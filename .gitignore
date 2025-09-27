@@ -1,0 +1,16 @@
+/node_modules
+/public/hot
+!/public/images/bg.jpg
+/public/storage
+/public/product_images
+/public/producs
+/storage/*.key
+/vendor
+.env
+.env.backup
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+npm-debug.log
+yarn-error.log
+/laravel-docker/.env
