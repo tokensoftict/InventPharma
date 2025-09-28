@@ -585,7 +585,7 @@ class PaymentRepository
             if($obj->online_credit_invoice !== "")
             {
                 $in = Invoice::find($obj->online_credit_invoice);
-                ProcessOrderService::sendBackPaymentConfirmedMessage($in->onliner_order_id);
+                ProcessOrderService::sendBackPaymentConfirmedMessage($in->onliner_order_id, $in->invoice_number);
                 $in->online_order_debit = 0;
                 $in->update();
             }
@@ -612,7 +612,7 @@ class PaymentRepository
     {
         if(isset($obj->invoice) && $obj->invoice->online_order_status == "1" )
         {
-            ProcessOrderService::sendBackPaymentConfirmedMessage($obj->invoice->onliner_order_id);
+            ProcessOrderService::sendBackPaymentConfirmedMessage($obj->invoice->onliner_order_id, $obj->invoice->invoice_number);
             $in = Invoice::find($obj->invoice->id);
             $in->online_order_debit = 0;
             $in->update();

@@ -458,7 +458,7 @@ class InvoiceController extends Controller
 
             LogActivity($invoice->id, $invoice->invoice_number,"Online invoice, update sent to server ".$invoice->status);
 
-            ProcessOrderService::sendBackCancelOrderMessage($invoice->onliner_order_id);
+            ProcessOrderService::sendBackCancelOrderMessage($invoice->onliner_order_id, $invoice->invoice_number);
 
         }
 
@@ -519,7 +519,7 @@ class InvoiceController extends Controller
     public function packOnlineInvoice(Invoice $invoice)
     {
         DB::transaction(function() use ($invoice){
-            ProcessOrderService::sendBackWaitingForPaymentMessage($invoice->onliner_order_id);
+            ProcessOrderService::sendBackWaitingForPaymentMessage($invoice->onliner_order_id, $invoice->invoice_number);
             $invoice->status_id = status('Packed-Waiting-For-Payment');
             $invoice->online_order_debit = 1;
             $invoice->update();

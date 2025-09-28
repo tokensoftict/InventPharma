@@ -30,7 +30,7 @@ class WaitingForPaymentOnlineOrder
         if(config('app.sync_with_online')== 0)  return;
 
         if($event->invoice->online_order_status == "1") {
-            ProcessOrderService::sendBackWaitingForPaymentMessage($event->invoice->invoice->onliner_order_id);
+            ProcessOrderService::sendBackWaitingForPaymentMessage($event->invoice->invoice->onliner_order_id, $event->invoice->invoice->invoice_number);
             $event->invoice->online_order_debit = 1;
             $event->invoice->update();
         }

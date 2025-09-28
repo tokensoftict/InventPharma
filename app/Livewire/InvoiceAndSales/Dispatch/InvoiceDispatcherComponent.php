@@ -74,7 +74,7 @@ class InvoiceDispatcherComponent extends Component
 
         if($this->invoice->online_order_status == "1"){
 
-            ProcessOrderService::sendBackOrderDispatchedMessage($this->invoice->onliner_order_id, $this->invoice->carton_no);
+            ProcessOrderService::sendBackOrderDispatchedMessage($this->invoice->onliner_order_id, $this->invoice->invoice_number, $this->invoice->carton_no);
             logActivity($this->invoice->id, $this->invoice->invoice_number,'Online invoice -- dispatched update was sent to the serve');
         }
 

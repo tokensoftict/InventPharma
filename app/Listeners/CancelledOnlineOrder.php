@@ -31,7 +31,7 @@ class CancelledOnlineOrder
 
         if($event->invoice->online_order_status == "1") {
             if($event->invoice->status_id == status('Deleted')) {
-                ProcessOrderService::sendBackCancelOrderMessage($event->invoice->onliner_order_id);
+                ProcessOrderService::sendBackCancelOrderMessage($event->invoice->onliner_order_id, $event->invoice->invoice_number);
             }
         }
     }

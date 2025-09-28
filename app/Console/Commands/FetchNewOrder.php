@@ -70,7 +70,7 @@ class FetchNewOrder extends Command
         }
 
         $order['app_id'] = self::$OnlineStoreIDMapper[$order['store']];
-
+        $order['local_order_id'] = $order['id'];
         ProcessOrderService::handle(['order' => $order, 'action' => KafkaAction::PROCESS_ORDER]);
         return Command::SUCCESS;
     }

@@ -33,7 +33,7 @@ class PaymentConfirmOnlineOrder
         if($event->invoice->online_order_status == "1") {
             if($event->invoice->status_id == status('Paid')) {
                 if ($event->invoice->onliner_order_id !== "") {
-                    ProcessOrderService::sendBackPaymentConfirmedMessage($event->invoice->onliner_order_id);
+                    ProcessOrderService::sendBackPaymentConfirmedMessage($event->invoice->onliner_order_id, $event->invoice->invoice_number);
                     $in = Invoice::find($event->invoice->id);
                     $in->online_order_debit = 0;
                     $in->update();
