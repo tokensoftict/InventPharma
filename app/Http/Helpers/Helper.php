@@ -16,7 +16,8 @@ use Spatie\Valuestore\Valuestore;
 
 function onlineBase($endpoint = ""){
 
-    return  config('app.online_store_url')."api/data/".$endpoint;
+    //return  config('app.online_store_url')."api/data/".$endpoint;
+    return  'https://admin.generaldrugcentre.com/api/data/'.$endpoint;
 }
 
 function divide($num1, $num2)
