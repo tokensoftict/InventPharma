@@ -129,7 +129,7 @@ class ProcessOrderService
         //all have been validated and store successfully, now we can store the order products inside the array
         //lets check if there is an error
         if(count($errors) > 0){
-            self::sendBackErrorMessage($order['id'], $errors);
+            self::sendBackErrorMessage($order['id'], $order['local_order_id'], $errors);
             return $errors;
         }
 
@@ -202,7 +202,7 @@ class ProcessOrderService
         $invoiceRepo->createOnlineInvoice($invoiceData, collect($order['order_total_orders']));
 
 
-        self::sendBackSuccessMessage($order['id']);
+        self::sendBackSuccessMessage($order['id'], $order['local_order_id']);
 
         return true;
     }
@@ -212,12 +212,12 @@ class ProcessOrderService
      * @param array|string $errors
      * @return void
      */
-    public static function sendBackErrorMessage(int $order_id, array|string $errors) : void
+    public static function sendBackErrorMessage(int $order_id, int $online_local_order_id, array|string $errors) : void
     {
         if(config('app.sync_with_online') == 0)  return;
 
         if(config('app.KAFKA_STATUS') !== true) {
-            _POST('order_validation_error/'.$order_id, ['errors'=>$errors]);
+            _POST('order_validation_error/'.$online_local_order_id, ['errors'=>$errors]);
         } else {
             $message = new Message(
                 headers: ['event' => KafkaEvent::LOCAL_PUSH],
@@ -227,9 +227,9 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                _POST('order_validation_error/'.$order_id, ['errors'=>$errors]);
+                _POST('order_validation_error/'.$online_local_order_id, ['errors'=>$errors]);
             } catch (Exception $exception) {
-                _POST('order_validation_error/'.$order_id, ['errors'=>$errors]);
+                _POST('order_validation_error/'.$online_local_order_id, ['errors'=>$errors]);
                 report($exception);
             }
         }
@@ -240,13 +240,13 @@ class ProcessOrderService
      * @param int $order_id
      * @return void
      */
-    public static function sendBackSuccessMessage(int $order_id) : void
+    public static function sendBackSuccessMessage(int $order_id, int $online_local_order_id) : void
     {
         if(config('app.sync_with_online') == 0)  return;
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-            _GET('processorder/'.$order_id."/2");
+            _GET('processorder/'.$online_local_order_id."/2");
 
         } else {
 
@@ -258,9 +258,9 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                _GET('processorder/'.$order_id."/2");
+                _GET('processorder/'.$online_local_order_id."/2");
             } catch (Exception $exception) {
-                _GET('processorder/'.$order_id."/2");
+                _GET('processorder/'.$online_local_order_id."/2");
                 report($exception);
             }
         }
@@ -271,13 +271,13 @@ class ProcessOrderService
      * @param int $order_id
      * @return void
      */
-    public static function sendBackCancelOrderMessage(int $order_id) : void
+    public static function sendBackCancelOrderMessage(int $order_id, int $online_local_order_id) : void
     {
         if(config('app.sync_with_online') == 0)  return;
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-            _GET('processorder/'.$order_id."/5");
+            _GET('processorder/'.$online_local_order_id."/5");
 
         } else {
 
@@ -289,9 +289,9 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                _GET('processorder/'.$order_id."/5");
+                _GET('processorder/'.$online_local_order_id."/5");
             } catch (Exception $exception) {
-                _GET('processorder/'.$order_id."/5");
+                _GET('processorder/'.$online_local_order_id."/5");
                 report($exception);
             }
         }
@@ -301,13 +301,13 @@ class ProcessOrderService
      * @param int $order_id
      * @return void
      */
-    public static function sendBackWaitingForPaymentMessage(int $order_id) : void
+    public static function sendBackWaitingForPaymentMessage(int $order_id, int $online_local_order_id) : void
     {
         if(config('app.sync_with_online') == 0)  return;
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-            _GET('processorder/'.$order_id."/6");
+            _GET('processorder/'.$online_local_order_id."/6");
 
         } else {
 
@@ -319,9 +319,9 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                _GET('processorder/'.$order_id."/6");
+                _GET('processorder/'.$online_local_order_id."/6");
             } catch (Exception $exception) {
-                _GET('processorder/'.$order_id."/6");
+                _GET('processorder/'.$online_local_order_id."/6");
                 report($exception);
             }
         }
@@ -331,13 +331,13 @@ class ProcessOrderService
      * @param int $order_id
      * @return void
      */
-    public static function sendBackPaymentConfirmedMessage(int $order_id) : void
+    public static function sendBackPaymentConfirmedMessage(int $order_id, int $online_local_order_id) : void
     {
         if(config('app.sync_with_online') == 0)  return;
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-            _GET('processorder/'.$order_id."/3");
+            _GET('processorder/'.$online_local_order_id."/3");
 
         } else {
 
@@ -349,9 +349,9 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                _GET('processorder/'.$order_id."/3");
+                _GET('processorder/'.$online_local_order_id."/3");
             } catch (Exception $exception) {
-                _GET('processorder/'.$order_id."/3");
+                _GET('processorder/'.$online_local_order_id."/3");
                 report($exception);
             }
         }
@@ -362,13 +362,13 @@ class ProcessOrderService
      * @param string $carton
      * @return void
      */
-    public static function sendBackOrderDispatchedMessage(int $order_id, string $carton) : void
+    public static function sendBackOrderDispatchedMessage(int $order_id,  int $online_local_order_id, string $carton) : void
     {
         if(config('app.sync_with_online') == 0)  return;
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-            _GET('processorder/'.$order_id."/4?cartoon=".$carton);
+            _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
 
         } else {
 
@@ -380,9 +380,9 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                _GET('processorder/'.$order_id."/4?cartoon=".$carton);
+                _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
             } catch (Exception $exception) {
-                _GET('processorder/'.$order_id."/4?cartoon=".$carton);
+                _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
                 report($exception);
             }
         }
