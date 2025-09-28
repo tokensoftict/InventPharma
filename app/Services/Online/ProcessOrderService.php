@@ -14,6 +14,7 @@ use App\Models\Invoice;
 use App\Models\Stock;
 use App\Repositories\InvoiceRepository;
 use Exception;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Junges\Kafka\Facades\Kafka;

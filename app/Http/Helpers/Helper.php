@@ -16,7 +16,7 @@ use Spatie\Valuestore\Valuestore;
 
 function onlineBase($endpoint = ""){
 
-    return  config('app.online_store_url').$endpoint;
+    return  config('app.online_store_url')."api/data/".$endpoint;
 }
 
 function divide($num1, $num2)
@@ -26,7 +26,7 @@ function divide($num1, $num2)
     return ($num1/$num2);
 }
 
-function _GET($endpoint) : array|bool
+function  _GET($endpoint) : array|bool
 {
     if(config('app.sync_with_online')== 0)  return false;
 
