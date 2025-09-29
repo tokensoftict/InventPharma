@@ -399,9 +399,6 @@
                 this.totalInvoice();
             },
             getPriceRange(quantity, defaultSellingPrice, customPrices) {
-            console.log(defaultSellingPrice);
-            console.log(quantity);
-            console.log(customPrices);
                 for (const priceRule of (customPrices ?? [])) {
                     const min = parseInt(priceRule.min_qty);
                     const max = parseInt(priceRule.max_qty);
@@ -430,7 +427,7 @@
             },
             typeQuantity(index)
             {
-                if(this.invoiceitems[index]['quantity'] > this.invoiceitems[index]['av_qty'])
+                if(parseInt(this.invoiceitems[index]['quantity']) > this.invoiceitems[index]['av_qty'])
                 {
                     error("Total available quantity is "+this.invoiceitems[index]['av_qty']);
                     this.invoiceitems[index]['quantity'] = this.invoiceitems[index]['av_qty'];
@@ -466,7 +463,6 @@
 
             totalInvoice()
             {
-                console.log(this.invoiceitems);
                 this.netTotal = this.money(this.invoiceitems.length > 0 ? this.invoiceitems.reduce((result, item) => {
                     return result + (item.selling_price * item.quantity);
                 }, 0) : 0);
