@@ -2,6 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\KafkaAction;
+use App\Enums\KafkaTopics;
+use App\Jobs\PushDataServer;
 use App\Models\Customer;
 use Illuminate\Console\Command;
 
@@ -29,25 +32,21 @@ class SyncCustomer extends Command
     public function handle()
     {
         $this->info('Gathering Customer Data');
-        $customers = Customer::where('status',1);
-        $chunk_numbers = round(($customers->count() / 500));
-        $customers->chunk(500,function($customer) use (&$chunk_numbers){
+        $customer =   Customer::query();
+        $customerCount = round(($customer->count() / 2000));
+        Customer::query()->chunk(2000, function($customers) use (&$customerCount){
             $all_data = [];
-            foreach($customer as $cus){
-                $all_data[] = $cus->getBulkPushData();
+            foreach($customers as $customer){
+                $all_data[] = $customer->getBulkPushData();
             }
-            $postdata = ['table'=>'existing_customer','data'=> $all_data];
+            $this->info('Gathering Customer Data Complete');
+            $this->info('Parsing Customer Data');
             $this->info('Parsing Customer Data Complete');
-            $this->info('Posting Customer Data to '.onlineBase());
-            $response = _POST2('sync_customer',$postdata);
-
-            if($response == true){
-                $chunk_numbers = $chunk_numbers-1;
-                $this->info('Customer data has been posted successfully '.$chunk_numbers);
-                sleep(4);
-            }else{
-                dd($response);
-            }
+            $this->info('Posting Customer Data to '.onlineBase('customers'));
+            dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_CUSTOMER, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+                'action'=>'new','table'=>'existing_customer', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
+            $this->info('Chunk '. $customerCount. ' send successfully');
+            $customerCount --;
         });
 
         return Command::SUCCESS;
