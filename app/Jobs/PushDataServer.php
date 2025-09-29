@@ -48,9 +48,7 @@ class PushDataServer implements ShouldQueue
 
             try {
                 Kafka::publish()->onTopic($this->data['KAFKA_TOPICS'])->withMessage($message)->send();
-                _POST('update_data',$this->data);
             } catch (Exception $exception) {
-                _POST('update_data',$this->data);
                 report($exception);
             }
         }
