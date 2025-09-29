@@ -258,14 +258,12 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                if(!is_null($online_local_order_id)) {
-                    _GET('processorder/'.$online_local_order_id."/2");
-                }
             } catch (Exception $exception) {
-                if(!is_null($online_local_order_id)) {
-                    _GET('processorder/'.$online_local_order_id."/2");
-                }
                 report($exception);
+            }
+
+            if(!is_null($online_local_order_id)) {
+                _GET('processorder/'.$online_local_order_id."/2");
             }
         }
     }
