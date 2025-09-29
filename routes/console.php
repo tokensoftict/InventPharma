@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command("queue:work --stop-when-empty")->everyFiveSeconds()->withoutOverlapping(); //to run emails
+//Schedule::command("queue:work --stop-when-empty")->everyFiveSeconds()->withoutOverlapping(); //to run emails
 Schedule::command('open:stock')->dailyAt('01:00');
 //Schedule::command('orders:refresh')->everyMinute()->withoutOverlapping();
 
