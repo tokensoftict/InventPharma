@@ -291,11 +291,11 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                _GET('processorder/'.$online_local_order_id."/5");
             } catch (Exception $exception) {
-                _GET('processorder/'.$online_local_order_id."/5");
                 report($exception);
             }
+
+            _GET('processorder/'.$online_local_order_id."/5");
         }
     }
 
@@ -321,11 +321,11 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                _GET('processorder/'.$online_local_order_id."/6");
             } catch (Exception $exception) {
-                _GET('processorder/'.$online_local_order_id."/6");
                 report($exception);
             }
+
+            _GET('processorder/'.$online_local_order_id."/6");
         }
     }
 
@@ -351,11 +351,11 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                _GET('processorder/'.$online_local_order_id."/3");
             } catch (Exception $exception) {
-                _GET('processorder/'.$online_local_order_id."/3");
                 report($exception);
             }
+
+            _GET('processorder/'.$online_local_order_id."/3");
         }
     }
 
@@ -382,11 +382,11 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
             } catch (Exception $exception) {
-                _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
                 report($exception);
             }
+
+            _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
         }
     }
 
