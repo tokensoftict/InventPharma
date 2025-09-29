@@ -36,8 +36,8 @@ class SyncStockToServer extends Command
         $stocks = Stock::where(function($query){
             $query->orWhere('bulk_price','>',0)->orWhere('retail_price','>',0);
         });
-        $chunk_numbers = round(($stocks->count() / 2000));
-        $stocks->chunk(2000,function($stocks) use (&$chunk_numbers){
+        $chunk_numbers = round(($stocks->count() / 1000));
+        $stocks->chunk(1000,function($stocks) use (&$chunk_numbers){
             $all_data = [];
             foreach($stocks as $stock){
                 $all_data[] = $stock->getBulkPushData();
