@@ -227,11 +227,11 @@ class ProcessOrderService
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
-                _POST('order_validation_error/'.$online_local_order_id, ['errors'=>$errors]);
             } catch (Exception $exception) {
-                _POST('order_validation_error/'.$online_local_order_id, ['errors'=>$errors]);
                 report($exception);
             }
+
+            _POST('order_validation_error/'.$online_local_order_id, ['errors'=>$errors]);
         }
 
     }

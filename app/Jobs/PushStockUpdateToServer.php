@@ -63,12 +63,12 @@ class PushStockUpdateToServer implements ShouldQueue
 
             try {
                 Kafka::publish()->onTopic($data['KAFKA_TOPICS'])->withMessage($message)->send();
-                _POST('add_or_update_stock',$data);
             } catch (Exception $exception) {
-                _POST('add_or_update_stock',$data);
                 report($exception);
             }
 
+            $data = ['action' => 'update', 'table' => 'stock', 'data' => $stock, 'url'=>onlineBase()."dataupdate/add_or_update_stock"];
+            _POST('add_or_update_stock',$data);
         }
 
     }
