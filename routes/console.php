@@ -18,7 +18,7 @@ Schedule::command('open:supplierdbstock')->dailyAt('07:00');
 
 Schedule::command('run:movingstocks')->dailyAt('04:00');
 
-Schedule::command('sync:stock')->everyTwoHours();
+Schedule::command('sync:old_stock')->everyTwoHours();
 
 //Schedule::command('download:product-image')->withoutOverlapping()->everyMinute()->appendOutputTo('storage/app/imageDownload.txt');
 
