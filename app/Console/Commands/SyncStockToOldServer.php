@@ -35,7 +35,7 @@ class SyncStockToOldServer extends Command
         $stocks->chunk(500,function($stocks) use (&$chunk_numbers){
             $all_data = [];
             foreach($stocks as $stock){
-                $all_data[] = $stock->getBulkPushData();
+                $all_data[] = $stock->getBulkOldPushData();
             }
             $this->info('Gathering Stock Data Complete');
             $this->info('Parsing Stock Data');

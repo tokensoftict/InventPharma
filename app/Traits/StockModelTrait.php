@@ -431,6 +431,44 @@ trait StockModelTrait
     }
 
 
+    public function getBulkOldPushData() : array{
+        $data =  [
+            'local_stock_id'=>$this->id,
+            'description'=>$this->description,
+            'name'=>$this->name,
+            'classification_id'=>$this->classification_id,
+            'category_id'=>$this->category_id,
+            'brand_id'=>$this->brand_id,
+            'manufacturer_id'=>$this->manufacturer_id,
+            'group_id'=>$this->stockgroup_id,
+            'price'=>$this->bulk_price,
+            'quantity'=>$this->getOnlineQuantity(),
+            'retail_quantity' => $this->getRetailQuantity(),
+            'box'=>$this->box,
+            'is_wholesales'=>($this->bulk_price > 0 ? 1 : 0 ),
+            'max'=>"0",
+            'cartoon'=>$this->carton,
+            'sachet'=>1,
+            //'status'=>$this->status,
+            'retail_status'=>$this->status,
+        ];
+
+        $ex = $this->getOnlineExpiryDate();
+        if( $ex ) {
+            $data['expiry_date'] =  $ex->format('Y-m-d');
+        }
+
+        // for OnlineSuperMarket Push
+        if($this->retail_price > 0){
+
+            $data['retail_price'] = $this->retail_price;
+
+            $data['retail_quantity'] = $this->retail;
+        }
+
+        return $data;
+    }
+
     public function getOnlineExpiryDate()
     {
         $batch = $this->activeBatches->filter(function($item, $index){

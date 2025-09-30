@@ -41,9 +41,11 @@ class PushStockUpdateToServer implements ShouldQueue
 
         $items = Stock::whereIn('id',$this->stock_array)->get();
         $stock = [];
+        $oldStock = [];
 
         foreach ($items as $item){
             $stock[] = $item->getBulkPushData();
+            $oldStock[] = $item->getBulkOldPushData();
         }
 
         $data = ['KAFKA_ACTION' => KafkaAction::UPDATE_STOCK, 'KAFKA_TOPICS'=> KafkaTopics::STOCKS, 'action' => 'update', 'table' => 'stock', 'data' => $stock, 'url'=>onlineBase()."dataupdate/add_or_update_stock"];
@@ -67,7 +69,7 @@ class PushStockUpdateToServer implements ShouldQueue
                 report($exception);
             }
 
-            $data = ['action' => 'update', 'table' => 'stock', 'data' => $stock, 'url'=>onlineBase()."dataupdate/add_or_update_stock"];
+            $data = ['action' => 'update', 'table' => 'stock', 'data' => $oldStock, 'url'=>onlineBase()."dataupdate/add_or_update_stock"];
             _POST('add_or_update_stock',$data);
         }
 
