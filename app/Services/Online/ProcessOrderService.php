@@ -226,7 +226,7 @@ class ProcessOrderService
                 key: config('app.KAFKA_HEADER_KEY')
             );
 
-            Storage::append("validation_error.log", json_encode($message));
+            Storage::append("validation_error.log", json_encode($message->getBody()));
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
@@ -259,7 +259,7 @@ class ProcessOrderService
                 key: config('app.KAFKA_HEADER_KEY')
             );
 
-            Storage::append("success_message.log", json_encode($message));
+            Storage::append("success_message.log",  json_encode($message->getBody()));
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
@@ -294,7 +294,7 @@ class ProcessOrderService
                 key: config('app.KAFKA_HEADER_KEY')
             );
 
-            Storage::append("cancel_message.log", json_encode($message));
+            Storage::append("cancel_message.log",  json_encode($message->getBody()));
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
@@ -326,7 +326,7 @@ class ProcessOrderService
                 key: config('app.KAFKA_HEADER_KEY')
             );
 
-            Storage::append("waiting_for_payment.log", json_encode($message));
+            Storage::append("waiting_for_payment.log",  json_encode($message->getBody()));
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
             } catch (Exception $exception) {
@@ -357,7 +357,7 @@ class ProcessOrderService
                 key: config('app.KAFKA_HEADER_KEY')
             );
 
-            Storage::append("payment_confirmed.log", json_encode($message));
+            Storage::append("payment_confirmed.log",  json_encode($message->getBody()));
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
@@ -390,7 +390,7 @@ class ProcessOrderService
                 key: config('app.KAFKA_HEADER_KEY')
             );
 
-            Storage::append("dispatched_message.log", json_encode($message));
+            Storage::append("dispatched_message.log",  json_encode($message->getBody()));
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
