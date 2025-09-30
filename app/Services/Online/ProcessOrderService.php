@@ -213,7 +213,7 @@ class ProcessOrderService
      * @param array|string $errors
      * @return void
      */
-    public static function sendBackErrorMessage(int $order_id, int $online_local_order_id, array|string $errors) : void
+    public static function sendBackErrorMessage(int $order_id, int|null $online_local_order_id, array|string $errors) : void
     {
         if(config('app.sync_with_online') == 0)  return;
 
@@ -278,7 +278,7 @@ class ProcessOrderService
      * @param int $order_id
      * @return void
      */
-    public static function sendBackCancelOrderMessage(int $order_id, int $online_local_order_id) : void
+    public static function sendBackCancelOrderMessage(int $order_id, int|null $online_local_order_id) : void
     {
         if(config('app.sync_with_online') == 0)  return;
 
@@ -310,7 +310,7 @@ class ProcessOrderService
      * @param int $order_id
      * @return void
      */
-    public static function sendBackWaitingForPaymentMessage(int $order_id, int $online_local_order_id) : void
+    public static function sendBackWaitingForPaymentMessage(int $order_id, int|null $online_local_order_id) : void
     {
         if(config('app.sync_with_online') == 0)  return;
 
@@ -341,7 +341,7 @@ class ProcessOrderService
      * @param int $order_id
      * @return void
      */
-    public static function sendBackPaymentConfirmedMessage(int $order_id, int $online_local_order_id) : void
+    public static function sendBackPaymentConfirmedMessage(int $order_id, int|null $online_local_order_id) : void
     {
         if(config('app.sync_with_online') == 0)  return;
 
@@ -374,7 +374,7 @@ class ProcessOrderService
      * @param string $carton
      * @return void
      */
-    public static function sendBackOrderDispatchedMessage(int $order_id,  int $online_local_order_id, string $carton) : void
+    public static function sendBackOrderDispatchedMessage(int $order_id,  int|null $online_local_order_id, string $carton) : void
     {
         if(config('app.sync_with_online') == 0)  return;
 
