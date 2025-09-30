@@ -17,6 +17,7 @@ use Exception;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Junges\Kafka\Facades\Kafka;
 use Junges\Kafka\Message\Message;
 
@@ -225,6 +226,8 @@ class ProcessOrderService
                 key: config('app.KAFKA_HEADER_KEY')
             );
 
+            Storage::append("validation_error.log", json_encode($message));
+
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
             } catch (Exception $exception) {
@@ -255,6 +258,8 @@ class ProcessOrderService
                 body: [['orderId' => $order_id, 'status_code' => 'Packing'], "action" => KafkaAction::ORDER_PROCESSED_UPDATE],
                 key: config('app.KAFKA_HEADER_KEY')
             );
+
+            Storage::append("success_message.log", json_encode($message));
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
@@ -289,6 +294,8 @@ class ProcessOrderService
                 key: config('app.KAFKA_HEADER_KEY')
             );
 
+            Storage::append("cancel_message.log", json_encode($message));
+
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
             } catch (Exception $exception) {
@@ -319,6 +326,7 @@ class ProcessOrderService
                 key: config('app.KAFKA_HEADER_KEY')
             );
 
+            Storage::append("waiting_for_payment.log", json_encode($message));
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
             } catch (Exception $exception) {
@@ -348,6 +356,8 @@ class ProcessOrderService
                 body: [['orderId' => $order_id, 'status_code' => 'Payment Confirmed'], "action" => KafkaAction::ORDER_PROCESSED_UPDATE],
                 key: config('app.KAFKA_HEADER_KEY')
             );
+
+            Storage::append("payment_confirmed.log", json_encode($message));
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
@@ -379,6 +389,8 @@ class ProcessOrderService
                 body: [['orderId' => $order_id, 'status_code' => 'Dispatched', 'carton' => $carton], "action" => KafkaAction::ORDER_PROCESSED_UPDATE],
                 key: config('app.KAFKA_HEADER_KEY')
             );
+
+            Storage::append("dispatched_message.log", json_encode($message));
 
             try {
                 Kafka::publish()->onTopic(KafkaTopics::ORDERS)->withMessage($message)->send();
