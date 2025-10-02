@@ -406,15 +406,21 @@
             {
                 alert('Click on capture barcode scanner to capture barcode');
             }else{
-                @if(!isset($this->product->id))
+                <?php
+                    if(!isset($this->product->id)) {
+                ?>
                 alert('Please save this product before, creating barcode')
-                @else
+                <?php
+                }else{
+                ?>
                 @this.validateBarcode(barcode).then(function(resp){
                     if(resp.status == false){
 
                     }
                 });
-                @endif
+                <?php
+                }
+                ?>
             }
         }
 
