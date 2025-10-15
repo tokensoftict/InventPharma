@@ -7,15 +7,15 @@
     <link rel="stylesheet" href="{{ asset('css/product-scanner-view-style.css') }}">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @livewireStyles
-    @livewireScripts
+
 </head>
 
 <body>
 
 <livewire:product-scanner.product-view/>
 
+@livewireScripts
 <script src="{{ asset('libs/jquery/jquery.min.js') }}"></script>
-<script defer src="{{ asset('js/alpine.min.js') }}"></script>
 <script src="{{ asset('js/barcode.js') }}"></script>
 <script>
     function img(anything) {
