@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\OutOfStockLog;
+use App\Models\ProductNotAvailable;
 use App\Repositories\InvoiceRepository;
 use App\Traits\SimpleComponentTrait;
 use Illuminate\Support\Facades\DB;
@@ -290,5 +291,20 @@ class InvoiceFormComponent extends Component
             'last_click_user_id' => auth()->id(),
             'last_click_date' => now(),
         ]);
+    }
+
+
+    public function logProductNotExist($name) : bool
+    {
+        $log = ProductNotAvailable::updateOrCreate(
+            ['name' => $name],
+            [
+                'department' => $this->d,
+                'user_id' => auth()->id(),
+                'date_time' => now()
+            ]
+        );
+
+        return true;
     }
 }

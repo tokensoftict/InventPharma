@@ -1,4 +1,4 @@
-<div x-data="invoice()" x-init="totalInvoice(); newCustomerEvent(); getInputFromBarcode()">
+<div x-data="invoice()" x-init="totalInvoice(); newCustomerEvent(); getInputFromBarcode(); logProductNotExist()">
     <div class="row">
         <div class="col-sm-8">
             <div class="card">
@@ -341,7 +341,7 @@
         function invoice()
         {
             return {
-                invoiceitems : @this.get('invoiceData.invoiceitems') ? JSON.parse( @this.get('invoiceData.invoiceitems')) : [],
+            invoiceitems : @this.get('invoiceData.invoiceitems') ? JSON.parse( @this.get('invoiceData.invoiceitems')) : [],
             searchString : "",
             searchproduct : [],
             searchCustomers : [],
@@ -613,8 +613,7 @@
                     console.log("product not found");
                 }
             },
-            getInputFromBarcode()
-            {
+            getInputFromBarcode() {
                 var obj = this;
                 $(document).ready(function(){
                     $(document).scannerDetection({
@@ -636,7 +635,18 @@
                         onError: function(string){}
                     });
                 });
-            }
+            },
+            logProductNotExist() {
+            const input = document.getElementById('searchText');
+            let currentObj = this;
+            input.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' && currentObj.searchproduct.length === 0) {
+                    @this.logProductNotExist($(input).val()).then(() => {
+                        success($(input).val()+" has been saved successfully!")
+                    });
+                }
+            });
+        }
         }
         }
 

@@ -259,4 +259,47 @@ class ProductReportController extends Controller
         return view('reports.product.supplierdboverviewreport', $data);
     }
 
+
+
+    public function unavailable_stock_log(Request $request)
+    {
+        $items = [
+            [
+                'id' =>"wholesales",
+                'name' => "Wholesales",
+            ],
+            [
+                'id' =>"retail",
+                'name' =>"Retail",
+            ],
+        ];
+
+        $data = [
+            'title' => 'Unavailable Stock Log Report',
+            'subtitle' => 'View Product that is not available in the database',
+            'filters' => [
+                'custom_dropdown_id' => "wholesales",
+                'label_name' => 'Departments',
+                'items' => $items,
+                'filters' => [
+                    'custom_dropdown_id' => "wholesales",
+                ]
+            ]
+        ];
+        if($request->get('filter'))
+        {
+            $data['filters'] = $request->get('filter');
+            $data['filters']['items'] = $items;
+            $data['filters']['label_name'] = 'Departments';
+            $data['filters']['custom_dropdown_id'] = $data['filters']['custom_dropdown_id'];
+            $data['filters']['filters']['custom_dropdown_id'] = $data['filters']['custom_dropdown_id'];
+            $data['filters']['filters']['items'] = $items;
+            $data['filters']['filters']['label_name'] = 'Departments';
+
+        }
+
+
+        return view('reports.product.unavailable_stock', $data);
+    }
+
 }
