@@ -34,7 +34,7 @@
     </section>
 
     <div id="screensaver"
-            style="display:block; position:fixed; top:0; left:0; width:100vw; height:100vh; background:black; z-index:9999;"
+            style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:black; z-index:9999;"
             wire:ignore
     >
         <video id="screensaverVideo" autoplay muted loop style="width:100%; height:100%; object-fit:cover;">
@@ -123,12 +123,12 @@
                 timeout = setTimeout(showScreensaver, 5000); // 60 seconds
             }
 
-            window.onload = resetTimer;
-            document.onmousemove = resetTimer;
-            document.onkeypress = resetTimer;
-            document.ontouchstart = resetTimer;
-            document.onclick = resetTimer;
-            document.onscroll = resetTimer;
+           // window.onload = resetTimer;
+           // document.onmousemove = resetTimer;
+           // document.onkeypress = resetTimer;
+           // document.ontouchstart = resetTimer;
+           // document.onclick = resetTimer;
+           // document.onscroll = resetTimer;
         };
 
         inactivityTime();
