@@ -4,13 +4,14 @@ namespace App\Livewire\AccessControl;
 
 use App\Models\Module;
 use App\Models\Usergroup;
+use App\Traits\LivewireAlert;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 
 class PermissionComponent extends Component
 {
-
+    use LivewireAlert;
 
     public Usergroup $usergroup;
 
@@ -37,7 +38,7 @@ class PermissionComponent extends Component
             {
                 if(count($task->permissions))
                 {
-                    $this->privileges[$task->id]  = 1;
+                    $this->privileges[$task->id]  = true;
                 }
 
             }
@@ -64,7 +65,7 @@ class PermissionComponent extends Component
         loadUserMenu($this->usergroup->id);
         $this->alert(
             "success",
-            "Privileges",
+            "User Privileges",
             [
                 'position' => 'center',
                 'timer' => 2000,

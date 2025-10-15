@@ -483,6 +483,8 @@ Route::middleware(['auth'])->group(function () {
 
                 Route::match(['get','post'],'nearoutofstock', ['as' => 'nearoutofstock', 'uses' => 'ProductReportController@nearoutofstock', 'custom_label'=>'Near Out Of Stock']);
 
+                Route::match(['get','post'],'out_of_stock_log', ['as' => 'out_of_stock_log', 'uses' => 'ProductReportController@out_of_stock_log', 'custom_label'=>'Near Out Of Stock Log Report']);
+
                 Route::match(['get','post'],'retailnearoutofstock', ['as' => 'retailnearoutofstock', 'uses' => 'ProductReportController@retailnearoutofstock', 'custom_label'=>'Retail Near Out Of Stock']);
 
                 Route::match(['get','post'],'stockpriceanalysis', ['as' => 'stockpriceanalysis', 'uses' => 'ProductReportController@stockpriceanalysis', 'custom_label'=>'Stock Price Analysis']);
