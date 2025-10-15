@@ -12,6 +12,7 @@ use App\Models\Creditpaymentlog;
 use App\Models\Invoice;
 use App\Models\Invoiceitem;
 use App\Models\Invoiceitembatch;
+use App\Models\MultipleInvoiceScanReport;
 use App\Models\Onlineordertotal;
 use App\Models\Stock;
 use App\Models\WaitingCustomer;
@@ -612,12 +613,30 @@ class InvoiceRepository
     }
 
 
+    private function logMultipleScan(Invoice $invoice)
+    {
+        $check = MultipleInvoiceScanReport::query()->where('invoice_id', $invoice->id)->first();
+        if(!$check) {
+            MultipleInvoiceScanReport::query()->create([
+                'invoice_id' => $invoice->id,
+                'invoice_number' => $invoice->invoice_number,
+                'scan_date' => todaysDate(),
+                'scan_time' => now(),
+                'user_id' => auth()->id(),
+                'no_of_items' => 2
+            ]);
+        } else {
+            $check->increment('no_of_items');
+        }
+    }
+
+
     public function checkOut(Invoice $invoice) : array
     {
         if($invoice->scan_user_id !== NULL)
         {
             logActivity($invoice->id, $invoice->invoice_number, "Trying to scan / checkout invoice has been checkout already");
-
+            $this->logMultipleScan($invoice);
             return ['status'=>false, 'message'=>'Invoice has already been checkout by '.$invoice->scan_by->name];
         }else{
 
@@ -632,7 +651,7 @@ class InvoiceRepository
                 addCustomerWaitingListStatusHistory($invoice->waitingCustomer, 'complete');
             }
 
-            logActivity($invoice->id, $invoice->invoice_number, "Invoice number was been Scan / Checkout");
+            logActivity($invoice->id, $invoice->invoice_number, "Invoice number has been Scan / Checkout");
 
             return ['status'=>true];
         }
