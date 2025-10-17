@@ -43,7 +43,7 @@ final class MultipleScanInvoiceReport extends PowerGridComponent
     public function datasource(): Builder
     {
         $this->filters['filters']['between.invoice_date'][0] = (new Carbon($this->filters['filters']['between.invoice_date'][0]));
-        $this->filters['filters']['between.invoice_date'][0] = (new Carbon($this->filters['filters']['between.invoice_date'][1]));
+        $this->filters['filters']['between.invoice_date'][1] = (new Carbon($this->filters['filters']['between.invoice_date'][1]));
         return MultipleInvoiceScanReport::query()->with('invoice', 'user') ->whereBetween('updated_at', $this->filters['filters']['between.invoice_date']);
     }
 
