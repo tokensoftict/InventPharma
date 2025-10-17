@@ -85,9 +85,7 @@ final class MultipleScanInvoiceReport extends PowerGridComponent
         return PowerGrid::fields()
             ->add('id')
             ->add('invoice_number')
-            ->add('scan_date', function (MultipleInvoiceScanReport $model){
-                return $model->scan_date->format('d/m/Y');
-            })
+            ->add('scan_date')
             ->add('username', function (MultipleInvoiceScanReport $model) {
                 return $model->user->name;
             })
