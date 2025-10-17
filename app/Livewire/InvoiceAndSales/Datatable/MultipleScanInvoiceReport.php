@@ -145,7 +145,7 @@ final class MultipleScanInvoiceReport extends PowerGridComponent
      */
 
 
-    public function actions(Invoiceactivitylog $model): array
+    public function actions(MultipleInvoiceScanReport $model): array
     {
         return [
             Button::make('view', 'View Invoice')
