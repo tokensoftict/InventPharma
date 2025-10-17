@@ -169,7 +169,7 @@ final class NearOsDatatableClickedUser extends PowerGridComponent
                     $q->where('status_id',status('Complete'));
                 })
                     ->orderBy('id','DESC')
-                    ->limit(1)->first()?->purchase?->date_completed->format("d/m/Y") ?? "N/A" ;
+                    ->limit(1)->first()?->purchase?->date_completed?->format("d/m/Y") ?? "N/A" ;
             });
 
 
