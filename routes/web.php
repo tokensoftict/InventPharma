@@ -442,6 +442,8 @@ Route::middleware(['auth'])->group(function () {
 
                 Route::match(['get','post'],'print_frequency', ['as' => 'print_frequency', 'uses' => 'InvoiceReportController@print_frequency', 'custom_label'=>'Retail Invoice POS Print Frequency']);
 
+                Route::match(['get','post'],'multiple_scan_invoice_report', ['as' => 'multiple_scan_invoice_report', 'uses' => 'InvoiceReportController@multiple_scan_invoice_report', 'custom_label'=>'Multiple Scan Invoice Report']);
+
             });
 
 

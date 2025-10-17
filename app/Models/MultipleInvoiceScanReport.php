@@ -44,4 +44,15 @@ class MultipleInvoiceScanReport extends Model
 		'scan_time',
 		'no_of_items'
 	];
+
+
+    public function invoice()
+    {
+        return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }

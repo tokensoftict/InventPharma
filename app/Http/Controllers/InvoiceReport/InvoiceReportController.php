@@ -166,6 +166,28 @@ class InvoiceReportController extends Controller
         return view('reports.invoice.retailprintfrequency', $data);
     }
 
+    public function multiple_scan_invoice_report(Request $request)
+    {
+        $data = [
+            'title' => 'Multiple Scan Invoice Report',
+            'subtitle' => 'This report generate invoices that were scan to checkout more than once',
+            'filters' => [
+                'from' =>todaysDate(),
+                'to'=>todaysDate(),
+                'filters' => [
+                    'between.invoice_date' => [todaysDate(),todaysDate()],
+                ]
+            ]
+        ];
+        if($request->get('filter'))
+        {
+            $data['filters'] = $request->get('filter');
+            $data['filters']['filters']['between.invoice_date'] = Arr::only(array_values( $request->get('filter')), [0,1]);
+        }
+
+        return view('reports.invoice.multiple_scan_invoice_report', $data);
+    }
+
 
     public function return_invoice(Request $request)
     {

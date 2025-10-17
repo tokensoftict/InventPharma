@@ -626,7 +626,10 @@ class InvoiceRepository
                 'no_of_items' => 2
             ]);
         } else {
-            $check->increment('no_of_items');
+            $noOfTimes = $check->no_of_items + 1;
+            $check->no_of_items = $noOfTimes;
+            $check->user_id = auth()->id();
+            $check->save();
         }
     }
 

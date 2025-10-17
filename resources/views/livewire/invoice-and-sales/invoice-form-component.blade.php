@@ -28,9 +28,9 @@
                                                     &nbsp; &nbsp;
                                                     SuperMarket Store : <span x-text="product.retail_store"></span>
                                                     &nbsp; &nbsp;
-                                                    
+
                                                     <span x-show="(product.custom_prices.length > 0)" class="font-size-13" style="font-weight: bolder"  >Bundle Price : <span class="text-danger font-size-13"  x-html="money(product.custom_prices[0].price)+'&nbsp; = '+product.custom_prices[0].min_qty+' Quantity'"></span></span>
-                                                    
+
                                                 @endif
                                             </div>
                                         </div>
@@ -341,7 +341,7 @@
         function invoice()
         {
             return {
-            invoiceitems : @this.get('invoiceData.invoiceitems') ? JSON.parse( @this.get('invoiceData.invoiceitems')) : [],
+                invoiceitems : @this.get('invoiceData.invoiceitems') ? JSON.parse( @this.get('invoiceData.invoiceitems')) : [],
             searchString : "",
             searchproduct : [],
             searchCustomers : [],
@@ -399,17 +399,17 @@
                 this.totalInvoice();
             },
             getPriceRange(quantity, defaultSellingPrice, customPrices) {
-                for (const priceRule of (customPrices ?? [])) {
-                    const min = parseInt(priceRule.min_qty);
-                    const max = parseInt(priceRule.max_qty);
+            for (const priceRule of (customPrices ?? [])) {
+                const min = parseInt(priceRule.min_qty);
+                const max = parseInt(priceRule.max_qty);
 
-                    if (quantity >= min && quantity < max) {
-                        return parseFloat(priceRule.price);
-                    }
+                if (quantity >= min && quantity < max) {
+                    return parseFloat(priceRule.price);
                 }
+            }
 
-                return parseFloat(defaultSellingPrice);
-            },
+            return parseFloat(defaultSellingPrice);
+        },
             incrementQuantity(index)
             {
                 let qty =  parseInt(this.invoiceitems[index]['quantity']) + 1;
@@ -532,11 +532,11 @@
                     error("One or more items in your cart have a quantity of zero or less. Please review your input and try again")
                     return ;
                 }
-                 @php
+                @php
                     if( $this->department != "4") {
-                 @endphp
+                @endphp
                 if(this.customer_id.firstname === "") {
-                     error("You have not select a customer for this invoice,  please select a customer by searching!...")
+                    error("You have not select a customer for this invoice,  please select a customer by searching!...")
                     return ;
                 }
 
@@ -613,34 +613,59 @@
                     console.log("product not found");
                 }
             },
-            getInputFromBarcode() {
+            async parseCustomerQrCode(barcode)
+            {
                 var obj = this;
-                $(document).ready(function(){
-                    $(document).scannerDetection({
-                        timeBeforeScanTest: 200, // wait for the next character for upto 200ms
-                        endChar: [13], // be sure the scan is complete if key 13 (enter) is detected
-                        avgTimeByChar: 40, // it's not a barcode if a character takes longer than 40ms// turn off scanner detection if an input has focus
-                        startChar: [16], // Prefix character for the cabled scanner (OPL6845R)
-                        endChar: [40],
-                        ignoreIfFocusOn : ['customer-search-text', 'searchText'],
-                        onComplete: function(barcode){
-                            //window.focus();
-                            obj.requestProductWithBarcode(barcode);
-                        }, // main callback function
-                        scanButtonKeyCode: 116, // the hardware scan button acts as key 116 (F5)
-                        scanButtonLongPressThreshold: 5, // assume a long press if 5 or more events come in sequence
-                        onScanButtonLongPressed: function(){
 
-                        }, // callback for long pressing the scan button
-                        onError: function(string){}
-                    });
-                });
+                @this.parseCustomerFromQrCode(barcode).then(function (response){
+                if(response.status === true) {
+                    obj.customer_id = response.customer;
+                    obj.searchCustomerString = "";
+                    obj.searchCustomers = [];
+                }else {
+                    error(response.message);
+                }
+            });
             },
+            getInputFromBarcode() {
+            var obj = this;
+            $(document).ready(function(){
+                $(document).scannerDetection({
+                    timeBeforeScanTest: 200, // wait for the next character for upto 200ms
+                    endChar: [13], // be sure the scan is complete if key 13 (enter) is detected
+                    avgTimeByChar: 40, // it's not a barcode if a character takes longer than 40ms// turn off scanner detection if an input has focus
+                    startChar: [16], // Prefix character for the cabled scanner (OPL6845R)
+                    endChar: [40],
+                    ignoreIfFocusOn : ['customer-search-text', 'searchText'],
+                    onComplete: function(barcode){
+                        barcode = barcode.trim();
+                        if(/^\d+$/.test(barcode) && barcode.length < 50) {
+                            obj.requestProductWithBarcode(barcode);
+                        } else {
+                            obj.parseCustomerQrCode(barcode);
+                        }
+
+                        const input = document.getElementById('searchText');
+                        $(input).val("")
+
+                        obj.searchCustomerString = "";
+                        obj.searchCustomers = [];
+                    }, // main callback function
+                    scanButtonKeyCode: 116, // the hardware scan button acts as key 116 (F5)
+                    scanButtonLongPressThreshold: 5, // assume a long press if 5 or more events come in sequence
+                    onScanButtonLongPressed: function(){
+
+                    }, // callback for long pressing the scan button
+                    onError: function(string){}
+                });
+            });
+        },
             logProductNotExist() {
             const input = document.getElementById('searchText');
             let currentObj = this;
             input.addEventListener('keydown', function(event) {
-                if (event.key === 'Enter' && currentObj.searchproduct.length === 0) {
+                const cleanBarCode = $(input).val().trim();
+                if (event.key === 'Enter' && (/^\d+$/.test(cleanBarCode) === false && $(input).val().length < 100) && currentObj.searchproduct.length === 0) {
                     @this.logProductNotExist($(input).val()).then(() => {
                         success($(input).val()+" has been saved successfully!")
                     });

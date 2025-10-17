@@ -307,4 +307,35 @@ class InvoiceFormComponent extends Component
 
         return true;
     }
+
+
+    public function parseCustomerFromQrCode($code)
+    {
+        $customer = json_decode(decrypt($code), true);
+        if($customer) {
+            $customer = Customer::where('phone_number', $customer['phone'])->first();
+            if($customer) {
+                return [
+                    'status' => true,
+                    'customer' => $customer->toArray()
+                ];
+            }
+            $customer = new Customer();
+            $customer->phone_number = $customer['phone'];
+            $customer->firstname = $customer['first_name'];
+            $customer->lastname = $customer['first_name'];
+            $customer->email = $customer['email'];
+            $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
+            $customer->city_id = NULL;
+            $customer->save();
+            return [
+                'status' => true,
+                'customer' => $customer->toArray()
+            ];
+
+
+        } else {
+            return ["status" => false, "message" => "Customer decrypt customer information"];
+        }
+    }
 }
