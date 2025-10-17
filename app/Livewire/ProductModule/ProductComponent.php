@@ -269,4 +269,13 @@ class ProductComponent extends Component
         });
 
     }
+
+    public function deleteBarcode($code)
+    {
+        $this->barcodes =  $this->product->stockbarcodes->map(function($barcode){
+            return $barcode->barcode;
+        })->filter(function($barcode) use ($code){
+            return $barcode !== $code;
+        })->toArray();
+    }
 }

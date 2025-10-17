@@ -267,7 +267,11 @@
                                         <tr>
                                             <td>{{ $loop->iteration }}</td>
                                             <td>{!! $barcode !!}</td>
-                                            <td><button href="#" onclick="deleteBarcode('{{ $barcode }}')" class="btn btn-danger btn-sm">Delete</button></td>
+                                            <td><button wire:target="deleteBarcode('{{ $barcode }}')" wire:loading.attr="disabled" wire:click="deleteBarcode('{{ $barcode }}')"  class="btn btn-danger btn-sm">
+                                                    Delete
+                                                    <span wire:loading wire:target="deleteBarcode('{{ $barcode }}')" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                </button>
+                                            </td>
                                         </tr>
                                     @endforeach
                                 @endif

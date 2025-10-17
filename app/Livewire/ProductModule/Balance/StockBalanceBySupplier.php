@@ -126,7 +126,7 @@ final class StockBalanceBySupplier extends PowerGridComponent
                     $total += $stockbatch->ms;
                 }
                 if(department_by_quantity_column('retail', false)->status) {
-                    $total+=round(abs($stockbatch->rt/ $stockbatch->stock->box));
+                    $total+=round(abs(divide($stockbatch->rt, $stockbatch->stock->box)));
                 }
 
                 return $total;
