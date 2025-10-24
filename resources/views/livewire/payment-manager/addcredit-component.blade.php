@@ -36,7 +36,7 @@
                     <select class="form-control form-control-lg" wire:model="online_credit_invoice">
                         <option value="">Select Online Invoice</option>
                         @foreach($this->pendingOnlineInvoices as $invoice)
-                            <option data-amt="{{ $invoice->total_amount_paid }}"  value="{{ $invoice->id }}">Invoice #{{ $invoice->id }} - {{ money($invoice->total_amount_paid) }}</option>
+                            <option data-amt="{{ $invoice->total_amount_paid }}"  value="{{ $invoice->id }}">Invoice #{{ $invoice->id }} - {{ money($invoice->total_amount_paid) }} - {{ $invoice->invoice_date }}</option>
                         @endforeach
                     </select>
                 </div>
