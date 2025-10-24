@@ -31,7 +31,8 @@ class AddcreditComponent extends Component
 
     public function mount()
     {
-        $this->pendingOnlineInvoices = Invoice::where('customer_id', $this->customer->id)->where('online_order_debit', 1)->get();
+        $this->pendingOnlineInvoices = Invoice::where('customer_id', $this->customer->id)->where('online_order_debit', 1)
+            ->orderBy('id', 'desc')->limit(1)->get();
     }
 
 
