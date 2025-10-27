@@ -65,7 +65,7 @@ class ProductComponent extends Component
         }
 
         $this->barcodes = $this->product->stockbarcodes->map(function($barcode){
-            return $barcode->barcode;
+            return str_replace("\r", "",$barcode->barcode);
         })->toArray();
 
         $this->productPriceBasedOnQuantity = $this->product->stockquantityprices->map(function($price){
@@ -168,6 +168,7 @@ class ProductComponent extends Component
     public function validateBarcode($code)
     {
         $code = trim(preg_replace('/\s\s+/', ' ', $code));
+        $code = str_replace("\r", "",$code);
         $barcode = Stockbarcode::where('barcode', $code)->first();
         if($barcode){
             if($barcode->stock_id == $this->product->id){
