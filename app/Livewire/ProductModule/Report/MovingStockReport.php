@@ -39,6 +39,7 @@ final class MovingStockReport extends PowerGridComponent
      */
     public function datasource(): Builder
     {
+        set_time_limit(0);
         return Movingstock::query()->with(['stock', 'stock.category']);
     }
 
