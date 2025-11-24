@@ -14,3 +14,11 @@ Homestead.yaml
 npm-debug.log
 yarn-error.log
 /laravel-docker/.env
+.DS_Store
+
+.idea/PSGeneralDrugCentreKafka.iml
+.idea/php.xml
+public/.DS_Store
+public/products/
+storage/.DS_Store
+**/.DS_Store
