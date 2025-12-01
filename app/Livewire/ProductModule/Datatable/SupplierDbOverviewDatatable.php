@@ -33,7 +33,7 @@ class SupplierDbOverviewDatatable extends ExportDataTableComponent
     {
         return [
             Column::make("Name", "supplier.name")
-                ->format(fn($value, $row, Column $column) => $value)
+                ->format(fn($value, $row, Column $column) => $row->name)
                 ->sortable()->searchable()->sortable(),
             Column::make("Total Opening Cost", "total_opening_cost_price")
             ->format(fn($value, $row, Column $column)=> money($value))->sortable(),
