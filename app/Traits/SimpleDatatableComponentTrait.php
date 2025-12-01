@@ -2,6 +2,7 @@
 namespace App\Traits;
 use App\Classes\Column;
 use App\Exports\GeneralDataExport;
+use Illuminate\Support\Str;
 use Livewire\Features\SupportPagination\WithoutUrlPagination;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -153,7 +154,9 @@ trait SimpleDatatableComponentTrait
         }
 
         $value = $column->getValue($row);
-
+        if($value === null and Str::contains($column->getFrom(), '.')) {
+            $value = $row->{Str::afterLast($column->getFrom(), '.')};
+        }
 
         if ($column->hasFormatter()) {
             $value = call_user_func($column->getFormatCallback(), $value, $row, $column);
