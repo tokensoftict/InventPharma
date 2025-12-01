@@ -42,6 +42,7 @@ final class StockOpeningReport extends PowerGridComponent
      */
     public function datasource(): Builder
     {
+        set_time_limit(999999);
         $date = $this->filters['payment_date'];
 
         return Stockopening::query()->with(['stock', 'supplier', 'stock.category', 'stock.promotion_items'])->where('date_added', $date);
