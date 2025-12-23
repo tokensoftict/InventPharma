@@ -4,6 +4,8 @@
     <meta charset="utf-8" />
     <title>{{ config('app.name', 'Peace Factory') }}: Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="{{ asset("rapasoft/core.min.css") }}" rel="stylesheet" /> <!-- Rappasoft Table Third Party Styles -->
+    <link href="{{ asset("rapasoft/thirdparty.css") }}" rel="stylesheet" />
     <link rel="shortcut icon" href="{{ asset('images/favicon.ico') }}">
     <link rel="stylesheet" href="{{ asset('css/preloader.min.css') }}" type="text/css" />
     <link href="{{ asset('css/bootstrap.min.css') }}" id="bootstrap-style" rel="stylesheet" type="text/css" />
@@ -22,6 +24,8 @@
             font-size: 12px !important;
         }
     </style>
+    <script src="{{ asset("rapasoft/core.min.js") }}"  ></script> <!-- Rappasoft Third Party Scripts -->
+    <script src="{{ asset("rapasoft/thirdparty.min.js") }}"  ></script></head>
 </head>
 @php
     $now = \Carbon\Carbon::now();
