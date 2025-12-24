@@ -120,8 +120,8 @@ class StockTransferRepository
                 "quantity" => $qty_,
                 "selling_price"=>$sk->{$price_column},
                 "cost_price" => $sk->{cost_price_column(department_by_quantity_column($data['from'])->id)},
-                "batch_id" =>$b_id,
-                "added_by"=>auth()->id()
+                "stockbatch_id" =>$b_id,
+                "user_id"=>auth()->id()
             ];
 
             $transfer_item[] = new Stocktransferitem($item);
@@ -239,8 +239,9 @@ class StockTransferRepository
                 "selling_price" => $transfer['selling_price'],
                 "rem_quantity"=>$sk->getCurrentlevel($stocktransfer->from),
                 "transfer_date" =>$stocktransfer->transfer_date,
-                "batch_id" => $b_id,
-                "added_by" => auth()->id()
+                "stockbatch_id" => $b_id,
+                "cost_price" => $sk->{cost_price_column(department_by_quantity_column($from)->id)},
+                "user_id" => auth()->id()
             ];
 
             $transfer_item[] = new StockTransferItem($item);
