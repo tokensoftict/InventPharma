@@ -50,10 +50,15 @@ final class BalanceStockWorthReport extends PowerGridComponent
 
         $selling_price_column = [
             'retail'=>"retail_price",
+            'retail_store' => 'retail_price',
             'wholesales'=>"whole_price",
             'bulksales'=>"whole_price",
             'quantity'=>"whole_price",
         ];
+
+        if($department == "retail_store") {
+            $department = "retail";
+        }
 
         $column = $department == "retail" ? "average_retail_cost_price" : "average_cost_price";
         $sumcolumn_opening = $department == "retail" ? "stockopenings.retail" : "stockopenings.".$department;
@@ -75,31 +80,74 @@ final class BalanceStockWorthReport extends PowerGridComponent
                     });
             })->groupBy('invoiceitembatches.stock_id');
 
+
+
         $po = DB::table('purchaseitems')->select('purchaseitems.stock_id',DB::raw('(AVG(purchaseitems.cost_price) * SUM(purchaseitems.qty)) as po_item_cost_price'))->leftJoin('purchases','purchaseitems.purchase_id','=','purchases.id')
-            ->where('purchases.status_id',status('Paid'))->whereBetween('purchases.date_completed',$date)->where('purchases.department',$department)->groupBy('purchaseitems.stock_id');
+            ->where('purchases.status_id',status('Complete'))->whereBetween('purchases.date_completed',$date)->where('purchases.department',$department)->groupBy('purchaseitems.stock_id');
+
+
+//        $stock_transfer_out = DB::table('stocktransferitems')->select(
+//            'stocktransferitems.stock_id',
+//            DB::raw( 'SUM(stocktransferitems.quantity * stockbatches.'.$batch_cost_column.') as stock_transfer_out')
+//        )->leftJoin('stocktransfers','stocktransfers.id','=','stocktransferitems.stocktransfer_id')
+//            ->join('stockbatches','stocktransferitems.stockbatch_id','=','stockbatches.id')
+//            ->whereBetween('stocktransfers.transfer_date',$date)
+//            ->where('stocktransfers.status_id',status('Approved'))
+//            ->where('from',$department)
+//            ->groupBy('stocktransferitems.stock_id');
+
+
+
+        $latestCostPrice = DB::table('stockbatches as sb1')
+            ->select('sb1.stock_id', 'sb1.cost_price')
+            ->whereNotNull('sb1.'.$batch_cost_column.'')
+            ->whereRaw('sb1.id = (
+        SELECT MAX(sb2.id)
+        FROM stockbatches sb2
+        WHERE sb2.stock_id = sb1.stock_id
+        AND sb2.cost_price IS NOT NULL
+    )');
+
 
 
         $stock_transfer_out = DB::table('stocktransferitems')->select(
             'stocktransferitems.stock_id',
-            DB::raw( 'SUM(stocktransferitems.quantity * stockbatches.'.$batch_cost_column.') as stock_transfer_out')
+            DB::raw( 'SUM(stocktransferitems.quantity * latest_batches.'.$batch_cost_column.') as stock_transfer_out')
         )->leftJoin('stocktransfers','stocktransfers.id','=','stocktransferitems.stocktransfer_id')
-            ->join('stockbatches','stocktransferitems.stockbatch_id','=','stockbatches.id')
+            ->leftJoinSub($latestCostPrice, 'latest_batches', function ($join) {
+                $join->on('latest_batches.stock_id', '=', 'stocktransferitems.stock_id');
+            })
             ->whereBetween('stocktransfers.transfer_date',$date)
             ->where('stocktransfers.status_id',status('Approved'))
             ->where('from',$department)
             ->groupBy('stocktransferitems.stock_id');
 
 
+
+//        $stock_transfer_in = DB::table('stocktransferitems')
+//            ->select(
+//                'stocktransferitems.stock_id',
+//                DB::raw( 'SUM(stocktransferitems.quantity * stockbatches.'.$batch_cost_column.') as stock_transfer_in')
+//            )->leftJoin('stocktransfers','stocktransfers.id','=','stocktransferitems.stocktransfer_id')
+//            ->join('stockbatches','stocktransferitems.stockbatch_id','=','stockbatches.id')
+//            ->whereBetween('stocktransfers.transfer_date',$date)
+//            ->where('stocktransfers.status_id',status('Approved'))
+//            ->where('to',$department)
+//            ->groupBy('stocktransferitems.stock_id');
+
         $stock_transfer_in = DB::table('stocktransferitems')
             ->select(
                 'stocktransferitems.stock_id',
-                DB::raw( 'SUM(stocktransferitems.quantity * stockbatches.'.$batch_cost_column.') as stock_transfer_in')
+                DB::raw( 'SUM(stocktransferitems.quantity  * latest_batches.'.$batch_cost_column.')  as stock_transfer_in')
             )->leftJoin('stocktransfers','stocktransfers.id','=','stocktransferitems.stocktransfer_id')
-            ->join('stockbatches','stocktransferitems.stockbatch_id','=','stockbatches.id')
+            ->leftJoinSub($latestCostPrice, 'latest_batches', function ($join) {
+                $join->on('latest_batches.stock_id', '=', 'stocktransferitems.stock_id');
+            })
             ->whereBetween('stocktransfers.transfer_date',$date)
             ->where('stocktransfers.status_id',status('Approved'))
             ->where('to',$department)
             ->groupBy('stocktransferitems.stock_id');
+
 
 
         $report = DB::table('stocks')->where('stocks.status','1')
@@ -133,8 +181,6 @@ final class BalanceStockWorthReport extends PowerGridComponent
             ->where('stockopenings.date_added',$date[0])
 
             ->where('stock_closing.date_added', $closing_date)
-
-
 
             ->leftJoinSub($stock_transfer_in,'st_in',function($join){
                 $join->on('st_in.stock_id','=','stocks.id');
