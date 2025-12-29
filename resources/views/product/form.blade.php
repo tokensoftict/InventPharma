@@ -67,6 +67,5 @@
                 </fieldset>
             </div>
         </div>
-        <livewire:product-module.product-component :product="$product"/>
     @endif
 @endsection
