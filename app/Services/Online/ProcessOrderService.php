@@ -177,7 +177,8 @@ class ProcessOrderService
                 'discount_value' => 0,
                 'discount_amount' => 0,
                 'discount_type' => 'Fixed',
-                'batches' => $item['batches']
+                'batches' => $item['batches'],
+                'selectedOptions' => []
             ] ;
         })->toArray();
 

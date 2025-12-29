@@ -226,23 +226,6 @@ class InvoiceRepository
             if($batch === false) {
                 $errors[$product->id] = "Not enough available quantity to process ".$product->name.", available quantity is ". $product->{$from};
             } else {
-                /*
-                if($product->stockquantityprices()->where('department', ($from == "retail" ? "retail" : "wholesales"))->count() > 0) {
-                    $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
-                        quantity:$stocks[$product->id]['item']['quantity'],
-                        defaultSellingPrice:$product->{selling_price_column()},
-                        customPrices: $product->stockquantityprices()->where('department', ($from == "retail" ? "retail" : "wholesales"))->get()->toArray(),
-                        stock: $product,
-                        department: $from,
-                    );
-                } else {
-                    $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column('')};
-                }
-
-                // now add product option increment price to it
-                //$stocks[$product->id]['item']['selling_price'] += $this->getOptionsTotalAmount($stocks[$product->id]['item']['selectedOptions'] ?? []);
-    */
-
                 if($from == "retail") {
                     if($product->stockquantityprices->count() > 0) {
                         $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
@@ -255,16 +238,26 @@ class InvoiceRepository
                     } else {
                         $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column(4)};
                     }
-                }else{
-                    $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column()};
+                } else {
+                    if($product->stockquantityprices->count() > 0) {
+                        $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
+                            quantity:$stocks[$product->id]['item']['quantity'],
+                            defaultSellingPrice:$product->{selling_price_column()},
+                            customPrices: $product->stockquantityprices->toArray(),
+                            stock: $product,
+                            department: $from,
+                        );
+                    } else {
+                        $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column()};
+                    }
                 }
+
+                $stocks[$product->id]['item']['selling_price'] += $this->getOptionsTotalAmount($stocks[$product->id]['item']['selectedOptions'] ?? []);
+
                 $stocks[$product->id]['item']['cost_price'] = abs($total_cost_batch / count($batch));
                 $stocks[$product->id]['batches'] = $batch;
-
             }
 
-            $stocks[$product->id]['item']['cost_price'] = abs($total_cost_batch / count($batch));
-            $stocks[$product->id]['batches'] = $batch;
         });
 
         if(count($errors) > 0) return ['status'=> false , 'errors'=>$errors];
@@ -288,9 +281,6 @@ class InvoiceRepository
         $invoiceData['total_profit'] =  $invoiceData['sub_total'] -  $invoiceData['total_cost'];
 
     }
-
-
-
 
     public function createInvoice(array $invoiceData, $validate = true) : Invoice|array
     {
@@ -379,7 +369,6 @@ class InvoiceRepository
 
         return $invoice;
     }
-
 
     public static function returnStock(Invoice $invoice)
     {
@@ -553,8 +542,6 @@ class InvoiceRepository
 
     }
 
-
-
     public function createOnlineInvoice(array $invoiceData, Collection $orderTotal) : Invoice
     {
         return DB::transaction(function() use (&$invoiceData, &$orderTotal){
@@ -635,7 +622,6 @@ class InvoiceRepository
         });
     }
 
-
     private function initiateBinCard(Invoice $invoice)
     {
         $returnBatches = [];
@@ -658,7 +644,6 @@ class InvoiceRepository
         dispatch(new AddLogToProductBinCard($cards));
     }
 
-
     public function findByInvoiceNumber($invoice_number){
 
         $invoice = Invoice::where('invoice_number', $invoice_number)->first();
@@ -669,7 +654,6 @@ class InvoiceRepository
 
         return $invoice;
     }
-
 
     private function logMultipleScan(Invoice $invoice)
     {
@@ -690,7 +674,6 @@ class InvoiceRepository
             $check->save();
         }
     }
-
 
     public function checkOut(Invoice $invoice) : array
     {
