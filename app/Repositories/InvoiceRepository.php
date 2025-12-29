@@ -239,7 +239,7 @@ class InvoiceRepository
                 }
 
                 // now add product option increment price to it
-                $stocks[$product->id]['item']['selling_price'] += $this->getOptionsTotalAmount($stocks[$product->id]['item']['selectedOptions'] ?? []);
+                //$stocks[$product->id]['item']['selling_price'] += $this->getOptionsTotalAmount($stocks[$product->id]['item']['selectedOptions'] ?? []);
 
             }
 
