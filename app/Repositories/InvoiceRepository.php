@@ -226,6 +226,7 @@ class InvoiceRepository
             if($batch === false) {
                 $errors[$product->id] = "Not enough available quantity to process ".$product->name.", available quantity is ". $product->{$from};
             } else {
+                /*
                 if($product->stockquantityprices()->where('department', ($from == "retail" ? "retail" : "wholesales"))->count() > 0) {
                     $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
                         quantity:$stocks[$product->id]['item']['quantity'],
@@ -235,11 +236,30 @@ class InvoiceRepository
                         department: $from,
                     );
                 } else {
-                    $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column()};
+                    $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column('')};
                 }
 
                 // now add product option increment price to it
                 //$stocks[$product->id]['item']['selling_price'] += $this->getOptionsTotalAmount($stocks[$product->id]['item']['selectedOptions'] ?? []);
+    */
+
+                if($from == "retail") {
+                    if($product->stockquantityprices->count() > 0) {
+                        $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
+                            quantity:$stocks[$product->id]['item']['quantity'],
+                            defaultSellingPrice:$product->{selling_price_column(4)},
+                            customPrices: $product->stockquantityprices->toArray(),
+                            stock: $product,
+                            department: $from,
+                        );
+                    } else {
+                        $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column(4)};
+                    }
+                }else{
+                    $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column()};
+                }
+                $stocks[$product->id]['item']['cost_price'] = abs($total_cost_batch / count($batch));
+                $stocks[$product->id]['batches'] = $batch;
 
             }
 
