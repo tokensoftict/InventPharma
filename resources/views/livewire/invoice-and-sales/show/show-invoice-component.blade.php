@@ -1,5 +1,5 @@
 @php
-    function renderSelectedOptions(array $selectedOptions = []): string
+    function renderSelectedOptions(array|null $selectedOptions = []): string
         {
             if (empty($selectedOptions)) {
                 return '';
