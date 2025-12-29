@@ -730,7 +730,7 @@ trait StockModelTrait
 
         if($department !== NULL) {
             $stockOptions = $stockOptions->whereHas('stock_option_values', function ($query) use ($department) {
-                $productOptionStatusColumn = match (request()->column){
+                $productOptionStatusColumn = match ($department){
                     'wholesales', 'quantity', 'bulksales', '', NULL => 'wholesales_status',
                     'retail', 'retail_store' => 'retail_status',
                 };

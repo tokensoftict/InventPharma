@@ -357,7 +357,7 @@ class InvoiceFormComponent extends Component
     public function triggerProductOptionModal(array $selectedProduct)
     {
         $stock = Stock::find($selectedProduct['id']);
-        $this->selectedProductOption = $stock->buildProductOptions($this->department)->toArray();
+        $this->selectedProductOption = $stock->buildProductOptions($this->d)->toArray();
         $this->selectedProductName = $stock->name;
         $this->selectedProductInfo = $selectedProduct;
         foreach ($this->selectedProductOption as $option) {
