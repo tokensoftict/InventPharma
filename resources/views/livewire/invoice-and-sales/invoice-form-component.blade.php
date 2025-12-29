@@ -474,6 +474,8 @@
                 isDependent: false,
                 parent_stock_id: null
             });
+
+            this.applyDependentProducts();
             this.totalInvoice();
             },
             getPriceRange(quantity, defaultSellingPrice, customPrices, product) {
