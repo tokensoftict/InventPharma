@@ -123,7 +123,7 @@
                             </tbody>
                             <tfoot>
                             <tr>
-                                <td colspan="4"></td>
+                                <td colspan="6"></td>
                                 <td class="text-end">
                                     <button type="button"  wire:target="newStockOptionValues" wire:loading.attr="disabled" wire:click="newStockOptionValues('{{ $stockOption->option_field_id }}', '{{ $stockOption->id }}')" data-bs-toggle="tooltip" title="Add Option Value" data-option-row="0" class="btn btn-primary">
                                         <span wire:loading wire:target="newStockOptionValues" class="spinner-border spinner-border-sm me-2" role="status"></span>

@@ -116,6 +116,9 @@ class ProductOptionComponent extends Component
         $this->option_field_value_id ="";
         $this->retail_price_prefix = "+";
         $this->retail_price = "0";
+        $this->retail_status = "0";
+
+        $this->wholesales_status = "0";
 
         $this->wholesales_price_prefix = "+";
         $this->wholesales_price = "0";
