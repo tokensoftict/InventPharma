@@ -304,7 +304,7 @@
                                     <td>{{ $loop->iteration }}</td>
                                     <td class="text-left">
                                         {{ $item->stock->name }}
-                                        @if(sizeof($item->selectedOptions) > 0)
+                                        @if(sizeof($item->selectedOptions ?? []) > 0)
                                             <span class="d-block">{!! renderSelectedOptions($item->selectedOptions ?? []) !!}</span>
                                         @endif
                                     </td>
