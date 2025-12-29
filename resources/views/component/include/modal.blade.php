@@ -52,8 +52,20 @@
                                     <div class="mb-3">
                                         <label class="form-label">{{ $value['label'] }}</label>
                                         <textarea class="form-control" name="{{ $key }}"  wire:model="formData.{{ $key }}"  placeholder="{{ $value['label'] }}"></textarea>
+                                        @error("formData.".$key) <span class="text-danger">{{ $message }}</span> @enderror
                                     </div>
                                 @endif
+
+                                    @if($value['type'] === "hidden")
+                                        <div class="mb-3">
+                                            @if(isset($value['showValue']) && $value['showValue'] == true)
+                                                <label class="form-label">{{ $value['label'] }}</label>
+                                                <span class="form-control">{{ $value['editDisplay'] ??  $value['display']  }}</span>
+                                            @endif
+                                            <input type="hidden" wire:model="formData.{{ $key }}">
+                                            @error("formData.".$key) <span class="text-danger">{{ $message }}</span> @enderror
+                                        </div>
+                                    @endif
                             @endforeach
                         </div>
 

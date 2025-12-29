@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property float|null $cost_price
  * @property float|null $selling_price
  * @property string|null $department
+ * @property array|null $selectedOptions
  * @property float|null $profit
  * @property string|null $discount_type
  * @property float $discount_value
@@ -58,7 +59,8 @@ class Invoiceitem extends Model
 		'profit' => 'float',
 		'discount_value' => 'float',
 		'discount_amount' => 'float',
-		'before_customer_id' => 'int'
+		'before_customer_id' => 'int',
+        'selectedOptions' => 'array',
 	];
 
 	protected $fillable = [
@@ -75,7 +77,8 @@ class Invoiceitem extends Model
 		'discount_type',
 		'discount_value',
 		'discount_amount',
-		'before_customer_id'
+		'before_customer_id',
+        'selectedOptions'
 	];
 
     protected $with = ['stock'];

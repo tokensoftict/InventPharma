@@ -8,6 +8,9 @@ use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\OutOfStockLog;
 use App\Models\ProductNotAvailable;
+use App\Models\Stock;
+use App\Models\StockOption;
+use App\Models\StockOptionValue;
 use App\Repositories\InvoiceRepository;
 use App\Traits\SimpleComponentTrait;
 use Illuminate\Support\Facades\DB;
@@ -30,24 +33,20 @@ class InvoiceFormComponent extends Component
     public string $department_id = "";
 
     public string $d = "";
-
     public array $selectedDepartment = [];
-
     public $cities;
-
     private InvoiceRepository $invoiceRepository;
-
-
     public String $firstname = "";
     public String $lastname = "";
     public String $address = "";
     public String $phone_number = "";
     public String $email = "";
     public String $city_id = "";
-
+    public array $selectedProductOption = [];
+    public string $selectedProductName = "";
+    public array $selectedProductInfo = ["selectedOptions"];
 
     public string $invoice_number = "";
-
     public function mount()
     {
         $this->invoice_number = generateUniqueNumber();
@@ -61,9 +60,26 @@ class InvoiceFormComponent extends Component
         $department = (int) $this->department ?? auth()->user()->department_id;
 
         $this->departments = match ($department) {
-            5 => departments(true)->filter(function($item){
-                return in_array($item->id, [2,1]);
-            })->reverse(),
+            5 =>(function () {
+                // all this code is just to make wholesales department the first department that will show
+                // if the login user department is Administrative
+                $salesDepartment = departments(true)->filter(fn ($item) =>
+                in_array($item->id, [2, 3, 1])
+                );
+
+                $wholesales = 2;
+
+                $firstItemKey = $salesDepartment->search(
+                    fn ($item) => $item->id == $wholesales
+                );
+
+                if ($firstItemKey !== false) {
+                    $itemToMove = $salesDepartment->pull($firstItemKey);
+                    $salesDepartment->prepend($itemToMove);
+                }
+
+                return $salesDepartment;
+            })(),
             4 => departments(true)->filter(function($item){
                 return $item->id == 4;
             })->reverse(),
@@ -101,7 +117,6 @@ class InvoiceFormComponent extends Component
         $this->initDepartment();
         return view('livewire.invoice-and-sales.invoice-form-component');
     }
-
 
     public function newCustomer()
     {
@@ -210,7 +225,6 @@ class InvoiceFormComponent extends Component
 
     public function generateInvoice()
     {
-
         $this->initDepartment();
 
         $this->invoiceData['department'] = $this->d;
@@ -337,5 +351,38 @@ class InvoiceFormComponent extends Component
         } else {
             return ["status" => false, "message" => "Customer decrypt customer information"];
         }
+    }
+
+
+    public function triggerProductOptionModal(array $selectedProduct)
+    {
+        $stock = Stock::find($selectedProduct['id']);
+        $this->selectedProductOption = $stock->buildProductOptions($this->department)->toArray();
+        $this->selectedProductName = $stock->name;
+        $this->selectedProductInfo = $selectedProduct;
+        foreach ($this->selectedProductOption as $option) {
+            $this->selectedProductInfo['selectedOptions'][$option['option_id']] = "";
+        }
+
+        $this->dispatch('openProductOptionModal', ["selectedProduct" => $selectedProduct]);
+    }
+
+    public function saveProductOption()
+    {
+        $options = $this->selectedProductInfo['selectedOptions'];
+
+        $formatOptions = [];
+        foreach ($options as $key => $option) {
+            $optionInfo = StockOptionValue::with(['stock_option.option_field', 'stock_option.option_field.option', 'option_field_value'])->find($option);
+
+            $formatOptions[] = [
+                "option_name" => $optionInfo->stock_option->option_field->name,
+                "selectedValue" => $optionInfo->option_field_value->name,
+                "amount" => $optionInfo->{$this->d == "retail" ? "retail_price" : "wholesales_price"},
+                "sign" => $optionInfo->{$this->d == "retail" ? "retail_price_prefix" : "wholesales_price_prefix"}
+            ];
+        }
+        $this->selectedProductInfo['selectedOptions'] = $formatOptions;
+        $this->dispatch('closeProductOptionModal', ["selectedProduct" => $this->selectedProductInfo]);
     }
 }

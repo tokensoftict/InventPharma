@@ -1,5 +1,41 @@
-<div>
+@php
+    function renderSelectedOptions(array $selectedOptions): string
+        {
+            if (empty($selectedOptions)) {
+                return '';
+            }
 
+            $html = '<div class="small text-muted mt-1">';
+
+            foreach ($selectedOptions as $option) {
+                $priceText = '';
+
+                if (!empty($option['amount']) && (int)$option['amount'] !== 0) {
+                    $sign = $option['sign'] ?? '+';
+                    $amount = number_format((float)$option['amount']);
+
+                    $priceText = " {$sign}₦{$amount}";
+                }
+
+                $optionName = htmlspecialchars($option['option_name'], ENT_QUOTES, 'UTF-8');
+                $selectedValue = htmlspecialchars($option['selectedValue'], ENT_QUOTES, 'UTF-8');
+
+                $html .= '
+                <span class="me-2">
+                    ' . $optionName . ':
+                    <span class="badge bg-primary">
+                        ' . $selectedValue . $priceText . '
+                    </span>
+                </span>
+            ';
+            }
+
+            $html .= '</div>';
+
+            return $html;
+        }
+@endphp
+<div>
     <div class="row  border-bottom">
         <div class="col-4">
             <div class="card-sales-split" style="border-bottom: none">
@@ -266,7 +302,12 @@
                             @foreach($invoice->invoiceitems as $item)
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
-                                    <td class="text-left">{{ $item->stock->name }}</td>
+                                    <td class="text-left">
+                                        {{ $item->stock->name }}
+                                        @if(count($item->selectedOptions) > 0)
+                                            <span class="d-block">{!! renderSelectedOptions($item->selectedOptions) !!}</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">{{ money($item->selling_price - $item->discount_amount) }}</td>
                                     <td class="text-center">{{ money($item->discount_amount) }}</td>
                                     <td class="text-center">{{ $item->quantity }}</td>

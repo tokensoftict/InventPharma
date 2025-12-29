@@ -373,7 +373,7 @@ trait StockModelTrait
 
 
 
-    public function getBulkPushData() : array{
+    public function getBulkPushData() : array {
         $data =  [
             'local_stock_id'=>$this->id,
             'description'=>$this->description,
@@ -387,6 +387,8 @@ trait StockModelTrait
             'max'=>"0",
             'carton'=>$this->carton,
             'sachet'=>1,
+            'custom_price' => $this->stockquantityprices->map->only(['price', 'wholesale_price','min_qty', 'department', 'max_qty'])->toArray(),
+            'stock_option_values' => $this->buildProductOptions()
         ];
 
         $stockPrices = [];
@@ -409,7 +411,6 @@ trait StockModelTrait
                 "quantity" => $this->getOnlineQuantity(),
                 "status" => $this->status,
                 "expiry_date" => $expiry_date,
-                "custom_price" => []
             ];
         }
 
@@ -421,7 +422,6 @@ trait StockModelTrait
                 "quantity" => $this->getRetailQuantity(),
                 "status" => $this->status,
                 "expiry_date" => $re_expiry_date,
-                "custom_price" => $this->stockquantityprices->map->only(['price', 'min_qty', 'max_qty'])->toArray(),
             ];
         }
 
@@ -514,7 +514,7 @@ trait StockModelTrait
     public function totalBalance()
     {
         return $this->stockbatches()->sum(DB::raw('bulksales + quantity + wholesales'))+
-           divide($this->stockbatches()->sum('retail') , $this->box);
+            divide($this->stockbatches()->sum('retail') , $this->box);
     }
 
     public function newonlinePush()
@@ -527,11 +527,10 @@ trait StockModelTrait
 
     public function updateonlinePush()
     {
-        if(($this->bulk_price > 0 || $this->retail_price > 0)  && !$this->isDirty('batched')) {
+        if(($this->bulk_price > 0 || $this->retail_price > 0)) {
             dispatch(new PushDataServer(['KAFKA_ACTION' => KafkaAction::UPDATE_STOCK, 'KAFKA_TOPICS'=> KafkaTopics::STOCKS, 'action' => 'update', 'table' => 'stock', 'data' => $this->getBulkPushData(), 'endpoint' => 'stocks', 'url'=>onlineBase()."dataupdate/add_or_update_stock"]));
         }
     }
-
 
     public function checkifStockcanTransfer($qty,$from,$to){
         $batch_ids = [];
@@ -659,8 +658,6 @@ trait StockModelTrait
         }
     }
 
-
-
     public function getWholePriceAttribute()
     {
         if(!isset($this->promotion_item->status_id)) return $this->attributes['whole_price'];
@@ -699,18 +696,15 @@ trait StockModelTrait
         return (isset($promo->retail_price) && $promo->retail_price > 0 ) ? $promo->retail_price : $this->attributes['retail_price'];
     }
 
-
     public function getHasPromoAttribute()
     {
         return isset($this->promotion_item->status_id);
     }
 
-
     public function getUneditedValues() : array
     {
         return $this->attributes;
     }
-
 
     /**
      * @param string $department
@@ -728,5 +722,45 @@ trait StockModelTrait
         }
 
         return false;
+    }
+
+    public final function buildProductOptions(string $department = NULL)
+    {
+        $stockOptions =  $this->stockoptions()->with(['stock_option_values', 'option_field', 'option_field.option']);
+
+        if($department !== NULL) {
+            $stockOptions = $stockOptions->whereHas('stock_option_values', function ($query) use ($department) {
+                $productOptionStatusColumn = match (request()->column){
+                    'wholesales', 'quantity', 'bulksales', '', NULL => 'wholesales_status',
+                    'retail', 'retail_store' => 'retail_status',
+                };
+
+                $query->where($productOptionStatusColumn, "1");
+            });
+        }
+
+        return $stockOptions->get()->map(function($stockoption){
+            $items = [
+                "optionName" => $stockoption->option_field->name,
+                "option" => $stockoption->option_field->option->type,
+                "option_id" => $stockoption->id
+            ];
+
+            foreach ($stockoption->stock_option_values as $stockoption_value) {
+                $items['options'][] = [
+                    'id' => $stockoption_value->id,
+                    'name' => $stockoption_value->option_field_value->name,
+                    'retail_price_prefix' => $stockoption_value->retail_price_prefix,
+                    'retail_price' => $stockoption_value->retail_price,
+                    'retail_status' => $stockoption_value->retail_status,
+                    'wholesales_status' => $stockoption_value->wholesales_status,
+                    'wholesales_price' => $stockoption_value->wholesales_price,
+                    'wholesales_price_prefix' => $stockoption_value->wholesales_price_prefix,
+                ];
+            }
+
+            return $items;
+        });
+
     }
 }

@@ -119,10 +119,17 @@ class InvoiceRepository
                 'carton' => $invoiceitem->carton,
                 'name' => $invoiceitem->name,
                 'av_qty' => $invoiceitem->av_qty,
-                'custom_price' => $invoiceitem->invoice->department === 'retail' ? $invoiceitem->stock->stockquantityprices : [],
-                'default_selling_price' => $invoiceitem->invoice->department === 'retail' ? $invoiceitem->stock->retail_price : $invoiceitem->stock->whole_price
+                'custom_price' => $invoiceitem->stock->stockquantityprices()->where("department", ($invoiceitem->invoice->department === 'retail' ? "retail" : "wholesales"))->get()->transform(function($item) use($invoiceitem){
+                    $item->carton= $invoiceitem->carton;
+                    return $item;
+                })->toArray(),
+                'default_selling_price' => $invoiceitem->invoice->department === 'retail' ? $invoiceitem->stock->retail_price : $invoiceitem->stock->whole_price,
+                // this might cause an issue if the price was updated and the customer later return the product
+                // the system might or will use the new price not the old price the customer
+                // we will fix later
+                'selectedOptions' => $invoiceitem->selectedOptions
             ];
-        }
+        } //stock_option_json
         else {
             return [
                 'invoice_id' => NULL,
@@ -142,26 +149,54 @@ class InvoiceRepository
                 'name' => NULL,
                 'av_qty' =>NULL,
                 'custom_price' => [],
-                'default_selling_price' => NULL
+                'default_selling_price' => NULL,
+                'selectedOptions' => NULL,
             ];
 
         }
     }
 
 
-    public function resolvePriceByQuantity(int $quantity, float $defaultSellingPrice, array $customPrices): float
+    public function resolvePriceByQuantity(int $quantity, float $defaultSellingPrice, array $customPrices, Stock $stock, string $department): float
     {
         foreach ($customPrices as $priceRule) {
             $min = (int) $priceRule['min_qty'];
             $max = (int) $priceRule['max_qty'];
 
-            if ($quantity >= $min && $quantity < $max) {
-                return (float) $priceRule['price'];
+            if($department == 'retail') {
+                if ($quantity >= $min && $quantity < $max) {
+                    return (float) $priceRule['price'];
+                }
+            } else{
+                if (($quantity / $stock->carton) >= $min && ($quantity / $stock->carton) < $max) {
+                    return (float) $priceRule['price'];
+                }
             }
         }
 
         return $defaultSellingPrice;
     }
+
+
+    public function getOptionsTotalAmount(array $selectedOptions): float
+    {
+        $total = 0;
+
+        foreach ($selectedOptions as $option) {
+            $amount = isset($option['amount'])
+                ? (float) $option['amount']
+                : 0;
+
+            if (($option['sign'] ?? '+') === '-') {
+                $amount *= -1;
+            }
+
+            $total += $amount;
+        }
+
+        return $total;
+    }
+
 
     public function validateInvoiceItems(array $items, string $from)
     {
@@ -191,22 +226,25 @@ class InvoiceRepository
             if($batch === false) {
                 $errors[$product->id] = "Not enough available quantity to process ".$product->name.", available quantity is ". $product->{$from};
             } else {
-                if($from == "retail") {
-                    if($product->stockquantityprices->count() > 0) {
-                        $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
-                            quantity:$stocks[$product->id]['item']['quantity'],
-                            defaultSellingPrice:$product->{selling_price_column(4)},
-                            customPrices: $product->stockquantityprices->toArray()
-                        );
-                    } else {
-                        $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column(4)};
-                    }
-                }else{
+                if($product->stockquantityprices()->where('department', ($from == "retail" ? "retail" : "wholesales"))->count() > 0) {
+                    $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
+                        quantity:$stocks[$product->id]['item']['quantity'],
+                        defaultSellingPrice:$product->{selling_price_column()},
+                        customPrices: $product->stockquantityprices()->where('department', ($from == "retail" ? "retail" : "wholesales"))->get()->toArray(),
+                        stock: $product,
+                        department: $from,
+                    );
+                } else {
                     $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column()};
                 }
-                $stocks[$product->id]['item']['cost_price'] = abs($total_cost_batch / count($batch));
-                $stocks[$product->id]['batches'] = $batch;
+
+                // now add product option increment price to it
+                $stocks[$product->id]['item']['selling_price'] += $this->getOptionsTotalAmount($stocks[$product->id]['item']['selectedOptions'] ?? []);
+
             }
+
+            $stocks[$product->id]['item']['cost_price'] = abs($total_cost_batch / count($batch));
+            $stocks[$product->id]['batches'] = $batch;
         });
 
         if(count($errors) > 0) return ['status'=> false , 'errors'=>$errors];

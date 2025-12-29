@@ -21,10 +21,12 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $stock_id
  * @property int $user_id
  * @property float $price
+ * @property string $department
  * @property int $min_qty
  * @property int $max_qty
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * 
  * @property Stock $stock
  * @property User $user
  *
@@ -40,6 +42,7 @@ class ProductCustomPrice extends Model
 		'stock_id' => 'int',
 		'user_id' => 'int',
 		'price' => 'float',
+		'department' => 'string',
 		'min_qty' => 'int',
 		'max_qty' => 'int'
 	];
@@ -48,6 +51,7 @@ class ProductCustomPrice extends Model
 		'stock_id',
 		'user_id',
 		'price',
+		'department',
 		'min_qty',
 		'max_qty'
 	];
@@ -61,7 +65,6 @@ class ProductCustomPrice extends Model
 	{
 		return $this->belongsTo(User::class);
 	}
-
 
     public function updateonlinePush()
     {
@@ -78,11 +81,9 @@ class ProductCustomPrice extends Model
     }
 
 
-
     public static function repushToKafka()
     {
         $stock_array = self::query()->select('stock_id')->groupBy('stock_id')->pluck('stock_id')->toArray();
         dispatch(new PushStockUpdateToServer($stock_array));
     }
-
 }

@@ -69,7 +69,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property Collection|Stockbincard[] $stockbincards
  * @property Collection|Stockopening[] $stockopenings
  * @property Collection|Stocktransferitem[] $stocktransferitems
- * @property Collection|stockbarcodes[] $stockbarcodes
+ * @property Collection|Stockbarcode[] $stockbarcodes
+ * @property Collection|StockOptionValue[] $stockoptionvalues
+ * @property Collection|StockOption[] $stockoptions
+ * @property Collection|DependentProduct[] $dependent_products
  * @package App\Models
  */
 class Stock extends Model
@@ -294,5 +297,23 @@ class Stock extends Model
     public function stockquantityprices()
     {
         return $this->hasMany(ProductCustomPrice::class);
+    }
+
+
+    public function stockoptionvalues()
+    {
+        return $this->hasMany(StockOptionValue::class);
+    }
+
+
+    public function stockoptions()
+    {
+        return $this->hasMany(StockOption::class);
+    }
+
+
+    public function dependent_products()
+    {
+        return $this->hasMany(DependentProduct::class, 'parent_stock_id');
     }
 }

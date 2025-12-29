@@ -1,4 +1,4 @@
-<div x-data="invoice()" x-init="totalInvoice(); newCustomerEvent(); getInputFromBarcode(); logProductNotExist()">
+<div x-data="invoice()" x-init="totalInvoice(); newCustomerEvent(); getInputFromBarcode(); logProductNotExist();  handleProductOptionModal();">
     <div class="row">
         <div class="col-sm-8">
             <div class="card">
@@ -27,11 +27,9 @@
                                                 @if($this->d == "retail")
                                                     &nbsp; &nbsp;
                                                     SuperMarket Store : <span x-text="product.retail_store"></span>
-                                                    &nbsp; &nbsp;
-
-                                                    <span x-show="(product.custom_prices.length > 0)" class="font-size-13" style="font-weight: bolder"  >Bundle Price : <span class="text-danger font-size-13"  x-html="money(product.custom_prices[0].price)+'&nbsp; = '+product.custom_prices[0].min_qty+' Quantity'"></span></span>
-
                                                 @endif
+                                                &nbsp; &nbsp;
+                                                <span x-show="(product.custom_prices.length > 0)" class="font-size-13" style="font-weight: bolder"  >Bundle Price : <span class="text-danger font-size-13"  x-html="money(product.custom_prices[0].price)+'&nbsp; = '+product.custom_prices[0].min_qty+' Quantity'"></span></span>
                                             </div>
                                         </div>
                                     </div>
@@ -64,7 +62,8 @@
                                 <template x-for="(item,index) in invoiceitems.reverse()" :key="item.stock_id">
                                     <tr>
                                         <td class="text-start">
-                                            <span class="d-block"  x-text="item.name"></span>
+                                            <span class="d-block" x-text="item.name"></span>
+                                            <span class="d-block" x-show="item.selectedOptions.length > 0" x-html="renderSelectedOptions(item.selectedOptions)"></span>
                                             <span class="d-block text-danger" x-text="errors[item.stock_id]"></span>
                                         </td>
                                         <td class="text-center">
@@ -336,8 +335,63 @@
             </div>
         </form>
     </div>
-    <script>
+    <div wire:ignore.self class="modal fade" id="productOptionsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <form wire:submit="saveProductOption">
+                    <div class="modal-header">
+                        <h5 class="modal-title">{{ $this->selectedProductName }} Options</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
 
+                    <div class="modal-body">
+
+                        @foreach($this->selectedProductOption as $productOption)
+                            <div class="mb-4">
+                                <h6 class="fw-bold">{{ $productOption['optionName'] }}</h6>
+                                @if($productOption['option'] == "select")
+                                    <select class="form-select product-option-select" onchange="addToBasePrice(this)" id="{{ \Illuminate\Support\Str::snake($productOption['optionName'].$productOption['option_id']) }}" wire:model="selectedProductInfo.selectedOptions.{{ $productOption['option_id'] }}">
+                                        <option value="">-Select {{ $productOption['optionName'] }}-</option>
+                                        @foreach($productOption['options'] as $option)
+                                            <option prefix="{{ $option[$this->d == "retail" ? "retail_price_prefix" : "wholesales_price_prefix"] }}" amount="{{ $option[$this->d == "retail" ? "retail_price" : "wholesales_price"] }}" value="{{ $option['id'] }}">{{ $option['name'] }}  {{ $option[$this->d == "retail" ? "retail_price_prefix" : "wholesales_price_prefix"]." ".money($option[$this->d == "retail" ? "retail_price" : "wholesales_price"]) }}</option>
+                                        @endforeach
+                                    </select>
+                                @endif
+                            </div>
+                        @endforeach
+                        <hr>
+                        <!-- Price summary -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1 base_price" base-price="{{ $this->selectedProductInfo['selling_price'] ?? 0 }}">Base Price</p>
+                                <p class="mb-1">Options Adjustment</p>
+                                <p class="fw-bold">Final Price</p>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <p class="mb-1">NGN {{ money($this->selectedProductInfo['selling_price'] ?? 0) }}</p>
+                                <p class="mb-1 text-success">NGN <span class="option-increment">0.00</span></p>
+                                <p class="fw-bold">NGN <span class="total_option_price">{{ money($this->selectedProductInfo['selling_price'] ?? 0) }}</span></p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="submit" wire:target="saveProductOption" wire:loading.attr="disabled" wire:dis class="btn btn-primary">
+                            Apply Options
+                            <span wire:loading wire:target="saveProductOption" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+    <script>
+        var productOptionModal = "";
         function invoice()
         {
             return {
@@ -357,65 +411,77 @@
             this.selling_price = product.selling_price;
             this.addItem();
         },
-            addItem()
+            addItem() {
+            if ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0) {
+                $wire.warning("Stock already exists");
+                return;
+            }
+
+            if(this.selectedProduct['quantity'] === 0 || this.selectedProduct['quantity'] === "0")
             {
-                if ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0) {
-                    $wire.warning("Stock already exists");
-                    return;
-                }
+                error(this.selectedProduct.name+' is out of stock, quantity remain is 0');
+                @this.logOutofStockProduct( this.selectedProduct.id)
+                return;
+            }
 
-                if(this.selectedProduct['quantity'] === 0 || this.selectedProduct['quantity'] === "0")
-                {
-                    error(this.selectedProduct.name+' is out of stock, quantity remain is 0');
-                    @this.logOutofStockProduct( this.selectedProduct.id)
-                    return;
-                }
+            this.searchproduct = [];
+            this.searchString = "";
 
-                this.searchproduct = [];
-                this.searchString = "";
+            let selling_price = (this.selectedProduct.promo_selling_price && this.selectedProduct.promo_selling_price > 0) ? this.selectedProduct.promo_selling_price : this.selectedProduct.selling_price;
+            selling_price = parseFloat(selling_price);
 
-                let selling_price = (this.selectedProduct.promo_selling_price && this.selectedProduct.promo_selling_price > 0) ? this.selectedProduct.promo_selling_price : this.selectedProduct.selling_price;
+            //check if the selected product has option and if the user has not selected any option
+            if(this.selectedProduct.hasOptions && this.selectedProduct.selectedOptions === undefined) {
+                @this.triggerProductOptionModal(this.selectedProduct);
+                return;
+            }
 
-                this.invoiceitems.push({
-                    stock_id : this.selectedProduct.id,
-                    quantity : 1,
-                    box : this.selectedProduct.box,
-                    carton : this.selectedProduct.carton,
-                    av_qty : this.selectedProduct.quantity,
-                    customer_id : @this.get('invoiceData.customer_id') ?  @this.get('invoiceData.customer_id') :  {firstname : ""},
+            this.invoiceitems.push({
+                stock_id : this.selectedProduct.id,
+                quantity : 1,
+                box : this.selectedProduct.box,
+                carton : this.selectedProduct.carton,
+                av_qty : this.selectedProduct.quantity,
+                customer_id : @this.get('invoiceData.customer_id') ?  @this.get('invoiceData.customer_id') :  {firstname : ""},
                 name : this.selectedProduct.name,
-                    added_by : {{ auth()->user()->id }},
+                added_by : {{ auth()->user()->id }},
                 discount_added_by : null,
                 cost_price : this.selectedProduct.cost_price,
-                selling_price : selling_price,
+                selling_price : (selling_price + this.getProductOptionsTotalAmount(this.selectedProduct.selectedOptions)),
                 profit : this.selectedProduct.selling_price - this.selectedProduct.cost_price,
                 discount_value : 0,
                 discount_amount : 0,
                 discount_type : 'Fixed',
                 custom_price : this.selectedProduct.custom_prices ?? [],
-                default_selling_price : selling_price
+                default_selling_price : selling_price,
+                selectedOptions : this.selectedProduct.selectedOptions ?? []
             });
-
-                this.totalInvoice();
+            this.totalInvoice();
             },
-            getPriceRange(quantity, defaultSellingPrice, customPrices) {
+            getPriceRange(quantity, defaultSellingPrice, customPrices, product) {
+
             for (const priceRule of (customPrices ?? [])) {
                 const min = parseInt(priceRule.min_qty);
                 const max = parseInt(priceRule.max_qty);
-
+                @if($this->d == "retail")
                 if (quantity >= min && quantity < max) {
                     return parseFloat(priceRule.price);
                 }
+                @else
+                if ((quantity/priceRule.carton) >= min && (quantity / priceRule.carton) < max) {
+                    return parseFloat(priceRule.price);
+                }
+                @endif
             }
 
             return parseFloat(defaultSellingPrice);
         },
-            incrementQuantity(index)
-            {
+            incrementQuantity(index){
                 let qty =  parseInt(this.invoiceitems[index]['quantity']) + 1;
                 if(qty <= this.invoiceitems[index]['av_qty'])
                 {
-                    this.invoiceitems[index]['selling_price'] = this.getPriceRange(qty, this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price']);
+                    this.invoiceitems[index]['selling_price'] = this.getPriceRange(qty, this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price'], this.invoiceitems[index]);
+                    this.invoiceitems[index]['selling_price'] += this.getProductOptionsTotalAmount(this.invoiceitems[index]['selectedOptions']);
 
                     this.invoiceitems[index]['quantity'] = qty;
                     this.invoiceitems[index]['total_cost_price'] = this.invoiceitems[index]['cost_price'] * this.invoiceitems[index]['quantity'];
@@ -425,27 +491,28 @@
                     this.totalInvoice();
                 }
             },
-            typeQuantity(index)
-            {
+            typeQuantity(index){
                 if(parseInt(this.invoiceitems[index]['quantity']) > this.invoiceitems[index]['av_qty'])
                 {
                     error("Total available quantity is "+this.invoiceitems[index]['av_qty']);
                     this.invoiceitems[index]['quantity'] = this.invoiceitems[index]['av_qty'];
                 }
 
-                this.invoiceitems[index]['selling_price'] = this.getPriceRange(this.invoiceitems[index]['quantity'], this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price']);
+                this.invoiceitems[index]['selling_price'] = this.getPriceRange(this.invoiceitems[index]['quantity'], this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price'], this.invoiceitems[index]);
+                this.invoiceitems[index]['selling_price'] += this.getProductOptionsTotalAmount(this.invoiceitems[index]['selectedOptions']);
+
 
                 this.invoiceitems[index]['total_cost_price'] = this.invoiceitems[index]['cost_price'] * this.invoiceitems[index]['quantity'];
                 this.invoiceitems[index]['total_selling_price'] = this.invoiceitems[index]['selling_price'] * this.invoiceitems[index]['quantity'];
                 this.invoiceitems[index]['total_profit'] =  (this.invoiceitems[index]['selling_price'] - this.invoiceitems[index]['cost_price']) * this.invoiceitems[index]['quantity'];
                 this.totalInvoice();
             },
-            decrementQuantity(index)
-            {
+            decrementQuantity(index) {
                 let qty =  parseInt(this.invoiceitems[index]['quantity']) - 1;
                 if(qty > 0)
                 {
-                    this.invoiceitems[index]['selling_price'] = this.getPriceRange(qty, this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price']);
+                    this.invoiceitems[index]['selling_price'] = this.getPriceRange(qty, this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price'], this.invoiceitems[index]);
+                    this.invoiceitems[index]['selling_price'] += this.getProductOptionsTotalAmount(this.invoiceitems[index]['selectedOptions']);
 
                     this.invoiceitems[index]['quantity'] = qty;
                     this.invoiceitems[index]['total_cost_price'] = this.invoiceitems[index]['cost_price'] * this.invoiceitems[index]['quantity'];
@@ -460,7 +527,6 @@
                 this.invoiceitems = this.invoiceitems.filter(item => id !== item.stock_id);
                 this.totalInvoice();
             },
-
             totalInvoice()
             {
                 this.netTotal = this.money(this.invoiceitems.length > 0 ? this.invoiceitems.reduce((result, item) => {
@@ -502,11 +568,9 @@
                     this.department = event.detail[0].department;
                 });
             },
-            money(amount)
-            {
-                return formatMoney(amount);
-            },
-
+            money(amount){
+            return formatMoney(amount);
+        },
             async searchCustomer()
             {
                 if (this.searchCustomerString !== "" && this.searchCustomerString.length > 3) {
@@ -518,61 +582,58 @@
                     this.searchCustomers = [];
                 }
             },
-            selectCus(customer)
+            selectCus(customer) {
+            this.customer_id = customer;
+            this.searchCustomerString = "";
+            this.searchCustomers = [];
+        },
+            generateInvoice(status_id) {
+            const hasZero = this.invoiceitems.some(item => item.quantity <= 0);
+            if(hasZero) {
+                error("One or more items in your cart have a quantity of zero or less. Please review your input and try again")
+                return ;
+            }
+            @php
+                if( $this->department != "4") {
+            @endphp
+            if(this.customer_id.firstname === "") {
+                error("You have not select a customer for this invoice,  please select a customer by searching!...")
+                return ;
+            }
+
+            @php
+                }
+            @endphp
+
+            if(this.invoiceitems.length === 0)
             {
-                this.customer_id = customer;
-                this.searchCustomerString = "";
-                this.searchCustomers = [];
-            },
-
-            generateInvoice(status_id)
-            {
-                const hasZero = this.invoiceitems.some(item => item.quantity <= 0);
-                if(hasZero) {
-                    error("One or more items in your cart have a quantity of zero or less. Please review your input and try again")
-                    return ;
-                }
-                @php
-                    if( $this->department != "4") {
-                @endphp
-                if(this.customer_id.firstname === "") {
-                    error("You have not select a customer for this invoice,  please select a customer by searching!...")
-                    return ;
-                }
-
-                @php
-                    }
-                @endphp
-
-                if(this.invoiceitems.length === 0)
-                {
-                    error("Invoice items list is empty, please add at least one product to generate invoice")
-                    return ;
-                }
-                @php
-                    if( $this->department != "4") {
-                @endphp
-                @this.set('invoiceData.customer_id',this.customer_id.id, true);
-                @php
-                    }else{
-                @endphp
-                if(this.customer_id.firstname !== "")
-                {
-                    @this.set('invoiceData.customer_id',this.customer_id.id, true);
+                error("Invoice items list is empty, please add at least one product to generate invoice")
+                return ;
+            }
+            @php
+                if( $this->department != "4") {
+            @endphp
+            @this.set('invoiceData.customer_id',this.customer_id.id, true);
+            @php
                 }else{
-                    @this.set('invoiceData.customer_id',"1", true);
+            @endphp
+            if(this.customer_id.firstname !== "")
+            {
+                @this.set('invoiceData.customer_id',this.customer_id.id, true);
+            }else{
+                @this.set('invoiceData.customer_id',"1", true);
+            }
+
+            @php
                 }
+            @endphp
 
-                @php
-                    }
-                @endphp
+            @this.set('invoiceData.status_id', status_id, true);
+            @this.set('invoiceData.invoiceitems', JSON.stringify(this.invoiceitems), true);
 
-                @this.set('invoiceData.status_id', status_id, true);
-                @this.set('invoiceData.invoiceitems', JSON.stringify(this.invoiceitems), true);
-
-                this.errors = {};
-                let obj = this;
-                @this.generateInvoice().then(function(resp){
+            this.errors = {};
+            let obj = this;
+            @this.generateInvoice().then(function(resp){
 
                 if(resp.status !== true)
                 {
@@ -586,8 +647,7 @@
 
             });
 
-            },
-
+        },
             initDatePicker() {
             flatpickr(".datepicker-basic", {  });
             var e = document.querySelectorAll("[data-trigger]");
@@ -596,28 +656,26 @@
                 new Choices(a, { placeholderValue: "This is a placeholder set in the config", searchPlaceholderValue: "This is a search placeholder" });
             }
         },
-            async requestProductWithBarcode(barcode)
-            {
-                const product = await (await fetch('{{ route('findStockByBarcode') }}?barcode=' + barcode+"&column="+this.department
-                )).json();
-                this.searchString = "";
-                if(product.hasOwnProperty('id') &&  ((this.invoiceitems.filter(e => e.stock_id === product.id)).length === 0)) {
-                    this.selectedProduct = product
-                    this.addItem();
-                }  else if(product.hasOwnProperty('id') && ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0)) {
-                    const index = this.invoiceitems.findIndex(item => item.stock_id === product.id);
-                    if(index > -1) {
-                        this.incrementQuantity(index);
-                    }
-                } else {
-                    console.log("product not found");
+            async requestProductWithBarcode(barcode) {
+            const product = await (await fetch('{{ route('findStockByBarcode') }}?barcode=' + barcode+"&column="+this.department
+            )).json();
+            this.searchString = "";
+            if(product.hasOwnProperty('id') &&  ((this.invoiceitems.filter(e => e.stock_id === product.id)).length === 0)) {
+                this.selectedProduct = product
+                this.addItem();
+            }  else if(product.hasOwnProperty('id') && ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0)) {
+                const index = this.invoiceitems.findIndex(item => item.stock_id === product.id);
+                if(index > -1) {
+                    this.incrementQuantity(index);
                 }
-            },
-            async parseCustomerQrCode(barcode)
-            {
-                var obj = this;
+            } else {
+                console.log("product not found");
+            }
+        },
+            async parseCustomerQrCode(barcode) {
+            var obj = this;
 
-                @this.parseCustomerFromQrCode(barcode).then(function (response){
+            @this.parseCustomerFromQrCode(barcode).then(function (response){
                 if(response.status === true) {
                     obj.customer_id = response.customer;
                     obj.searchCustomerString = "";
@@ -626,7 +684,7 @@
                     error(response.message);
                 }
             });
-            },
+        },
             getInputFromBarcode() {
             var obj = this;
             $(document).ready(function(){
@@ -635,7 +693,6 @@
                     endChar: [13], // be sure the scan is complete if key 13 (enter) is detected
                     avgTimeByChar: 40, // it's not a barcode if a character takes longer than 40ms// turn off scanner detection if an input has focus
                     startChar: [16], // Prefix character for the cabled scanner (OPL6845R)
-                    endChar: [40],
                     ignoreIfFocusOn : ['customer-search-text', 'searchText'],
                     onComplete: function(barcode){
                         barcode = barcode.trim();
@@ -671,7 +728,67 @@
                     });
                 }
             });
+        },
+            handleProductOptionModal() {
+            let obj = this;
+            if(productOptionModal == "") {
+                productOptionModal = new bootstrap.Modal(document.getElementById("productOptionsModal"), {});
+            }
+
+
+            window.addEventListener('openProductOptionModal', (e) => {
+                productOptionModal.show();
+            });
+
+            window.addEventListener('closeProductOptionModal', (e) => {
+                obj.selectedProduct = e.detail[0]['selectedProduct'];
+                obj.addItem();
+                productOptionModal.hide();
+            });
+        },
+            renderSelectedOptions(selectedOptions) {
+            if (!Array.isArray(selectedOptions) || selectedOptions.length === 0) {
+                return '';
+            }
+
+            let html = '<div class="small text-muted mt-1">';
+
+            selectedOptions.forEach(option => {
+                let priceText = '';
+
+                if (option.amount && option.amount !== 0) {
+                    priceText = ` ${option.sign} NGN ${this.money(option.amount)}`;
+                }
+
+                html += `
+            <span class="me-2">
+                ${option.option_name}:
+                <span class="badge bg-primary">
+                    ${option.selectedValue}${priceText}
+                </span>
+            </span>
+        `;
+            });
+
+            html += '</div>';
+            return html;
+        },
+            getProductOptionsTotalAmount(selectedOptions) {
+            if (!Array.isArray(selectedOptions)) {
+                return 0;
+            }
+
+            return selectedOptions.reduce((total, option) => {
+                let amount = parseFloat(option.amount) || 0;
+
+                if (option.sign === '-') {
+                    amount = -amount;
+                }
+
+                return total + amount;
+            }, 0);
         }
+
         }
         }
 
@@ -685,7 +802,29 @@
 
         })
 
+        function addToBasePrice() {
+            let basePrice = parseFloat($('.base_price').attr('base-price'));
+            let totalOption = 0;
+            $('.product-option-select').each(function(index, option) {
+                if($(option).val() !== "") {
+                    const selectedOption = $(option).find('option:selected');
+                    const prefix = selectedOption.attr('prefix');
+                    const amount = parseFloat(selectedOption.attr('amount'));
 
+                    if (prefix === "+") {
+                        totalOption += amount;
+                    } else {
+                        totalOption -= amount;
+                    }
+                }
+            });
+
+
+
+            $('.option-increment').html(formatMoney(totalOption));
+            basePrice = basePrice + totalOption;
+            $('.total_option_price').html(formatMoney(basePrice))
+        }
     </script>
 </div>
 

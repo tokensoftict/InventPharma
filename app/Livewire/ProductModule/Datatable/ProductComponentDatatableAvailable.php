@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use App\Classes\Column;
 use App\Models\Stock;
 use App\Classes\BooleanColumn;
+use Illuminate\Support\Facades\DB;
 
 class ProductComponentDatatableAvailable extends ExportDataTableComponent
 {
@@ -21,8 +22,16 @@ class ProductComponentDatatableAvailable extends ExportDataTableComponent
 
     public function builder(): Builder
     {
-        return Stock::query()->select('*')->filterdata($this->filters);
-
+        return Stock::query()
+            ->join("stockbatches", "stockbatches.stock_id", "=", "stocks.id")
+            ->select(
+                DB::raw('SUM(stockbatches.wholesales) as wholesales_qty'),
+                DB::raw('SUM(stockbatches.bulksales) as bulksales_qty'),
+                DB::raw('SUM(stockbatches.retail) as retail_qty'),
+                DB::raw('SUM(stockbatches.retail_store) as retail_store_qty')
+            )
+            ->groupBy(DB::raw("stocks.id"))
+            ->filterdata($this->filters);
     }
 
     public static function mountColumn() : array
@@ -63,25 +72,25 @@ class ProductComponentDatatableAvailable extends ExportDataTableComponent
 
         if(department_by_quantity_column('wholesales', false)->status) {
             $column[] =  Column::make("WholeSales", "wholesales")
-                ->format(fn($value, $row, Column $column) => $value)
+                ->format(fn($value, $row, Column $column) => $row->wholesales_qty)
                 ->sortable();
         }
 
         if(department_by_quantity_column('bulksales', false)->status) {
             $column[] = Column::make("BulkSales", "bulksales")
-                ->format(fn($value, $row, Column $column) => $value)
+                ->format(fn($value, $row, Column $column) => $row->bulksales_qty)
                 ->sortable();
         }
 
         if(department_by_quantity_column('retail', false)->status) {
             $column[] = Column::make("Retail", "retail")
-                ->format(fn($value, $row, Column $column) => $value)
+                ->format(fn($value, $row, Column $column) => $row->retail_qty)
                 ->sortable();
         }
 
         if(department_by_quantity_column('retail_store', false)->status) {
             $column[] = Column::make("SuperMarket Store", "retail_store")
-                ->format(fn($value, $row, Column $column) => $value)
+                ->format(fn($value, $row, Column $column) => $row->retail_store_qty)
                 ->sortable();
         }
 

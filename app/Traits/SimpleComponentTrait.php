@@ -29,7 +29,6 @@ trait SimpleComponentTrait
 
     public array $updateValidateRules;
 
-
     public function boot()
     {
         $this->listeners = [
@@ -115,7 +114,7 @@ trait SimpleComponentTrait
 
     public function get()
     {
-       return $this->cacheModel === null ? $this->model::paginate(Settings::$pagination) : call_user_func($this->cacheModel);
+       return $this->cacheModel === null ? (method_exists($this,'custom_query') ? $this->custom_query() : $this->model::paginate(Settings::$pagination)) : call_user_func($this->cacheModel);
     }
 
     protected function loadEdit($id)
@@ -170,6 +169,7 @@ trait SimpleComponentTrait
     {
         foreach($this->data as $key=>$value)
         {
+            if($value['type'] == "hidden") continue;
             $this->formData[$key] = "";
         }
 

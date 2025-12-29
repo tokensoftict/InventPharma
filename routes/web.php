@@ -162,7 +162,6 @@ Route::middleware(['auth'])->group(function () {
                 Route::put('update', ['as' => 'update', 'uses' => 'StoreSettings@update']);
                 // Route::get('backup', ['as' => 'backup', 'uses' => 'StoreSettings@backup', 'visible' => true,'custom_label'=>"Back Up Database"]);
             });
-
             Route::prefix('expenses_type')->as('expenses_type.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'ExpensesTypeController@index', 'visible' => true, 'custom_label'=>'Expenses Type']);
                 Route::get('list', ['as' => 'list', 'uses' => 'ExpensesTypeController@listAll']);
@@ -173,6 +172,21 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'ExpensesTypeController@toggle']);
                 Route::put('{id}', ['as' => 'update', 'uses' => 'ExpensesTypeController@update']);
                 Route::delete('{id}', ['as' => 'destroy', 'uses' => 'ExpensesTypeController@destroy']);
+            });
+            Route::prefix('product_option')->as('product_option.')->group(function () {
+                Route::get('', ['as' => 'index', 'uses' => 'ProductOptionController@index', 'visible' => true, 'custom_label'=>'Product Option']);
+                Route::get('list', ['as' => 'list', 'uses' => 'ProductOptionController@listAll']);
+                Route::get('create', ['as' => 'create', 'uses' => 'ProductOptionController@create']);
+                Route::post('', ['as' => 'store', 'uses' => 'ProductOptionController@store']);
+                Route::get('{id}', ['as' => 'show', 'uses' => 'ProductOptionController@show']);
+                Route::get('{id}/edit', ['as' => 'edit', 'uses' => 'ProductOptionController@edit']);
+                Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'ProductOptionController@toggle']);
+                Route::put('{id}', ['as' => 'update', 'uses' => 'ProductOptionController@update']);
+                Route::get('{id}/product_option_fields', ['as' => 'view_values', 'uses' => 'ProductOptionController@view_values', 'custom_label'=>'View Values in Product Option']);
+
+                //product_option_fields
+                Route::get('{id}/product_option_fields/toggle', ['as' => 'toggle_product_option_fields', 'uses' => 'ProductOptionController@toggle_product_option_fields', 'custom_label'=>'Toggle Product Option Fields']);
+                Route::get('{id}/product_option_fields/update', ['as' => 'update_product_option_fields', 'uses' => 'ProductOptionController@update_product_option_fields', 'custom_label'=>'Update Product Option Fields']);
             });
 
         });
@@ -206,27 +220,18 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/otherinfo', ['as' => 'otherinfo', 'uses' => 'ProductController@otherinfo', 'visible' => true,'custom_label'=>'List Other info']);
                 Route::get('create', ['as' => 'create', 'uses' => 'ProductController@create','visible' => true, 'custom_label'=>'Add Stock']);
                 Route::get('expired', ['as' => 'expired', 'uses' => 'ProductController@expired','visible' => true]);
-                Route::get('near_expired', ['as' => 'near_expired', 'uses' => 'ProductController@near_expired','visible' => true,
-                    'custom_label'=>'Near Expiration Stock']);
+                Route::get('near_expired', ['as' => 'near_expired', 'uses' => 'ProductController@near_expired','visible' => true, 'custom_label'=>'Near Expiration Stock']);
                 Route::get('disable', ['as' => 'disable', 'uses' => 'ProductController@disabled','visible' => true,'custom_label'=>'List Disabled Stock']);
                 Route::get('non_reorder', ['as' => 'non_reorder', 'uses' => 'ProductController@non_reorder','visible' => true,'custom_label'=>'Non Re-order List']);
                 Route::match(['post', 'get'],'stock_balance_by_supplier', ['as' => 'stock_balance_by_supplier', 'uses' => 'ProductController@stock_balance_by_supplier','visible' => true,'custom_label'=>'Stock Balance By Supplier']);
-
-                Route::match(['post', 'get'],'stock_balance_by_supplier', ['as' => 'stock_balance_by_supplier', 'uses' => 'ProductController@stock_balance_by_supplier','visible' => true,'custom_label'=>'Stock Balance By Supplier']);
-
                 Route::match(['post', 'get'],'batched_stock_list', ['as' => 'batched_stock_list', 'uses' => 'ProductController@batched_stock_list','visible' => true,'custom_label'=>'Batched Stock List']);
-
                 Route::get('export', ['as' => 'export', 'uses' => 'ProductController@export']);
                 Route::get('{stock}/edit', ['as' => 'edit', 'uses' => 'ProductController@edit','custom_label'=>'Edit Product']);
                 Route::get('{stock}/toggle', ['as' => 'toggle', 'uses' => 'ProductController@toggle','custom_label'=>'Toggle Product']);
-                //Route::get('/changeCostPrice', ['as' => 'changeCostPrice', 'uses' => 'ProductController@changeCostPrice',
-                //   'custom_label'=>'Change Product Cost Price']);
                 Route::get('/changeSellingPrice', ['as' => 'changeSellingPrice', 'uses' => 'ProductController@changeSellingPrice', 'custom_label'=>'Change Product Selling Price']);
-
+                Route::get('/setDependentProduct', ['as' => 'setDependentProduct', 'uses' => 'ProductController@setDependentProduct', 'custom_label'=>'Configure Dependent Product']);
                 Route::match(['post','get'],'balance_stock', ['as' => 'balance_stock', 'uses' => 'ProductController@balance_stock','visible' => true, 'custom_label'=>'Quick Adjust Quantity']);
-
                 Route::match(['post','get'], 'stock_export', ['as' => 'export_stock', 'uses' => 'ProductController@export_stock','custom_label'=>'Export / Import Stocks', 'visible' => true]);
-
             });
         });
         Route::prefix('transfer')->namespace('StockTransfer')->group(function () {

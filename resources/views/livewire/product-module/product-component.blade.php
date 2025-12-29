@@ -1,4 +1,4 @@
-<div>
+<div  x-data="product">
     <form method="post" wire:submit="saveStock">
         <div class="row">
 
@@ -146,7 +146,7 @@
                 </div>
             </div>
 
-            <div class="col-lg-3 col-sm-6 col-12" >
+            <div class="col-lg-3 col-sm-6 col-12">
                 <div class="mb-3" wire:ignore>
                     <label>Minimum Quantity</label>
                     <input  placeholder="Minimum Quantity"  wire:model="product_data.minimum_quantity" class="form-control" type="number">
@@ -154,6 +154,16 @@
                 </div>
             </div>
 
+            @if(userCanView('product.setDependentProduct'))
+                <div class="col-lg-3 col-sm-6 col-12">
+                    <div class="mb-3" wire:ignore>
+                        <label>Dependent Product</label>
+                        <div  class="form-control">
+                            <button id="dependentProduct" type="button" class="btn btn-sm btn-primary">Dependent Product Settings</button>
+                        </div>
+                    </div>
+                </div>
+            @endif
             <div class="col-lg-12">
                 <div class="mb-3">
                     <label>Description</label>
@@ -193,16 +203,24 @@
                                     @error('product_data.retail_price') <span class="text-danger">{{ $message }}</span> @enderror
                                 </div>
                             </div>
+                        @endif
 
-                            <div class="col-lg-3 col-sm-6 col-12">
-                                <div class="mb-3">
-                                    <label>Bundle Price</label>
-                                    <div  class="form-control">
-                                        <button id="otherproductsettings" type="button" class="btn btn-sm btn-primary">Bundle Price Settings</button>
+                        <div class="col-lg-3 col-sm-6 col-12">
+                            <div class="mb-3">
+                                <label>Bundle Price</label>
+                                <div  class="form-control">
+                                    <div class="btn-group">
+                                        <button type="button" id="otherproductsettings" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Bundle Price Settings
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="javascript:void(0);" wire:click="openBundlePriceModal('retail')">Retail</a></li>
+                                            <li><a class="dropdown-item" href="javascript:void(0);" wire:click="openBundlePriceModal('wholesales')">Wholesales</a></li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
-                        @endif
+                        </div>
                     </div>
                 </div>
             @endif
@@ -240,7 +258,7 @@
 
         </div>
     </form>
-    <div  class="modal fade" wire:ignore.self id="simpleBarcodeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" role="dialog" aria-hidden="true">
+    <div  class="modal fade" wire:ignore.self id="simpleBarcodeModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-3" role="dialog" aria-hidden="true">
 
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
 
@@ -295,13 +313,13 @@
         <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Bundle Price Based On Quantity</h5>
+                    <h5 class="modal-title">Bundle Price Based On Quantity - {{ ucwords($productPriceBasedDepartment) }} Department</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-12">
-                            <h5 class="modal-title mb-3">Bundle Price and Quantity List</h5>
+                            <h5 class="modal-title mb-3">Bundle Price and Quantity List ({{ ucwords($productPriceBasedDepartment) }})</h5>
                             <table class="table table-condensed table-bordered">
                                 <thead>
                                 <tr>
@@ -325,7 +343,7 @@
                                 </tbody>
                                 <tfoot>
                                 <tr>
-                                    <td colspan="4">
+                                    <td colspan="5">
                                         <button type="button" id="addPriceBtn" class="float-end btn btn-success btn-sm">
                                             + Add Price
                                         </button>
@@ -347,198 +365,306 @@
         </div>
     </div>
 
-    <script>
-        let barCodeOpen = false;
-        let otherproductsettingsModal = "";
-        window.onload = function (){
-            $(document).ready(function(){
-                let myModal = "";
-                myModal = new bootstrap.Modal(document.getElementById("simpleBarcodeModal"), {});
-                otherproductsettingsModal = new bootstrap.Modal(document.getElementById("orderPriceSettings"), {});
+    <div  class="modal fade" wire:ignore.self id="dependentProductSettings" data-bs-backdrop="static" data-bs-keyboard="false"  role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Configure Dependent Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <fieldset>
+                        <legend>Add Product</legend>
+                        <hr/>
+                        <form wire:submit="addDependentproduct">
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="mb-3" >
+                                        <div wire:ignore>
+                                            <select id="dependent_product_select"  wire:model="dependentProduct.stock_id"  class="form-control">
+                                                <option value="">-Select Product-</option>
+                                            </select>
+                                        </div>
+                                        @error('dependentProduct.stock_id') <span class="text-danger">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+                                <div class="col-sm-2">
+                                    <div class="mb-3">
+                                        <input type="number"  wire:model="dependentProduct.parent"  class="form-control" placeholder="Parent">
+                                        @error('dependentProduct.parent') <span class="text-danger">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+                                <div class="col-sm-2">
+                                    <div class="mb-3">
+                                        <input type="number"  wire:model="dependentProduct.child"  class="form-control" placeholder="Child">
+                                        @error('dependentProduct.child') <span class="text-danger">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+                                <div class="col-sm-2">
+                                    <button type="submit" id="addDependentproduct" wire:target="addDependentproduct" wire:loading.attr="disabled" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-plus" wire:loading.remove wire:target="addDependentproduct"></i>
+                                        <span wire:loading wire:target="addDependentproduct" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        Add Product
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </fieldset>
 
-                document.getElementById("simpleBarcodeModal").addEventListener('shown.bs.modal', function () {
-                    barCodeOpen = true
-                })
 
-                document.getElementById("simpleBarcodeModal").addEventListener('hidden.bs.modal', function () {
-                    barCodeOpen = false
-                })
+                    <br/>
+                    <fieldset>
+                        <legend>Product List</legend>
+                        <hr/>
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                            <tr>
+                                <th class="text-start">#</th>
+                                <th class="text-center">Product Name</th>
+                                <th class="text-center" colspan="3">Ratios</th>
+                            </tr>
+                            <tr>
+                                <th class="text-start" colspan="2"></th>
+                                <th class="text-center">Parent</th>
+                                <th class="text-center">Child</th>
+                                <th class="text-center">Action</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($product->dependent_products()->with('stock')->get() as $dependentProduct)
+                                    <tr>
+                                        <td  class="text-start">{{ $loop->iteration }}</td>
+                                        <td class="text-center">{{ $dependentProduct->stock->name }}</td>
+                                        <td>{{  $dependentProduct->parent }}</td>
+                                        <td>{{  $dependentProduct->child }}</td>
+                                        <td>
+                                            <button type="button" class="btn btn-danger btn-sm" wire:confirm="Are you sure, you want to delete this product" wire:click="removeDependentproduct('{{ $dependentProduct->id }}')" wire:target="removeDependentproduct('{{ $dependentProduct->id }}')" wire:loading.attr="disabled">
+                                                <i class="fas fa-trash" wire:loading.remove wire:target="removeDependentproduct('{{ $dependentProduct->id }}')"></i>
+                                                <span wire:loading wire:target="removeDependentproduct('{{ $dependentProduct->id }}')" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </fieldset>
+                </div>
+            </div>
+        </div>
 
-                $('#barcode').on('click', function (){
-                    myModal.show();
-                });
+        <script>
+            let barCodeOpen = false;
+            let otherproductsettingsModal = "";
+            let dependentProductSettingsModal = "";
 
-                $('#otherproductsettings').on('click', function (){
-                    otherproductsettingsModal.show();
-                });
+            window.addEventListener('openBundleSettingsModal', (e) => {
+                otherproductsettingsModal.show();
+            });
+            window.addEventListener('closeBundleSettingsModal', (e) => {
+                otherproductsettingsModal.hide();
             });
 
-            $(document).scannerDetection({
-                timeBeforeScanTest: 200, // wait for the next character for upto 200ms
-                endChar: [13], // be sure the scan is complete if key 13 (enter) is detected
-                avgTimeByChar: 40, // it's not a barcode if a character takes longer than 40ms
-                ignoreIfFocusOn: 'input', // turn off scanner detection if an input has focus
-                startChar: [16], // Prefix character for the cabled scanner (OPL6845R)
-                endChar: [40],
-                onComplete: function(barcode){
-                    captureBarcode(barcode);
-                }, // main callback function
-                scanButtonKeyCode: 116, // the hardware scan button acts as key 116 (F5)
-                scanButtonLongPressThreshold: 5, // assume a long press if 5 or more events come in sequence
-                onScanButtonLongPressed: function(){
-                    alert('key pressed');
-                }, // callback for long pressing the scan button
-                onError: function(string){}
-            });
 
-            $('#saveBarcode').on('click', function(){
-                @this.saveBarcode().then(function(response){
-                    setTimeout(function(){
-                        window.location.reload();
-                    },2000)
+            window.addEventListener("load", function (){
+                $(document).ready(function(){
+                    let myModal = "";
+                    myModal = new bootstrap.Modal(document.getElementById("simpleBarcodeModal"), {});
+
+                    otherproductsettingsModal = new bootstrap.Modal(document.getElementById("orderPriceSettings"), {});
+                    dependentProductSettingsModal = new bootstrap.Modal(document.getElementById("dependentProductSettings"), {});
+
+                    document.getElementById("simpleBarcodeModal").addEventListener('shown.bs.modal', function () {
+                        barCodeOpen = true
+                    })
+
+                    document.getElementById("simpleBarcodeModal").addEventListener('hidden.bs.modal', function () {
+                        barCodeOpen = false
+                    })
+
+                    $('#barcode').on('click', function (){
+                        myModal.show();
+                    });
+
+
+                    $('#dependentProduct').on('click', function (){
+                        dependentProductSettingsModal.show();
+                    });
+
+                    document.getElementById("dependentProductSettings").addEventListener('show.bs.modal', function (){
+                        var path = '{{ route('findpurchasestock') }}'+"?column={{ '' }}&select2=yes"
+                        var obj = this;
+                        if (!$('#dependent_product_select').hasClass('select2-hidden-accessible')) {
+                            const select2 = $('#dependent_product_select').select2({
+                                dropdownParent: $('#dependentProductSettings'),
+                                placeholder: 'Select product',
+                                width: '100%',
+                                ajax: {
+                                    url: path,
+                                    dataType: 'json',
+                                    delay: 250,
+                                    data: function (data) {
+                                        return {
+                                            searchTerm: data.term // search term
+                                        };
+                                    },
+                                    processResults: function (response) {
+                                        return {
+                                            results:response
+                                        };
+                                    },
+                                }
+                            });
+
+                            @this.set("dependentProduct.stock_id",select2.val());
+                            select2.on("select2:select", (event) => {
+                                @this.set("dependentProduct.stock_id",select2.val());
+                            });
+
+                        }
+                    })
                 });
-            });
 
-        }
+                $(document).scannerDetection({
+                    timeBeforeScanTest: 200, // wait for the next character for upto 200ms
+                    endChar: [13], // be sure the scan is complete if key 13 (enter) is detected
+                    avgTimeByChar: 40, // it's not a barcode if a character takes longer than 40ms
+                    ignoreIfFocusOn: 'input', // turn off scanner detection if an input has focus
+                    startChar: [16], // Prefix character for the cabled scanner (OPL6845R)
+                    endChar: [40],
+                    onComplete: function(barcode){
+                        captureBarcode(barcode);
+                    }, // main callback function
+                    scanButtonKeyCode: 116, // the hardware scan button acts as key 116 (F5)
+                    scanButtonLongPressThreshold: 5, // assume a long press if 5 or more events come in sequence
+                    onScanButtonLongPressed: function(){
+                        alert('key pressed');
+                    }, // callback for long pressing the scan button
+                    onError: function(string){}
+                });
 
-        function deleteBarcode(code){
-            @this.barcodes = @this.barcodes.filter(item => item !== code)
-        }
+                $('#saveBarcode').on('click', function(){
+                    @this.saveBarcode().then(function(response){
+                        setTimeout(function(){
+                            window.location.reload();
+                        },2000)
+                    });
+                });
 
-        function captureBarcode(barcode) {
-            if(barCodeOpen === false)
-            {
-                alert('Click on capture barcode scanner to capture barcode');
-            }else{
-                <?php
-                    if(!isset($this->product->id)) {
-                ?>
-                alert('Please save this product before, creating barcode')
-                <?php
+            })
+
+            function deleteBarcode(code){
+                @this.barcodes = @this.barcodes.filter(item => item !== code)
+            }
+
+            function captureBarcode(barcode) {
+                if(barCodeOpen === false)
+                {
+                    alert('Click on capture barcode scanner to capture barcode');
                 }else{
-                ?>
-                @this.validateBarcode(barcode).then(function(resp){
-                    if(resp.status == false){
+                        <?php
+                    if(!isset($this->product->id)) {
+                        ?>
+                    alert('Please save this product before, creating barcode')
+                        <?php
+                    }else{
+                        ?>
+                    @this.validateBarcode(barcode).then(function(resp){
+                        if(resp.status == false){
 
+                        }
+                    });
+                        <?php
+                    }
+                        ?>
+                }
+            }
+        </script>
+        <script>
+            function getPriceRangeData() {
+                const rows = document.querySelectorAll('#priceTableBody tr');
+
+                // ✅ User deleted all rows
+                if (rows.length === 0) {
+                    return [];
+                }
+
+                const data = [];
+
+                // 1. Collect quantity + price from inputs
+                rows.forEach(row => {
+                    const quantityInput = row.querySelector('input[placeholder="Quantity"]');
+                    const priceInput = row.querySelector('input[placeholder="Price"]');
+
+                    const quantity = parseFloat(quantityInput.value);
+                    const price = parseFloat(priceInput.value);
+
+                    if (!isNaN(quantity) && !isNaN(price)) {
+                        data.push({ quantity, price });
                     }
                 });
-                <?php
-                }
-                ?>
-            }
-        }
 
-
-    </script>
-
-    <script>
-        function getPriceRangeData() {
-            const rows = document.querySelectorAll('#priceTableBody tr');
-            const data = [];
-            const seenQuantities = new Set();
-            let hasInvalid = false;
-
-            rows.forEach(row => {
-                const quantityInput = row.querySelector('input[placeholder="Quantity"]');
-                const priceInput = row.querySelector('input[placeholder="Price"]');
-
-                const quantity = parseFloat(quantityInput.value);
-                const price = parseFloat(priceInput.value);
-
-                let inputIsValid = true;
-
-                // Validate quantity
-                if (isNaN(quantity) || quantity < 2) {
-                    inputIsValid = false;
-                    quantityInput.classList.add('is-invalid');
-                } else if (seenQuantities.has(quantity)) {
-                    inputIsValid = false;
-                    quantityInput.classList.add('is-invalid');
-                } else {
-                    seenQuantities.add(quantity);
-                    quantityInput.classList.remove('is-invalid');
+                // ✅ Rows exist but user cleared all values
+                if (data.length === 0) {
+                    return [];
                 }
 
-                if (!inputIsValid) {
-                    hasInvalid = true;
-                }
+                // 2. Sort by quantity (ascending)
+                data.sort((a, b) => a.quantity - b.quantity);
 
-                // Add to data if valid
-                if (inputIsValid && !isNaN(price)) {
-                    data.push({
-                        quantity,
-                        price
-                    });
-                }
-            });
-
-            if (hasInvalid) {
-                alert("Each Quantity must be unique and ≥  2.");
-                return [];
-            }
-
-            // Sort and generate min-max quantity ranges
-            data.sort((a, b) => a.quantity - b.quantity);
-
-            const result = [];
-            for (let i = 0; i < data.length; i++) {
-                const current = data[i];
-                const next = data[i + 1];
-
-                result.push({
+                // 3. Build min–max ranges
+                return data.map((current, index) => ({
                     min_qty: current.quantity,
-                    max_qty: next ? next.quantity : 10000,
+                    max_qty: data[index + 1] ? data[index + 1].quantity : 10000,
                     price: current.price
-                });
+                }));
             }
 
-            return result;
-        }
 
+            document.addEventListener('DOMContentLoaded', function () {
+                const addBtn = document.getElementById('addPriceBtn');
+                const saveProductPrice = document.getElementById('saveProductPrice');
+                const tableBody = document.getElementById('priceTableBody');
 
-        document.addEventListener('DOMContentLoaded', function () {
-            const addBtn = document.getElementById('addPriceBtn');
-            const saveProductPrice = document.getElementById('saveProductPrice');
-            const tableBody = document.getElementById('priceTableBody');
+                addBtn.addEventListener('click', function () {
+                    const row = document.createElement('tr');
 
-            addBtn.addEventListener('click', function () {
-                const row = document.createElement('tr');
-
-                row.innerHTML = `
+                    row.innerHTML = `
             <td></td>
             <td><input type="number" value="" min="2" class="form-control form-control-sm min_qty" placeholder="Quantity"></td>
-            <td><input type="number" value="" step="0.0000001" min="2" class="form-control form-control-sm min_qty" placeholder="Price"></td>
+            <td><input type="number" value="0" step="0.0000001" min="2" class="form-control form-control-sm min_qty" placeholder="Price"></td>
             <td><button type="button" class="btn btn-danger btn-sm delete-row">Delete</button></td>
         `;
 
-                tableBody.appendChild(row);
-                updateRowNumbers();
-            });
-
-            tableBody.addEventListener('click', function (e) {
-                if (e.target.classList.contains('delete-row')) {
-                    e.target.closest('tr').remove();
+                    tableBody.appendChild(row);
                     updateRowNumbers();
-                }
-            });
-
-            function updateRowNumbers() {
-                [...tableBody.rows].forEach((row, index) => {
-                    row.cells[0].textContent = index + 1;
                 });
-            }
 
-            saveProductPrice.addEventListener("click", function (e) {
-                const data = getPriceRangeData();
-                if(data.length > 0) {
-                    @this.saveProductPrice(data).then((response) => {
-                        if (response === true) {
-                            otherproductsettingsModal.hide();
-                        }
-                    })
+                tableBody.addEventListener('click', function (e) {
+                    if (e.target.classList.contains('delete-row')) {
+                        e.target.closest('tr').remove();
+                        updateRowNumbers();
+                    }
+                });
+
+                function updateRowNumbers() {
+                    [...tableBody.rows].forEach((row, index) => {
+                        row.cells[0].textContent = index + 1;
+                    });
                 }
-            });
-        });
-    </script>
 
+                saveProductPrice.addEventListener("click", function (e) {
+                    const data = getPriceRangeData();
+                        @this.saveProductPrice(data).then((response) => {
+                            if (response === true) {
+                                otherproductsettingsModal.hide();
+                            }
+                        })
+
+                });
+            });
+
+
+        </script>
+    </div>
 </div>

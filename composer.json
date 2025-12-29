@@ -13,7 +13,7 @@
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.7",
-        "livewire/livewire": "^3.0",
+        "livewire/livewire": "^3.5",
         "maatwebsite/excel": "^3.1",
         "mateusjunges/laravel-kafka": "^2.5",
         "milon/barcode": "^11.0",

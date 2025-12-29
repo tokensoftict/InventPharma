@@ -126,7 +126,8 @@ class ProductRepository
         $name = explode(" ",$name);
 
         $selling_price = match (request()->column){
-            'wholesales', 'bulksales', 'quantity', '', NULL => 'whole_price',
+            'wholesales', 'quantity', '', NULL => 'whole_price',
+            'bulksales' => 'bulk_price',
             'retail', 'retail_store' => 'retail_price',
         };
 
@@ -134,6 +135,18 @@ class ProductRepository
             'wholesales', 'bulksales', 'quantity', '', NULL => 'cost_price',
             'retail','retail_store' => 'retail_cost_price',
         };
+
+        $customPriceColumn = match (request()->column){
+            'wholesales', 'quantity', 'bulksales', '', NULL => 'wholesales',
+            'retail', 'retail_store' => 'retail',
+        };
+
+        $productOptionStatusColumn = match (request()->column){
+            'wholesales', 'quantity', 'bulksales', '', NULL => 'wholesales_status',
+            'retail', 'retail_store' => 'retail_status',
+        };
+
+
 //->where(request()->column ,'>',0)
 
         $stocks = DB::table('stocks')
@@ -154,7 +167,7 @@ class ProductRepository
                 DB::raw("SUM(stockbatches.".request()->column.") as quantity")
             )
             ->where( "stocks.$selling_price", ">", 0)
-           // ->where("stockbatches.".request()->column, ">", 0)
+            // ->where("stockbatches.".request()->column, ">", 0)
             ->leftJoin('promotion_items', function($join) use ($selling_price) {
                 $join->on('stocks.id', '=', 'promotion_items.stock_id')
                     ->where('promotion_items.status_id', '=', DB::raw(status('Approved')))
@@ -174,17 +187,79 @@ class ProductRepository
 
         $customPrices = DB::table('product_custom_prices')
             ->whereIn('stock_id', $stockIds)
+            ->where("department",  $customPriceColumn)
             ->get()
             ->groupBy('stock_id');
 
 // Attach custom prices to each stock
         $stocks->transform(function ($stock) use ($customPrices) {
-            $stock->custom_prices = $customPrices->get($stock->id, collect())->values();
+            $stock->custom_prices = $customPrices->get($stock->id, collect())->values()->map(function($customPrice) use ($stock) {
+                $customPrice->carton = $stock->carton;
+                return $customPrice;
+            });
             return $stock;
         });
 
-        return $stocks->toJson();
+// Get Product Option for each stock result
+        $productOptions = DB::table("stock_option_values")
+            ->whereIn('stock_id', $stockIds)
+            ->where($productOptionStatusColumn, "1")
+            ->get()
+            ->groupBy('stock_id');
 
+// attach has Options to product to indicate if stock as option ot not
+        $stocks->transform(function ($stock) use ($productOptions) {
+            $options = $productOptions->get($stock->id, collect());
+            $stock->hasOptions = $options->count() > 0;
+            return $stock;
+        });
+
+
+ //Get all dependent Product
+        $dependentProduct = DB::table("dependent_products")
+            ->whereIn('parent_stock_id', $stockIds)
+            ->get()
+            ->groupBy('parent_stock_id');
+
+// attach dependent product to product if exist
+
+        $stocks->transform(function ($stock) use ($dependentProduct, $cost_price, $selling_price) {
+            $getProducts = $dependentProduct->get($stock->id, collect())->pluck('stock_id')->toArray();
+            $dependentProducts = DB::table('stocks')
+                ->select(
+                    'stocks.retail_store as retail_store',
+                    'stocks.id',
+                    "stocks.".$cost_price." as cost_price",
+                    "stocks.".$selling_price." as selling_price",
+                    'stocks.name',
+                    'stocks.box',
+                    'stocks.location',
+                    'stocks.name as text',
+                    'stocks.carton',
+                    'promotion_items.promotion_id',
+                    'promotion_items.from_date',
+                    'promotion_items.end_date',
+                    'promotion_items.'.$selling_price." as promo_selling_price",
+                    DB::raw("SUM(stockbatches.".request()->column.") as quantity")
+                )
+                ->where( "stocks.$selling_price", ">", 0)
+                // ->where("stockbatches.".request()->column, ">", 0)
+                ->leftJoin('promotion_items', function($join) use ($selling_price) {
+                    $join->on('stocks.id', '=', 'promotion_items.stock_id')
+                        ->where('promotion_items.status_id', '=', DB::raw(status('Approved')))
+                        ->where('promotion_items.'.$selling_price, '>', 0);
+                })
+                ->whereIn("stocks.id", $getProducts)
+                ->leftJoin('stockbatches', "stocks.id", '=',"stockbatches.stock_id" )
+                ->groupBy("stocks.id")
+                ->get();
+
+            $stock->dependent_products = $dependentProducts;
+            return $stock;
+        });
+
+
+        return $stocks->toJson();
     }
 
     public function findPurchaseProduct(mixed $name)
@@ -204,8 +279,8 @@ class ProductRepository
         };
 
         return DB::table('stocks')
-            ->select('id', $cost_price, $selling_price, 'name', 'box', 'location', 'name as text',
-                DB::raw('ROUND((((retail/box) + wholesales + quantity + bulksales)),0) as allqty')
+            ->select('id', $cost_price, $selling_price, 'name', 'box', 'location' ,'name as text',
+                DB::raw('ROUND((((retail/box) + (retail_store/box) + wholesales + quantity + bulksales)),0) as allqty')
             )->where(function($query) use(&$name){
                 foreach ($name as $char) {
                     $query->where('stocks.name', 'LIKE', "%$char%");

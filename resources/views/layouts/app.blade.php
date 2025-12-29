@@ -320,6 +320,15 @@
             notify('warning', message, options)
         }
 
+        window.addEventListener('successNotification', (e) => {
+            success(e.detail[0]['message']);
+        });
+
+        window.addEventListener('errorNotification', (e) => {
+            error(e.detail[0]['message']);
+        });
+
+
 </script>
 
 

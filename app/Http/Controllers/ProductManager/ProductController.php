@@ -82,7 +82,7 @@ class ProductController extends Controller
             'subtitle'=>'Update'
         ];
 
-        return setPageContent('product.form',$data);
+        return view('product.form',$data);
     }
 
 
@@ -122,6 +122,11 @@ class ProductController extends Controller
     }
 
     public function changeSellingPrice()
+    {
+
+    }
+
+    public function setDependentProduct()
     {
 
     }

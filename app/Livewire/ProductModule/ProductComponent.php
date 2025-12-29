@@ -4,6 +4,7 @@ namespace App\Livewire\ProductModule;
 
 use App\Classes\Settings;
 use App\Models\Category;
+use App\Models\DependentProduct;
 use App\Models\ProductCustomPrice;
 use App\Models\Stock;
 use App\Models\Stockbarcode;
@@ -36,8 +37,16 @@ class ProductComponent extends Component
     public array $barcodes = [];
 
     public array $productPriceBasedOnQuantity = [];
+    public string $productPriceBasedDepartment = '';
 
     private ProductRepository $productRepository;
+
+
+    public array $dependentProduct = [
+        'stock_id',
+        'parent',
+        'child'
+    ];
 
     public function boot(ProductRepository $productRepository)
     {
@@ -68,25 +77,15 @@ class ProductComponent extends Component
             return str_replace("\r", "",$barcode->barcode);
         })->toArray();
 
-        $this->productPriceBasedOnQuantity = $this->product->stockquantityprices->map(function($price){
-            return [
-                'id' => $price->id,
-                'price' => $price->price,
-                'min_qty' => $price->min_qty,
-                'max_qty' => $price->max_qty,
-            ];
-        })->toArray();
     }
 
     public function render()
     {
-
         return view('livewire.product-module.product-component');
     }
 
     public function saveStock()
     {
-
         $data = [
             "product_data.name"=>"bail|required|max:255",
             "product_data.piece"=>"bail|required",
@@ -161,7 +160,7 @@ class ProductComponent extends Component
             ]
         );
 
-        return redirect()->route('product.index');
+        return redirect()->route('product.edit', $this->product->id);
 
     }
 
@@ -215,18 +214,37 @@ class ProductComponent extends Component
     }
 
 
+    public function openBundlePriceModal(string $department)
+    {
+        $this->productPriceBasedDepartment = $department;
+
+        $this->productPriceBasedOnQuantity = $this->product->stockquantityprices()->where('department', $this->productPriceBasedDepartment)->get()->map(function($price){
+            return [
+                'id' => $price->id,
+                'price' => $price->price,
+                'department' => $price->department,
+                'min_qty' => $price->min_qty,
+                'max_qty' => $price->max_qty,
+            ];
+        })->toArray();
+
+        $this->dispatch('openBundleSettingsModal', []);
+    }
+
     public function saveProductPrice(array $prices)
     {
         $price = array_map(function($price) {
             $price['stock_id'] = $this->product->id;
             $price['user_id'] = auth()->id();
+            $price['department'] = $this->productPriceBasedDepartment;
             return new ProductCustomPrice($price);
         }, $prices);
 
-        return DB::transaction(function() use($price) {
-            $this->product->stockquantityprices()->delete();
-            $this->product->stockquantityprices()->saveMany($price);
-
+        $status = DB::transaction(function() use($price) {
+            $this->product->stockquantityprices()->where('department', $this->productPriceBasedDepartment)->delete();
+            if(count($price) > 0) {
+                $this->product->stockquantityprices()->saveMany($price);
+            }
             $this->alert(
                 "success",
                 "Product",
@@ -241,6 +259,17 @@ class ProductComponent extends Component
         });
 
 
+        $this->productPriceBasedOnQuantity = $this->product->stockquantityprices()->where('department', $this->productPriceBasedDepartment)->get()->map(function($price){
+            return [
+                'id' => $price->id,
+                'price' => $price->price,
+                'department' => $price->department,
+                'min_qty' => $price->min_qty,
+                'max_qty' => $price->max_qty,
+            ];
+        })->toArray();
+
+        return $status;
     }
 
     public function saveBarcode()
@@ -279,4 +308,45 @@ class ProductComponent extends Component
             return $barcode !== $code;
         })->toArray();
     }
+
+
+    public function addDependentproduct()
+    {
+        $this->validate([
+            'dependentProduct.stock_id' => 'required',
+            'dependentProduct.parent' => 'required',
+            'dependentProduct.child' => 'required',
+        ],
+            [
+                'dependentProduct.stock_id.required' => 'Please select a stock',
+                'dependentProduct.parent.required' => 'Parent field is required.',
+                'dependentProduct.child.required' => 'Child field is required.',
+            ]
+        );
+
+        $data = $this->dependentProduct;
+        $data['parent_stock_id'] = $this->product->id;
+
+        DependentProduct::create($data);
+
+        $this->dependentProduct = [
+            'stock_id' => "",
+            'parent' => "",
+            'child' => "",
+        ];
+
+        $this->dispatch('successNotification', ["message" => "Dependent Product has been added successfully"]);
+    }
+
+
+    public function removeDependentproduct($dependentProductId)
+    {
+        DB::transaction(function() use ($dependentProductId){
+            DependentProduct::find($dependentProductId)->delete();
+        });
+
+        $this->dispatch('successNotification', ["message" => "Dependent Product has been deleted successfully"]);
+    }
+
+
 }
