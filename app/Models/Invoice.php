@@ -241,4 +241,8 @@ class Invoice extends Model
     {
         return $this->hasOne(WaitingCustomer::class, );
     }
+
+
+
+
 }

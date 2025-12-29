@@ -92,7 +92,7 @@ class InvoiceRepository
                 'last_updated_by' => auth()->id(),
                 'invoice_date' => todaysDate(),
                 'sales_time' => Carbon::now()->toDateTimeLocalString(),
-                'invoiceitems' =>  collect([])->toJson()
+                'invoiceitems' =>  collect([])->toJson(),
             ];
         }
 
@@ -127,7 +127,10 @@ class InvoiceRepository
                 // this might cause an issue if the price was updated and the customer later return the product
                 // the system might or will use the new price not the old price the customer
                 // we will fix later
-                'selectedOptions' => $invoiceitem->selectedOptions
+                'selectedOptions' => $invoiceitem->selectedOptions,
+                'isDependent' => $invoiceitem->isDependent,
+                'parent_stock_id' => $invoiceitem->parent_stock_id,
+                'dependent_products' => $invoiceitem->dependent_products
             ];
         } //stock_option_json
         else {
@@ -151,6 +154,7 @@ class InvoiceRepository
                 'custom_price' => [],
                 'default_selling_price' => NULL,
                 'selectedOptions' => NULL,
+                'dependent_products' => []
             ];
 
         }

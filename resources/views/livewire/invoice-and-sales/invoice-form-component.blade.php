@@ -59,32 +59,48 @@
                                 </tr>
                                 </thead>
                                 <tbody id="appender">
-                                <template x-for="(item,index) in invoiceitems.reverse()" :key="item.stock_id">
-                                    <tr>
+
+                                <template x-for="(item,index) in invoiceitems" :key="item.stock_id">
+                                    <tr :class="item.isDependent ? 'table-warning' : ''">
                                         <td class="text-start">
                                             <span class="d-block" x-text="item.name"></span>
-                                            <span class="d-block" x-show="item.selectedOptions.length > 0" x-html="renderSelectedOptions(item.selectedOptions)"></span>
+                                            <span class="d-block" x-show="item.selectedOptions && item.selectedOptions.length > 0" x-html="renderSelectedOptions(item.selectedOptions)"></span>
                                             <span class="d-block text-danger" x-text="errors[item.stock_id]"></span>
                                         </td>
+
                                         <td class="text-center">
                                             <div class="input-group form-group mb-0" style="width:120px;">
-                                                <a x-on:click="incrementQuantity(index)" class="btn btn-sm btn-primary">
+                                                <!-- If it's a dependent product, disable editing -->
+                                                <a x-on:click="!item.isDependent && incrementQuantity(index)" class="btn btn-sm btn-primary" :class="{'disabled': item.isDependent}">
                                                     <i class="fa fa-plus"></i>
                                                 </a>
-                                                <input type="number" x-on:keyup="typeQuantity(index)"  x-model="invoiceitems[index]['quantity']" value="1" class="form-control form-control-sm text-center">
-                                                <a x-on:click="decrementQuantity(index)" class="btn btn-sm btn-danger">
+                                                <input type="number"
+                                                       x-on:keyup="!item.isDependent && typeQuantity(index)"
+                                                       x-model="item.quantity"
+                                                       class="form-control form-control-sm text-center"
+                                                       :readonly="item.isDependent">
+                                                <a x-on:click="!item.isDependent && decrementQuantity(index)" class="btn btn-sm btn-danger" :class="{'disabled': item.isDependent}">
                                                     <i class="fa fa-minus"></i>
                                                 </a>
                                             </div>
                                         </td>
+
                                         <td class="text-center" x-text="item.box"></td>
                                         <td class="text-center" x-text="item.carton"></td>
                                         <td class="text-center" x-text="item.av_qty"></td>
                                         <td class="text-end" x-text="money(item.selling_price)"></td>
-                                        <td class="text-end" x-text="money((item.selling_price * item.quantity))"></td>
-                                        <td class="text-end"><button class="btn btn-sm btn-danger" x-on:click="deleteItem(item.stock_id)">Delete</button> </td>
+                                        <td class="text-end" x-text="money(item.selling_price * item.quantity)"></td>
+                                        <td class="text-end">
+                                            <!-- Only show delete button for parent products -->
+                                            <template x-if="!item.isDependent">
+                                                <button class="btn btn-sm btn-danger" x-on:click="deleteItem(item.stock_id)">Delete</button>
+                                            </template>
+                                        </td>
                                     </tr>
                                 </template>
+
+
+
                                 </tbody>
                                 <tfoot>
                                 <tr>
@@ -392,8 +408,7 @@
     </div>
     <script>
         var productOptionModal = "";
-        function invoice()
-        {
+        function invoice() {
             return {
                 invoiceitems : @this.get('invoiceData.invoiceitems') ? JSON.parse( @this.get('invoiceData.invoiceitems')) : [],
             searchString : "",
@@ -413,7 +428,7 @@
         },
             addItem() {
             if ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0) {
-                $wire.warning("Stock already exists");
+                error("Stock already exists");
                 return;
             }
 
@@ -454,7 +469,10 @@
                 discount_type : 'Fixed',
                 custom_price : this.selectedProduct.custom_prices ?? [],
                 default_selling_price : selling_price,
-                selectedOptions : this.selectedProduct.selectedOptions ?? []
+                selectedOptions : this.selectedProduct.selectedOptions ?? [],
+                dependent_products : this.selectedProduct.dependent_products ?? [],
+                isDependent: false,
+                parent_stock_id: null
             });
             this.totalInvoice();
             },
@@ -484,10 +502,12 @@
                     this.invoiceitems[index]['selling_price'] += this.getProductOptionsTotalAmount(this.invoiceitems[index]['selectedOptions']);
 
                     this.invoiceitems[index]['quantity'] = qty;
+
                     this.invoiceitems[index]['total_cost_price'] = this.invoiceitems[index]['cost_price'] * this.invoiceitems[index]['quantity'];
                     this.invoiceitems[index]['total_selling_price'] = this.invoiceitems[index]['selling_price'] * this.invoiceitems[index]['quantity'];
                     this.invoiceitems[index]['total_profit'] =  (this.invoiceitems[index]['selling_price'] - this.invoiceitems[index]['cost_price']) * this.invoiceitems[index]['quantity'];
 
+                    this.applyDependentProducts();
                     this.totalInvoice();
                 }
             },
@@ -498,6 +518,8 @@
                     this.invoiceitems[index]['quantity'] = this.invoiceitems[index]['av_qty'];
                 }
 
+
+
                 this.invoiceitems[index]['selling_price'] = this.getPriceRange(this.invoiceitems[index]['quantity'], this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price'], this.invoiceitems[index]);
                 this.invoiceitems[index]['selling_price'] += this.getProductOptionsTotalAmount(this.invoiceitems[index]['selectedOptions']);
 
@@ -505,6 +527,7 @@
                 this.invoiceitems[index]['total_cost_price'] = this.invoiceitems[index]['cost_price'] * this.invoiceitems[index]['quantity'];
                 this.invoiceitems[index]['total_selling_price'] = this.invoiceitems[index]['selling_price'] * this.invoiceitems[index]['quantity'];
                 this.invoiceitems[index]['total_profit'] =  (this.invoiceitems[index]['selling_price'] - this.invoiceitems[index]['cost_price']) * this.invoiceitems[index]['quantity'];
+                this.applyDependentProducts();
                 this.totalInvoice();
             },
             decrementQuantity(index) {
@@ -519,12 +542,16 @@
                     this.invoiceitems[index]['total_selling_price'] = this.invoiceitems[index]['selling_price'] * this.invoiceitems[index]['quantity'];
                     this.invoiceitems[index]['total_profit'] =  (this.invoiceitems[index]['selling_price'] - this.invoiceitems[index]['cost_price']) * this.invoiceitems[index]['quantity'];
 
+                    this.applyDependentProducts();
                     this.totalInvoice();
                 }
             },
-            deleteItem(id)
-            {
-                this.invoiceitems = this.invoiceitems.filter(item => id !== item.stock_id);
+            deleteItem(parentStockId) {
+                this.invoiceitems = this.invoiceitems.filter(item =>
+                    item.stock_id !== parentStockId &&
+                    item.parent_stock_id !== parentStockId
+                );
+
                 this.totalInvoice();
             },
             totalInvoice()
@@ -544,8 +571,7 @@
                 this.searchproduct = [];
             }
         },
-            newCustomerEvent()
-            {
+            newCustomerEvent(){
 
                 let myModal = "";
 
@@ -571,8 +597,7 @@
             money(amount){
             return formatMoney(amount);
         },
-            async searchCustomer()
-            {
+            async searchCustomer(){
                 if (this.searchCustomerString !== "" && this.searchCustomerString.length > 3) {
                     this.searchCustomers = await (await fetch('{{ route('findcustomer') }}?query=' + this.searchCustomerString
                     )).
@@ -787,7 +812,80 @@
 
                 return total + amount;
             }, 0);
-        }
+        },
+            applyDependentProducts() {
+                const parents = this.invoiceitems.filter(i => !i.isDependent);
+
+                parents.forEach(parentItem => {
+
+                    if (!parentItem.dependent_products) return;
+
+                    parentItem.dependent_products.forEach(dep => {
+                        const info = dep.dependent_info[0];
+
+                        const qty = Math.floor(parentItem.quantity / info.parent) * info.child;
+
+                        const existingIndex = this.invoiceitems.findIndex(i =>
+                            i.isDependent &&
+                            i.stock_id === dep.id &&
+                            i.parent_stock_id === parentItem.stock_id
+                        );
+
+                        if (qty > 0) {
+                            if (existingIndex === -1) {
+                                this.invoiceitems.push(
+                                    this.buildDependentItem(dep, qty, parentItem)
+                                );
+                            } else {
+                                this.invoiceitems[existingIndex].quantity = qty;
+                            }
+                        } else {
+                            if (existingIndex !== -1) {
+                                this.invoiceitems.splice(existingIndex, 1);
+                            }
+                        }
+                    });
+                });
+
+                this.totalInvoice();
+            },
+            buildDependentItem(dep, qty, parentItem) {
+                const sellingPrice = parseFloat(dep.selling_price);
+
+                return {
+                    stock_id: dep.id,
+                    quantity: qty,
+                    box: dep.box,
+                    carton: dep.carton,
+                    av_qty: dep.quantity,
+
+                    customer_id : @this.get('invoiceData.customer_id') ?  @this.get('invoiceData.customer_id') :  {firstname : ""},
+
+                    name: dep.name + " (Dependent)",
+                    added_by: this.userId, // pass from blade or alpine init
+                    discount_added_by: null,
+
+                    cost_price: parseFloat(dep.cost_price),
+                    selling_price: sellingPrice,
+                    profit: sellingPrice - parseFloat(dep.cost_price),
+
+                    discount_value: 0,
+                    discount_amount: 0,
+                    discount_type: 'Fixed',
+
+                    custom_price: dep.custom_prices ?? [],
+                    default_selling_price: sellingPrice,
+
+                    selectedOptions: [],             // 🚫 dependents have no options
+                    dependent_products: [],           // 🚫 dependents cannot spawn others
+
+                    // 🔑 dependency flags
+                    isDependent: true,
+                    parent_stock_id: parentItem.stock_id
+                };
+            }
+
+
 
         }
         }

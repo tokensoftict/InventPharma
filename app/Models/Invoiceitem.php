@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int|null $customer_id
  * @property int $added_by
  * @property int|null $discount_added_by
+ * @property boolean|null $isDependent
+ * @property int|null $parent_stock_id
  * @property float|null $cost_price
  * @property float|null $selling_price
  * @property string|null $department
@@ -33,6 +35,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property User|null $user
+ * @property array|null $dependent_products
  * @property Customer|null $customer
  * @property Invoice $invoice
  * @property Stock|null $stock
@@ -61,6 +64,9 @@ class Invoiceitem extends Model
 		'discount_amount' => 'float',
 		'before_customer_id' => 'int',
         'selectedOptions' => 'array',
+        'isDependent' => 'bool',
+        'parent_stock_id' => 'int',
+        'dependent_products' => 'array',
 	];
 
 	protected $fillable = [
@@ -78,7 +84,10 @@ class Invoiceitem extends Model
 		'discount_value',
 		'discount_amount',
 		'before_customer_id',
-        'selectedOptions'
+        'selectedOptions',
+        'isDependent',
+        'parent_stock_id',
+        'dependent_products'
 	];
 
     protected $with = ['stock'];

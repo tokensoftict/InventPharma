@@ -211,6 +211,7 @@ class ProductRepository
         $stocks->transform(function ($stock) use ($productOptions) {
             $options = $productOptions->get($stock->id, collect());
             $stock->hasOptions = $options->count() > 0;
+            $stock->dependent_products = [];
             return $stock;
         });
 
@@ -222,15 +223,15 @@ class ProductRepository
             ->groupBy('parent_stock_id');
 
 // attach dependent product to product if exist
-
+    if( $customPriceColumn == "wholesales") {
         $stocks->transform(function ($stock) use ($dependentProduct, $cost_price, $selling_price) {
             $getProducts = $dependentProduct->get($stock->id, collect())->pluck('stock_id')->toArray();
             $dependentProducts = DB::table('stocks')
                 ->select(
                     'stocks.retail_store as retail_store',
                     'stocks.id',
-                    "stocks.".$cost_price." as cost_price",
-                    "stocks.".$selling_price." as selling_price",
+                    "stocks." . $cost_price . " as cost_price",
+                    "stocks." . $selling_price . " as selling_price",
                     'stocks.name',
                     'stocks.box',
                     'stocks.location',
@@ -239,25 +240,28 @@ class ProductRepository
                     'promotion_items.promotion_id',
                     'promotion_items.from_date',
                     'promotion_items.end_date',
-                    'promotion_items.'.$selling_price." as promo_selling_price",
-                    DB::raw("SUM(stockbatches.".request()->column.") as quantity")
+                    'promotion_items.' . $selling_price . " as promo_selling_price",
+                    DB::raw("SUM(stockbatches." . request()->column . ") as quantity")
                 )
-                ->where( "stocks.$selling_price", ">", 0)
+                ->where("stocks.$selling_price", ">", 0)
                 // ->where("stockbatches.".request()->column, ">", 0)
-                ->leftJoin('promotion_items', function($join) use ($selling_price) {
+                ->leftJoin('promotion_items', function ($join) use ($selling_price) {
                     $join->on('stocks.id', '=', 'promotion_items.stock_id')
                         ->where('promotion_items.status_id', '=', DB::raw(status('Approved')))
-                        ->where('promotion_items.'.$selling_price, '>', 0);
+                        ->where('promotion_items.' . $selling_price, '>', 0);
                 })
                 ->whereIn("stocks.id", $getProducts)
-                ->leftJoin('stockbatches', "stocks.id", '=',"stockbatches.stock_id" )
+                ->leftJoin('stockbatches', "stocks.id", '=', "stockbatches.stock_id")
                 ->groupBy("stocks.id")
-                ->get();
+                ->get()->transform(function ($dependent) use ($dependentProduct, $stock) {
+                    $dependent->dependent_info = $dependentProduct->get($stock->id, collect());
+                    return $dependent;
+                });
 
             $stock->dependent_products = $dependentProducts;
             return $stock;
         });
-
+    }
 
         return $stocks->toJson();
     }
