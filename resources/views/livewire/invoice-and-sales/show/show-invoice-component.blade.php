@@ -1,5 +1,5 @@
 @php
-    function renderSelectedOptions(array $selectedOptions): string
+    function renderSelectedOptions(array $selectedOptions = []): string
         {
             if (empty($selectedOptions)) {
                 return '';
@@ -305,7 +305,7 @@
                                     <td class="text-left">
                                         {{ $item->stock->name }}
                                         @if(count($item->selectedOptions) > 0)
-                                            <span class="d-block">{!! renderSelectedOptions($item->selectedOptions) !!}</span>
+                                            <span class="d-block">{!! renderSelectedOptions($item->selectedOptions ?? []) !!}</span>
                                         @endif
                                     </td>
                                     <td class="text-center">{{ money($item->selling_price - $item->discount_amount) }}</td>
