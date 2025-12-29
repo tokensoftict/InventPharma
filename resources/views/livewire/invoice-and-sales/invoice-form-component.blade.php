@@ -366,7 +366,7 @@
                             <div class="mb-4">
                                 <h6 class="fw-bold">{{ $productOption['optionName'] }}</h6>
                                 @if($productOption['option'] == "select")
-                                    <select class="form-select product-option-select" onchange="addToBasePrice(this)" id="{{ \Illuminate\Support\Str::snake($productOption['optionName'].$productOption['option_id']) }}" wire:model="selectedProductInfo.selectedOptions.{{ $productOption['option_id'] }}">
+                                    <select required class="form-select product-option-select" onchange="addToBasePrice(this)" id="{{ \Illuminate\Support\Str::snake($productOption['optionName'].$productOption['option_id']) }}" wire:model="selectedProductInfo.selectedOptions.{{ $productOption['option_id'] }}">
                                         <option value="">-Select {{ $productOption['optionName'] }}-</option>
                                         @foreach($productOption['options'] as $option)
                                             <option prefix="{{ $option[$this->d == "retail" ? "retail_price_prefix" : "wholesales_price_prefix"] }}" amount="{{ $option[$this->d == "retail" ? "retail_price" : "wholesales_price"] }}" value="{{ $option['id'] }}">{{ $option['name'] }}  {{ $option[$this->d == "retail" ? "retail_price_prefix" : "wholesales_price_prefix"]." ".money($option[$this->d == "retail" ? "retail_price" : "wholesales_price"]) }}</option>
