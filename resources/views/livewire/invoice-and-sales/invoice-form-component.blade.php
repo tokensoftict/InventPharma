@@ -60,7 +60,7 @@
                                 </thead>
                                 <tbody id="appender">
 
-                                <template x-for="(item,index) in invoiceitems" :key="item.stock_id">
+                                <template x-for="(item,index) in invoiceitems.reverse()" :key="item.stock_id">
                                     <tr :class="item.isDependent ? 'table-warning' : ''">
                                         <td class="text-start">
                                             <span class="d-block" x-text="item.name"></span>
