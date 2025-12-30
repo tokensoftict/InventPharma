@@ -153,7 +153,7 @@
         function purchase()
         {
             return {
-                supplier_id :  @this.get('data.supplier_id'),
+                supplier_id :  @this.get('supplier_id'),
                 department :  @this.get('department'),
                 stock_id : "",
                 cost_price : "",
