@@ -1,33 +1,56 @@
 <div x-data="purchase" x-init="totalPurchase()">
     {{-- The whole world belongs to you. --}}
+<hr/>
 
-    <div class="row">
+    <div class="row mt-5">
         <div class="col-sm-6">
             <div class="mb-3">
-                <label>Select Stock</label>
+                <label>Search & Select Stock</label>
                 <select id="select2" x-init="select2" x-model="stock_id" class="form-control" id="product">
                     <option value="">-Select One-</option>
                 </select>
             </div>
         </div>
-    </div>
-    <div class="row">
-
         <div class="col-sm-2">
             <div class="mb-3">
                 <label style="white-space: nowrap;">Av. Quantity</label>
                 <input type="number" readonly class="form-control" x-model="allqty" id="av_qty"/>
             </div>
         </div>
-
         <div class="col-sm-2">
             <div class="mb-3">
                 <label>Recent Cost Price</label>
                 <input  type="number" x-model="cost_price" class="form-control" id="cost_price"/>
             </div>
         </div>
+    </div>
+    <div class="row">
+
 
         <div class="col-sm-2">
+            <div class="mb-3">
+                <label>Bulk Price</label>
+                <input @if(!userCanView('product.changeSellingPrice'))  {{ 'readonly' }} @endif   type="number" x-model="bulk_price" class="form-control" id="cost_price"/>
+            </div>
+        </div>
+
+
+        <div class="col-sm-2">
+            <div class="mb-3">
+                <label>Wholesales Price</label>
+                <input  @if(!userCanView('product.changeSellingPrice'))  {{ 'readonly' }} @endif  type="number" x-model="whole_price" class="form-control" id="cost_price"/>
+            </div>
+        </div>
+
+        <div class="col-sm-2">
+            <div class="mb-3">
+                <label>Retail Sales Price</label>
+                <input @if(!userCanView('product.changeSellingPrice'))  {{ 'readonly' }} @endif  type="number" x-model="retail_price" class="form-control" id="cost_price"/>
+            </div>
+        </div>
+
+
+        <div class="col-sm-1">
             <div class="mb-3">
                 <label style="white-space: nowrap;">Quantity</label>
                 <input type="number" class="form-control" x-model="quantity" id="qty"/>
@@ -41,49 +64,17 @@
             </div>
         </div>
 
-        <div class="col-sm-2">
+        <div class="col">
             <div class="mb-3">
                 <label style="white-space: nowrap;">Batch Number</label>
                 <input type="text" class="form-control" x-model="batch_no" id="batch_no"/>
             </div>
         </div>
 
-        <div class="col-sm-2">
+        <div class="col">
             <button class="btn  btn-primary" x-on:click="addItem" style="margin-top: 27px;" type="button">Add Stock</button>
         </div>
     </div>
-
-    <div class="row mt-4">
-        <div class="col-lg-8 offset-3">
-            <div class="row">
-                <div class="col-lg-4">
-                    <div class="mb-3">
-                        <label>Select Supplier</label>
-                        <select class="form-control" x-init="select2Alpine('supplier_id')" id="supplier_id" x-ref="supplier_id" x-model="supplier_id" name="supplier_id">
-                            <option value="">Select Supplier</option>
-                            @foreach($this->suppliers as $supplier)
-                                <option  value="{{ $supplier->id }}">{{ $supplier->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <label>Select Department</label>
-                    <select class="form-control" name="department" x-init="select2Alpine('department')" id="department" x-model="department" wire:model="data.department">
-                        <option value="">Select Department</option>
-                        @foreach($this->depertments as $depertment)
-                            <option selected value="{{ $depertment->quantity_column }}">{{ $depertment->label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-lg-4">
-                    <label>Purchase Date</label>
-                    <input type="text" readonly wire:model="data.date_created" class="form-control">
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="row">
        <div class="col-lg-12">
            <br/>
@@ -95,9 +86,12 @@
                        <th>Product Name</th>
                        <th class="text-center">Quantity</th>
                        <th class="text-end">Cost Price</th>
+                       <th class="text-end">Bulk Price</th>
+                       <th class="text-end">Wholesales Price</th>
+                       <th class="text-end">Retail Sales Price</th>
                        <th class="text-center">Expiry Date</th>
                        <th class="text-center">Batch Number</th>
-                       <th class="text-end">Total</th>
+                       <th class="text-end">Total Cost</th>
                        <th>Action</th>
                    </tr>
                    </thead>
@@ -107,6 +101,9 @@
                            <td class="text-start" x-text="item.name"></td>
                            <td class="text-center" x-text="item.qty"></td>
                            <td class="text-end" x-text="money(item.cost_price)"></td>
+                           <td class="text-end" x-text="money(item.bulk_price)"></td>
+                           <td class="text-end" x-text="money(item.whole_price)"></td>
+                           <td class="text-end" x-text="money(item.retail_price)"></td>
                            <td class="text-center" x-text="item.expiry_date"></td>
                            <td class="text-center" x-text="item.batch_no"></td>
                            <td class="text-end" x-text="money(item.total)"></td>
@@ -120,7 +117,10 @@
                        <td></td>
                        <td></td>
                        <td></td>
-                       <td class="text-end">Total</td>
+                       <td></td>
+                       <td></td>
+                       <td></td>
+                       <td class="text-end">Total Cost Price</td>
                        <td class="text-end" x-text="netTotal">0.00</td>
                        <td></td>
                    </tr>
@@ -129,7 +129,6 @@
            </div>
        </div>
     </div>
-
     <div class="col-lg-12 mt-3">
 
         <button  wire:target="draftPurchase,completePurchase" wire:loading.attr="disabled" type="button" x-on:click="draftPurchaseOrder()"  class="btn btn-primary btn-lg me-2">
@@ -148,14 +147,19 @@
         <a href="{{ route('purchase.index') }}" class="btn btn-danger btn-lg">Cancel</a>
     </div>
 
+
+
     <script>
         function purchase()
         {
             return {
-                supplier_id : @this.get('data.supplier_id') ? @this.get('data.supplier_id') : "",
-                department : @this.get('data.department') ? @this.get('data.department') : "",
+                supplier_id :  @this.get('data.supplier_id'),
+                department :  @this.get('department'),
                 stock_id : "",
                 cost_price : "",
+                bulk_price : "",
+                whole_price : "",
+                retail_price : "",
                 allqty : 0,
                 quantity : "",
                 expiry_date: "",
@@ -165,7 +169,7 @@
                 purchaseitems : @this.get('data.purchaseitems') ?  JSON.parse(@this.get('data.purchaseitems')) : [],
                 select2()
                 {
-                    var path = '{{ route('findpurchasestock') }}'+"?column={{ '' }}&select2=yes"
+                    var path = '{{ route('findpurchasestock') }}'+"?column={{ $this->department }}&select2=yes"
                     var obj = this;
                     var select =  $('#select2').select2({
                         placeholder: 'Select for product',
@@ -192,6 +196,9 @@
                             console.log(data);
                             obj.stock_id = data.id;
                             obj.cost_price = data[0].cost_price;
+                            obj.retail_price = data[0].retail_price,
+                            obj.bulk_price = data[0].bulk_price,
+                            obj.whole_price = data[0].whole_price,
                             obj.quantity = 1;
                             obj.name = data.name;
                             obj.selectStock = data[0];
@@ -250,6 +257,9 @@
                         'qty' :this.quantity,
                         'name' : this.selectStock.name,
                         'cost_price' : this.cost_price,
+                        'bulk_price' : this.bulk_price,
+                        'whole_price' : this.whole_price,
+                        'retail_price' : this.retail_price,
                         'batch_no' : this.batch_no,
                         'user_id' : '{{ auth()->id() }}',
                         'total' : this.quantity * this.cost_price,
@@ -258,6 +268,9 @@
 
                     this.expiry_date = "";
                     this.cost_price = "";
+                    this.bulk_price = "";
+                    this.retail_price = "";
+                    this.whole_price = "";
                     this.quantity = "";
                     this.allqty = "";
                     this.expiry_date = "";

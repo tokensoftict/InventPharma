@@ -272,25 +272,41 @@ class ProductRepository
 
         $name = explode(" ",$name);
 
-        $selling_price = match (request()->column){
-            'wholesales', 'bulk-sales', 'quantity', '', NULL => 'whole_price',
-            'retail', 'retail_store'  => 'retail_price',
-        };
 
         $cost_price = match (request()->column){
             'wholesales', 'bulk-sales', 'quantity', '', NULL => 'cost_price',
             'retail', 'retail_store'  => 'retail_cost_price',
         };
 
-        return DB::table('stocks')
-            ->select('id', $cost_price, $selling_price, 'name', 'box', 'location' ,'name as text',
+        $stocks = DB::table('stocks')
+            ->select('id', 'whole_price','bulk_price', 'retail_price', 'name', 'box', 'location' ,'name as text',
                 DB::raw('ROUND((((retail/box) + (retail_store/box) + wholesales + quantity + bulksales)),0) as allqty')
             )->where(function($query) use(&$name){
                 foreach ($name as $char) {
                     $query->where('stocks.name', 'LIKE', "%$char%");
                 }
-            })->get()->toJson();
+            })->get();
 
+        $stockIds = $stocks->pluck('id')->toArray();
+
+        $query  = DB::table('stockbatches as sb')
+            ->whereIn('sb.stock_id', $stockIds)
+            ->whereNotNull('sb.'.$cost_price)
+            ->whereIn('sb.id', function ($query) use ($cost_price){
+                $query->select(DB::raw('MAX(id)'))
+                    ->from('stockbatches')
+                    ->whereNotNull($cost_price)
+                    ->groupBy('stock_id');
+            })
+            ->get()
+            ->keyBy('stock_id');
+
+
+        return $stocks->transform(function ($stock)  use ($query, $cost_price) {
+            $price = $query->get($stock->id, collect());
+            $stock->cost_price = isset($price?->{$cost_price}) ? $price?->{$cost_price} : 0;
+            return $stock;
+        })->toJson();
     }
 
 

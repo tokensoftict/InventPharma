@@ -38,12 +38,30 @@ class PurchaseOrderController extends Controller
             'title' => "New Stock Purchase",
             'subtitle' => "Create New Stock Purchase",
             'purchase' => new Purchase(),
-            'departments' => departments()->filter(function($item){
-                return $item->quantity_column !== NULL;
+            'suppliers' => suppliers(true),
+            'depertments' => departments(true)->filter(function($item){
+                if(in_array(auth()->user()->department_id, [1,2,3,5])){
+                    return $item->id === 1 || $item->id == 4 || $item->id == 6;
+                }
+                return auth()->user()->department_id === 4;
             }),
+            'purchase_date' => NULL,
+            'department' => NULL,
+            'supplier_id' => NULL,
         ];
 
-        return setPageContent('purchase.form',$data);
+        if(config('app.PURCHASE_DEPARTMENT') !== false) {
+            $data['depertments'] = department_by_ids(explode(",", config('app.PURCHASE_DEPARTMENT')));
+        }
+
+
+        if(isset($request->supplier_id) and isset($request->department) and isset($request->purchase_date)){
+            $data['supplier_id'] = $request->supplier_id;
+            $data['department'] = $request->department;
+            $data['purchase_date'] = $request->purchase_date;
+        }
+
+        return view('purchase.form',$data);
     }
 
     public function show(Purchase $purchase)
@@ -57,16 +75,37 @@ class PurchaseOrderController extends Controller
         return setPageContent('purchase.show',$data);
     }
 
-    public function edit(Purchase $purchase)
+    public function edit(Purchase $purchase, Request $request)
     {
         $data = [
             'title' => "Edit Stock Purchase List",
             'subtitle' => "Edit and Update Stock Purchase",
             'purchase' => $purchase,
-            'departments' => departments()->filter(function($item){
-                return $item->quantity_column !== NULL;
+            'suppliers' => suppliers(true),
+            'depertments' => departments(true)->filter(function($item){
+                if(in_array(auth()->user()->department_id, [1,2,3,5])){
+                    return $item->id === 1 || $item->id == 4 || $item->id == 6;
+                }
+                return auth()->user()->department_id === 4;
             }),
+
         ];
+
+        $data['supplier_id'] = $purchase->supplier_id;
+        $data['department'] = $purchase->department;
+        $data['purchase_date'] = $purchase->date_created;
+
+        if(isset($request->supplier_id) and isset($request->department) and isset($request->purchase_date)){
+            $data['supplier_id'] = $request->supplier_id;
+            $data['department'] = $request->department;
+            $data['purchase_date'] = $request->purchase_date;
+        }
+
+
+        if(config('app.PURCHASE_DEPARTMENT') !== false) {
+            $data['depertments'] = department_by_ids(explode(",", config('app.PURCHASE_DEPARTMENT')));
+        }
+
 
         return setPageContent('purchase.form',$data);
     }

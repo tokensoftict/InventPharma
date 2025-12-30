@@ -74,10 +74,13 @@
                 <tr>
                     <th>#</th>
                     <th>Name</th>
-                    <th>Quantity</th>
-                    <th>Cost Price</th>
-                    <th>Expiry Date</th>
-                    <th>Batch Number</th>
+                    <th class="text-end">Quantity</th>
+                    <th class="text-end">Cost Price</th>
+                    <th class="text-end">Bulk Price</th>
+                    <th class="text-end">Wholesales Price</th>
+                    <th class="text-end">Retail Sales Price</th>
+                    <th class="text-end">Expiry Date</th>
+                    <th class="text-end">Batch Number</th>
                     <th class="text-end">Total</th>
                 </tr>
                 </thead>
@@ -86,10 +89,13 @@
                     <tr>
                         <td>{{ $loop->iteration }}</td>
                         <td>{{ $item->name }} </td>
-                        <td>{{ $item->qty }}</td>
-                        <td>{{ number_format($item->cost_price,2) }}</td>
-                        <td>{{ $item->expiry_date ?? eng_str_date($item->expiry_date) }}</td>
-                        <td>{{ $item->batch_no }}</td>
+                        <td class="text-end">{{ $item->qty }}</td>
+                        <td class="text-end">{{ number_format($item->cost_price,2) }}</td>
+                        <td class="text-end">{{ number_format($item->bulk_price,2) }}</td>
+                        <td class="text-end">{{ number_format($item->whole_price,2) }}</td>
+                        <td class="text-end">{{ number_format($item->retail_price,2) }}</td>
+                        <td class="text-end">{{ $item->expiry_date ?? eng_str_date($item->expiry_date) }}</td>
+                        <td class="text-end">{{ $item->batch_no }}</td>
                         <td class="text-end">{{ number_format(($item->qty * $item->cost_price),2) }}</td>
                     </tr>
                 @endforeach
@@ -101,10 +107,16 @@
                     <th></th>
                     <th></th>
                     <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
                     <th class="text-end">Sub Total</th>
                     <th class="text-end">{{ number_format((new \App\Repositories\PurchaseOrderRepository())->totalPo($this->purchase),2) }}</th>
                 </tr>
                 <tr>
+                    <th></th>
+                    <th></th>
+                    <th></th>
                     <th></th>
                     <th></th>
                     <th></th>

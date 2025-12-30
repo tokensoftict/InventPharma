@@ -51,7 +51,10 @@ class Purchaseitem extends Model
 		'qty',
 		'cost_price',
 		'user_id',
-        'batch_no'
+        'batch_no',
+        'bulk_price',
+        'retail_price',
+        'whole_price',
 	];
 
     //protected $with = ['stock'];

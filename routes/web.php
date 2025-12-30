@@ -263,9 +263,9 @@ Route::middleware(['auth'])->group(function () {
 
                 Route::get('/completed', ['as' => 'approved', 'uses' => 'PurchaseOrderController@completed', 'visible' => true,'custom_label'=>'Completed List']);
 
-                Route::get( 'create', ['as' => 'create', 'uses' => 'PurchaseOrderController@create','visible' => true, 'custom_label'=>'Create New Purchase']);
+                Route::match( ['get', 'post'], 'create', ['as' => 'create', 'uses' => 'PurchaseOrderController@create','visible' => true, 'custom_label'=>'Create New Purchase']);
 
-                Route::get('{purchase}/edit', ['as' => 'edit', 'uses' => 'PurchaseOrderController@edit','custom_label'=>'Edit Purchase']);
+                Route::match(['get', 'post'],'{purchase}/edit', ['as' => 'edit', 'uses' => 'PurchaseOrderController@edit','custom_label'=>'Edit Purchase']);
 
                 Route::get('{purchase}/show', ['as' => 'show', 'uses' => 'PurchaseOrderController@show','custom_label'=>'Show Purchase Information']);
 

@@ -64,6 +64,9 @@ class PurchaseOrderRepository
                 'qty' => $purchaseitem->qty,
                 'name' => $purchaseitem->name,
                 'cost_price' => $purchaseitem->cost_price,
+                'bulk_price' => $purchaseitem->bulk_price ?? $purchaseitem->stock->bulk_price,
+                'retail_price' => $purchaseitem->retail_price ?? $purchaseitem->stock->retail_price,
+                'whole_price' =>  $purchaseitem->whole_price ?? $purchaseitem->stock->whole_price,
                 'user_id' => $purchaseitem->user_id,
                 'total' => ($purchaseitem->qty * $purchaseitem->cost_price)
             ];
@@ -76,6 +79,9 @@ class PurchaseOrderRepository
                 'batch_no' => "",
                 'name' => "",
                 'cost_price' => "",
+                'bulk_price' => "",
+                'retail_price' => "",
+                'whole_price' => "",
                 'user_id' => auth()->id(),
                 'total' => 0
             ];
@@ -146,7 +152,10 @@ class PurchaseOrderRepository
 
             $stockUpdate[] = [
                 cost_price_column(department_by_quantity_column($purchase->department)->id) => $item->cost_price,
-                'id' => $item->stock_id
+                'id' => $item->stock_id,
+                'bulk_price' => $item->bulk_price ?? $item->stock->bulk_price,
+                'retail_price' => $item->retail_price ?? $item->stock->retail_price,
+                'whole_price' =>  $item->whole_price ?? $item->stock->whole_price,
             ];
 
             $bincards[] = [
@@ -164,6 +173,9 @@ class PurchaseOrderRepository
                 'department_balance'=>$item->stock->getCurrentlevel($purchase->department)
             ];
 
+
+
+
         }
 
         dispatch(new AddLogToProductBinCard($bincards));
@@ -177,7 +189,11 @@ class PurchaseOrderRepository
 
         foreach ( $stockUpdate as $update)
         {
-            Stock::find($update['id'])->updateQuantity();
+            $st = Stock::find($update['id']);
+
+            $st->update(Arr::except($update,'id'));
+
+            $st->updateQuantity();
         }
 
         /*

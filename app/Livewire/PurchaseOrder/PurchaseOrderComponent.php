@@ -20,6 +20,8 @@ class PurchaseOrderComponent extends Component
 
     public $depertments;
 
+    public string $supplier_id, $department, $purchase_date;
+
     protected PurchaseOrderRepository $purchaseOrderRepository;
 
     public function boot(PurchaseOrderRepository $purchaseOrderRepository)
