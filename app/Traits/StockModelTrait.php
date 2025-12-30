@@ -387,7 +387,7 @@ trait StockModelTrait
             'max'=>"0",
             'carton'=>$this->carton,
             'sachet'=>1,
-            'custom_price' => $this->stockquantityprices->where('department', 'retail')->map->only(['price', 'wholesale_price','min_qty', 'max_qty'])->toArray(),
+            'custom_price' => $this->stockquantityprices->where('department', 'retail')->map->only(['price','min_qty', 'max_qty'])->toArray(), //'wholesale_price' 'department'
             'stock_option_values' => $this->buildProductOptions()->toArray()
         ];
 
