@@ -1,6 +1,6 @@
 <div x-data="purchase" x-init="totalPurchase()">
     {{-- The whole world belongs to you. --}}
-<hr/>
+    <hr/>
 
     <div class="row mt-5">
         <div class="col-sm-6">
@@ -76,58 +76,66 @@
         </div>
     </div>
     <div class="row">
-       <div class="col-lg-12">
-           <br/>
-           <h4>Purchase Order</h4>
-           <div class="table-responsive">
-               <table class="table table-striped table-striped table-bordered">
-                   <thead>
-                   <tr>
-                       <th>Product Name</th>
-                       <th class="text-center">Quantity</th>
-                       <th class="text-end">Cost Price</th>
-                       <th class="text-end">Bulk Price</th>
-                       <th class="text-end">Wholesales Price</th>
-                       <th class="text-end">Retail Sales Price</th>
-                       <th class="text-center">Expiry Date</th>
-                       <th class="text-center">Batch Number</th>
-                       <th class="text-end">Total Cost</th>
-                       <th>Action</th>
-                   </tr>
-                   </thead>
-                   <tbody>
-                   <template x-for="(item,index) in purchaseitems" :key="item.stock_id">
-                       <tr>
-                           <td class="text-start" x-text="item.name"></td>
-                           <td class="text-center" x-text="item.qty"></td>
-                           <td class="text-end" x-text="money(item.cost_price)"></td>
-                           <td class="text-end" x-text="money(item.bulk_price)"></td>
-                           <td class="text-end" x-text="money(item.whole_price)"></td>
-                           <td class="text-end" x-text="money(item.retail_price)"></td>
-                           <td class="text-center" x-text="item.expiry_date"></td>
-                           <td class="text-center" x-text="item.batch_no"></td>
-                           <td class="text-end" x-text="money(item.total)"></td>
-                           <td class="text-end"><button class="btn btn-sm btn-primary" x-on:click="deleteItem(item.stock_id)">Delete</button> </td>
-                       </tr>
-                   </template>
-                   </tbody>
-                   <tfoot>
-                   <tr>
-                       <td></td>
-                       <td></td>
-                       <td></td>
-                       <td></td>
-                       <td></td>
-                       <td></td>
-                       <td></td>
-                       <td class="text-end">Total Cost Price</td>
-                       <td class="text-end" x-text="netTotal">0.00</td>
-                       <td></td>
-                   </tr>
-                   </tfoot>
-               </table>
-           </div>
-       </div>
+        <div class="col-lg-12">
+            <br/>
+            <h4>Purchase Order</h4>
+            <div class="table-responsive">
+                <table class="table table-striped table-striped table-bordered">
+                    <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-end">Cost Price</th>
+                        <th class="text-end">Bulk Price</th>
+                        <th class="text-end">Wholesales Price</th>
+                        <th class="text-end">Retail Sales Price</th>
+                        <th class="text-center">Expiry Date</th>
+                        <th class="text-center">Batch Number</th>
+                        <th class="text-end">Total Cost</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <template x-for="(item,index) in purchaseitems" :key="item.stock_id">
+                        <tr>
+                            <td class="text-start" x-text="item.name"></td>
+                            <td class="text-end">
+                                <input x-model="purchaseitems[index]['qty']"  x-on:keyup="calculateTotal()" type="number" class="form-control text-end">
+                            </td>
+                            <td lass="text-end"><input x-model="purchaseitems[index]['cost_price']" x-on:keyup="totalPurchase()" type="number" class="form-control text-end"></td>
+                            @if(!userCanView('product.changeSellingPrice'))
+                                <td class="text-end" x-text="money(item.bulk_price)"></td>
+                                <td class="text-end" x-text="money(item.whole_price)"></td>
+                                <td class="text-end" x-text="money(item.retail_price)"></td>
+                            @else
+                                <td lass="text-end"><input x-model="purchaseitems[index]['bulk_price']" type="number" class="form-control text-end"></td>
+                                <td lass="text-end"><input x-model="purchaseitems[index]['whole_price']" type="number" class="form-control text-end"></td>
+                                <td lass="text-end"><input x-model="purchaseitems[index]['retail_price']" type="number" class="form-control text-end"></td>
+                            @endif
+                            <td class="text-center" x-text="item.expiry_date"></td>
+                            <td class="text-center" x-text="item.batch_no"></td>
+                            <td class="text-end" x-text="money(item.total)"></td>
+                            <td class="text-end"><button class="btn btn-sm btn-primary" x-on:click="deleteItem(item.stock_id)">Delete</button> </td>
+                        </tr>
+                    </template>
+                    </tbody>
+                    <tfoot>
+                    <tr>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td class="text-end">Total Cost Price</td>
+                        <td class="text-end" x-text="netTotal">0.00</td>
+                        <td></td>
+                    </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
     </div>
     <div class="col-lg-12 mt-3">
 
@@ -137,12 +145,12 @@
             Draft Purchase
         </button>
         @if (userCanView('purchase.complete'))
-        &nbsp; &nbsp; &nbsp;
-        <button  wire:target="draftPurchase,completePurchase" wire:loading.attr="disabled" type="button" x-on:click="completePurchaseOrder()"  class="btn btn-success btn-lg me-2">
-            <i wire:loading.remove wire:target="draftPurchase,completePurchase" class="fa fa-check"></i>
-            <span wire:loading wire:target="draftPurchase,completePurchase" class="spinner-border spinner-border-sm me-2" role="status"></span>
-            Complete Purchase
-        </button>
+            &nbsp; &nbsp; &nbsp;
+            <button  wire:target="draftPurchase,completePurchase" wire:loading.attr="disabled" type="button" x-on:click="completePurchaseOrder()"  class="btn btn-success btn-lg me-2">
+                <i wire:loading.remove wire:target="draftPurchase,completePurchase" class="fa fa-check"></i>
+                <span wire:loading wire:target="draftPurchase,completePurchase" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Complete Purchase
+            </button>
         @endif
         <a href="{{ route('purchase.index') }}" class="btn btn-danger btn-lg">Cancel</a>
     </div>
@@ -167,189 +175,195 @@
                 selectStock : {},
                 netTotal :0,
                 purchaseitems : @this.get('data.purchaseitems') ?  JSON.parse(@this.get('data.purchaseitems')) : [],
-                select2()
-                {
-                    var path = '{{ route('findpurchasestock') }}'+"?column={{ $this->department }}&select2=yes"
-                    var obj = this;
-                    var select =  $('#select2').select2({
-                        placeholder: 'Select for product',
-                        ajax: {
-                            url: path,
-                            dataType: 'json',
-                            delay: 250,
-                            data: function (data) {
-                                return {
-                                    searchTerm: data.term // search term
-                                };
-                            },
-                            processResults: function (response) {
-                                return {
-                                    results:response
-                                };
-                            },
-                        }
-                    })
+            select2()
+            {
+                var path = '{{ route('findpurchasestock') }}'+"?column={{ $this->department }}&select2=yes"
+                var obj = this;
+                var select =  $('#select2').select2({
+                    placeholder: 'Select for product',
+                    ajax: {
+                        url: path,
+                        dataType: 'json',
+                        delay: 250,
+                        data: function (data) {
+                            return {
+                                searchTerm: data.term // search term
+                            };
+                        },
+                        processResults: function (response) {
+                            return {
+                                results:response
+                            };
+                        },
+                    }
+                })
 
-                    $('#select2').on('change',function(eventData){
-                        var data = $(this).select2('data');
-                        if(data[0] !==undefined) {
-                            console.log(data);
-                            obj.stock_id = data.id;
-                            obj.cost_price = data[0].cost_price;
-                            obj.retail_price = data[0].retail_price,
+                $('#select2').on('change',function(eventData){
+                    var data = $(this).select2('data');
+                    if(data[0] !==undefined) {
+                        console.log(data);
+                        obj.stock_id = data.id;
+                        obj.cost_price = data[0].cost_price;
+                        obj.retail_price = data[0].retail_price,
                             obj.bulk_price = data[0].bulk_price,
                             obj.whole_price = data[0].whole_price,
                             obj.quantity = 1;
-                            obj.name = data.name;
-                            obj.selectStock = data[0];
-                            obj.allqty = data[0].allqty
-                        }
-                    });
-
-                },
-                select2Alpine(referred) {
-                    this[referred+'_select2'] = $(document.getElementById(referred)).select2();
-                    this[referred+'_select2'].on("select2:select", (event) => {
-                        this[referred] = event.target.value;
-                    });
-                    if( this[referred] === "")
-                    {
-                        this[referred] = this[referred+'_select2'].val();
+                        obj.name = data.name;
+                        obj.selectStock = data[0];
+                        obj.allqty = data[0].allqty
                     }
-                    if( this[referred] !== "")
-                    {
-                        this[referred+'_select2'].select2('val', this[referred]);
-                       $( document.getElementById(referred)).val(this[referred]).trigger('change');
-                    }
-                },
-                totalPurchase(){
-                    this.netTotal = this.money(this.purchaseitems.length > 0 ? this.purchaseitems.reduce((result, item) => {
-                        return result + item.total;
-                    }, 0) : 0);
-                    return true;
-                },
-                deleteItem(id) {
-                    this.purchaseitems = this.purchaseitems.filter(item => id !== item.stock_id);
-                    this.totalPurchase();
-                },
-                addItem(){
+                });
 
-                    if ((this.purchaseitems.filter(e => e.stock_id === this.selectStock.id)).length > 0) {
-                        alert("Stock already exists");
-                        return;
-                    }
+            },
+            select2Alpine(referred) {
+            this[referred+'_select2'] = $(document.getElementById(referred)).select2();
+            this[referred+'_select2'].on("select2:select", (event) => {
+                this[referred] = event.target.value;
+            });
+            if( this[referred] === "")
+            {
+                this[referred] = this[referred+'_select2'].val();
+            }
+            if( this[referred] !== "")
+            {
+                this[referred+'_select2'].select2('val', this[referred]);
+                $( document.getElementById(referred)).val(this[referred]).trigger('change');
+            }
+        },
+            totalPurchase(){
+            this.netTotal = this.money(this.purchaseitems.length > 0 ? this.purchaseitems.reduce((result, item) => {
+                return result + item.total;
+            }, 0) : 0);
+            return true;
+        },
+            deleteItem(id) {
+            this.purchaseitems = this.purchaseitems.filter(item => id !== item.stock_id);
+            this.totalPurchase();
+        },
+            addItem(){
 
-                    if(this.stock_id === "" || this.cost_price == "" || this.expiry_date == "")
-                    {
-                        alert("Please search and select a stock,enter cost price and expiry date to add to purchase items")
-                        return;
-                    }
+            if ((this.purchaseitems.filter(e => e.stock_id === this.selectStock.id)).length > 0) {
+                alert("Stock already exists");
+                return;
+            }
 
-
-                    if(this.batch_no === ""){
-                        alert("Please enter batch number")
-                        return ;
-                    }
-
-                    this.purchaseitems.push({
-                        'stock_id' : this.selectStock.id,
-                        'expiry_date' : this.expiry_date,
-                        'qty' :this.quantity,
-                        'name' : this.selectStock.name,
-                        'cost_price' : this.cost_price,
-                        'bulk_price' : this.bulk_price,
-                        'whole_price' : this.whole_price,
-                        'retail_price' : this.retail_price,
-                        'batch_no' : this.batch_no,
-                        'user_id' : '{{ auth()->id() }}',
-                        'total' : this.quantity * this.cost_price,
-                        'status_id' : '{{ status("Pending") }}'
-                    });
-
-                    this.expiry_date = "";
-                    this.cost_price = "";
-                    this.bulk_price = "";
-                    this.retail_price = "";
-                    this.whole_price = "";
-                    this.quantity = "";
-                    this.allqty = "";
-                    this.expiry_date = "";
-                    this.batch_no = "";
-                    this.totalPurchase();
-                    $('#select2').empty().trigger('change');
+            if(this.stock_id === "" || this.cost_price == "" || this.expiry_date == "")
+            {
+                alert("Please search and select a stock,enter cost price and expiry date to add to purchase items")
+                return;
+            }
 
 
-                 },
+            if(this.batch_no === ""){
+                alert("Please enter batch number")
+                return ;
+            }
 
-                 money(amount)
-                {
-                        return formatMoney(amount);
-                 },
+            this.purchaseitems.push({
+                'stock_id' : this.selectStock.id,
+                'expiry_date' : this.expiry_date,
+                'qty' :this.quantity,
+                'name' : this.selectStock.name,
+                'cost_price' : this.cost_price,
+                'bulk_price' : this.bulk_price,
+                'whole_price' : this.whole_price,
+                'retail_price' : this.retail_price,
+                'batch_no' : this.batch_no,
+                'user_id' : '{{ auth()->id() }}',
+                'total' : this.quantity * this.cost_price,
+                'status_id' : '{{ status("Pending") }}'
+            });
 
-                 validatePurchase(){
+            this.expiry_date = "";
+            this.cost_price = "";
+            this.bulk_price = "";
+            this.retail_price = "";
+            this.whole_price = "";
+            this.quantity = "";
+            this.allqty = "";
+            this.expiry_date = "";
+            this.batch_no = "";
+            this.totalPurchase();
+            $('#select2').empty().trigger('change');
 
-                    if(this.supplier_id === "")
-                    {
-                        alert("Please select supplier");
 
-                        return false;
-                    }
+        },
 
-                    if(this.department === "")
-                    {
-                        alert("Please select department");
+            money(amount)
+            {
+                return formatMoney(amount);
+            },
 
-                        return false;
-                    }
+            validatePurchase(){
 
-                    if(this.purchaseitems.length === 0){
+            if(this.supplier_id === "")
+            {
+                alert("Please select supplier");
 
-                        alert("Please add item to the purchase list");
+                return false;
+            }
 
-                        return false;
-                    }
+            if(this.department === "")
+            {
+                alert("Please select department");
 
-                    return true;
+                return false;
+            }
 
-                },
-                draftPurchaseOrder(){
+            if(this.purchaseitems.length === 0){
 
-                    if(this.validatePurchase() == false) return;
+                alert("Please add item to the purchase list");
 
-                    @this.set('data.status_id', '{{ status("Draft") }}', true);
-                    @this.set('data.user_id', '{{ auth()->id() }}', true);
-                    @this.set('data.department', this.department, true);
-                    @this.set('data.supplier_id', this.supplier_id, true);
-                    @this.set('data.date_created', '{{ todaysDate() }}', true);
-                    @this.set('data.purchaseitems', this.purchaseitems, true);
+                return false;
+            }
 
-                    @this.draftPurchase().then(function(){
-                            setTimeout(()=>{
-                                window.location.href = '{{ route('purchase.index') }}';
-                            },1100);
-                     });
+            return true;
 
-                 },
+        },
+            draftPurchaseOrder(){
+
+            if(this.validatePurchase() == false) return;
+
+            @this.set('data.status_id', '{{ status("Draft") }}', true);
+            @this.set('data.user_id', '{{ auth()->id() }}', true);
+            @this.set('data.department', this.department, true);
+            @this.set('data.supplier_id', this.supplier_id, true);
+            @this.set('data.date_created', '{{ todaysDate() }}', true);
+            @this.set('data.purchaseitems', this.purchaseitems, true);
+
+            @this.draftPurchase().then(function(){
+                setTimeout(()=>{
+                    window.location.href = '{{ route('purchase.index') }}';
+                },1100);
+            });
+
+        },
             completePurchaseOrder(){
 
-                    if(this.validatePurchase() == false) return;
+            if(this.validatePurchase() == false) return;
 
-                    @this.set('data.status_id', '{{ status("Complete") }}', true);
-                    @this.set('data.user_id', '{{ auth()->id() }}', true);
-                    @this.set('data.completed_by', '{{ auth()->id() }}', true);
-                    @this.set('data.department', this.department, true);
-                    @this.set('data.supplier_id', this.supplier_id, true);
-                    @this.set('data.date_created', '{{ todaysDate() }}', true);
-                    @this.set('data.date_completed', '{{ todaysDate() }}', true);
-                    @this.set('data.purchaseitems', this.purchaseitems, true);
+            @this.set('data.status_id', '{{ status("Complete") }}', true);
+            @this.set('data.user_id', '{{ auth()->id() }}', true);
+            @this.set('data.completed_by', '{{ auth()->id() }}', true);
+            @this.set('data.department', this.department, true);
+            @this.set('data.supplier_id', this.supplier_id, true);
+            @this.set('data.date_created', '{{ todaysDate() }}', true);
+            @this.set('data.date_completed', '{{ todaysDate() }}', true);
+            @this.set('data.purchaseitems', this.purchaseitems, true);
 
-                    @this.completePurchase().then(function(){
-                            setTimeout(()=>{
-                                window.location.href = '{{ route('purchase.index') }}';
-                            },1100);
-                    });
-                }
-            }
+            @this.completePurchase().then(function(){
+                setTimeout(()=>{
+                    window.location.href = '{{ route('purchase.index') }}';
+                },1100);
+            });
+        },
+            calculateTotal() {
+            this.purchaseitems.forEach((item, index) =>{
+                this.purchaseitems[index]['total'] = parseFloat(this.purchaseitems[index]['qty']) * parseFloat(this.purchaseitems[index]['cost_price'])
+            })
+            this.totalPurchase();
+        }
+        }
         }
     </script>
 </div>
