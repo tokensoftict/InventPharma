@@ -87,6 +87,11 @@
                     @error('store.moving_stocks_constant2') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
 
+                <div class="mb-3">
+                    <label>Customer Loyalty Point Rate</label>
+                    <input  type="number"  wire:model="store.point_rate" required class="form-control" name="point_rate" placeholder="Customer Loyalty Point Rate"/>
+                    @error('store.point_rate') <span class="text-danger">{{ $message }}</span> @enderror
+                </div>
 
                 <div class="mb-3">
                     <label>Store Address Line</label>
@@ -98,11 +103,14 @@
                     <textarea name="second_address" class="form-control" wire:model="store.second_address"  placeholder="Store Address Line 2"></textarea>
                     @error('store.second_address') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
+
                 <div class="mb-3">
                     <label>Store Contact Numbers</label>
                     <textarea name="contact_number" required class="form-control" wire:model="store.contact_number" placeholder="Store Contact Numbers"></textarea>
                     @error('store.contact_number') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
+
+
                 <div class="mb-3">
                     <label>Store Logo</label>
                     <input type="file" id="formFile"  name="logo" wire:model="store.logo" style="width: 0;height: 0;padding: 0; margin: 0" >

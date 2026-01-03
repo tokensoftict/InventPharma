@@ -393,7 +393,7 @@ class PaymentRepository
             if(!($obj->cash_tendered === "" || $obj->cash_tendered < $obj->sub_total))
             {
                 $obj->change =   $obj->cash_tendered - $obj->sub_total;
-                if($obj->change > $obj->sub_total){
+                if($obj->change > $obj->sub_total){ // dont use this place for POS the company is not doing POS
                     $obj->btnEnabled = false;
                 }else {
                     $obj->btnEnabled = true;
@@ -651,7 +651,7 @@ class PaymentRepository
         if(!$returnOnlineOrder) $returnOnlineOrder = [];
         if(!is_null($obj->invoice->onliner_order_id) and !in_array($obj->invoice->id , $returnOnlineOrder)){
             $payment_data['payment_date'] = dailyDate();
-            //this means that the invoice is not a return invoice instead its an invoice that is been paid for for the first time
+            //this means that the invoice is not a return invoice instead its an invoice that is been paid for  the first time
         }else {
             // this is a return invoice and its an online invoice
             $payments = Payment::where('invoice_number', $obj->invoice->invoice_number)->first();

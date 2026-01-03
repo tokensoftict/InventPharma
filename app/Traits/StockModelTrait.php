@@ -463,7 +463,7 @@ trait StockModelTrait
 
             $data['retail_price'] = $this->retail_price;
 
-            $data['retail_quantity'] = $this->retail;
+            $data['retail_quantity'] = $this->retail + $this->retail_store;
         }
 
         return $data;
@@ -472,7 +472,7 @@ trait StockModelTrait
     public function getOnlineExpiryDate()
     {
         $batch = $this->activeBatches->filter(function($item, $index){
-            return ($item->wholesales > 0 || $item->bulksales > 0 || $item->quantity > 0);
+            return ($item->wholesales > 0 || $item->bulksales > 0 || $item->quantity > 0 || $item->retail_store > 0);
         })->first();
 
         if($batch) return (new Carbon($batch->expiry_date));
@@ -483,7 +483,7 @@ trait StockModelTrait
     public function getOnlineRetailExpiryDate()
     {
         $batch = $this->activeBatches->filter(function($item, $index){
-            return ($item->retail > 0);
+            return ($item->retail > 0 || $item->retail_store > 0);
         })->first();
 
         if($batch) return $batch->expiry_date;
@@ -505,16 +505,16 @@ trait StockModelTrait
 
     public function getRetailQuantity()
     {
-        return round(divide($this->stockbatches()->sum('retail'),$this->box), 0);
+        return round(divide($this->stockbatches()->sum(DB::raw('retail + retail_store')),$this->box), 0);
     }
 
     public function cacheTotalBalance(){
-        return $this->quantity + $this->bulksales + $this->wholesales + (divide($this->retail , $this->box));
+        return $this->quantity + $this->bulksales + $this->wholesales + (divide(($this->retail + $this->retail_store) , $this->box));
     }
     public function totalBalance()
     {
         return $this->stockbatches()->sum(DB::raw('bulksales + quantity + wholesales'))+
-            divide($this->stockbatches()->sum('retail') , $this->box);
+            divide($this->stockbatches()->sum(DB::raw('retail + retail_store')) , $this->box);
     }
 
     public function newonlinePush()

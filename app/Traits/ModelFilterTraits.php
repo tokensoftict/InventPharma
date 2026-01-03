@@ -84,7 +84,7 @@ trait ModelFilterTraits
             }
         });
 
-        self::updated(function($model){
+        self::updated(function($model) {
 
             $instance = (new self());
             Cache::forget($instance->table);
@@ -93,8 +93,7 @@ trait ModelFilterTraits
                 $function_name();
             }
 
-            if(method_exists($model, 'updateonlinePush') && config('app.sync_with_online')== 1)
-            {
+            if(method_exists($model, 'updateonlinePush') && config('app.sync_with_online')== 1) {
                 $model->updateonlinePush();
             }
 
@@ -125,13 +124,11 @@ trait ModelFilterTraits
             }
         });
 
-
         if (!defined('STDIN') && \auth()->check() && self::class === Stock::class) {
             static::addGlobalScope('checkForPromo', function (Builder $builder){
                 $builder->with(['promotion_item']);
             });
         }
-
 
     }
 

@@ -105,9 +105,23 @@ final class BalanceStockWorthReport extends PowerGridComponent
         SELECT MAX(sb2.id)
         FROM stockbatches sb2
         WHERE sb2.stock_id = sb1.stock_id
-        AND sb2.cost_price IS NOT NULL
+        AND sb2.'.$batch_cost_column.' IS NOT NULL
     )');
 
+
+        $openingStock = DB::table('stockopenings')
+            ->select(
+                'stock_id',
+                DB::raw('(AVG(stockopenings.'.$column.') * ('.$sumcolumn_opening.')) as opening_stock_worth')
+            )
+            ->where('date_added', $date[0])->groupBy('stock_id');
+
+        $closingStock = DB::table('stockopenings')
+            ->select(
+                'stock_id',
+                DB::raw('(AVG(stockopenings.'.$column.') * ('.$sumcolumn_opening.')) as closing_stock_worth')
+            )
+            ->where('date_added', $closing_date)->groupBy('stock_id');
 
 
         $stock_transfer_out = DB::table('stocktransferitems')->select(
@@ -149,7 +163,6 @@ final class BalanceStockWorthReport extends PowerGridComponent
             ->groupBy('stocktransferitems.stock_id');
 
 
-
         $report = DB::table('stocks')->where('stocks.status','1')
             ->select(
                 'stocks.id',
@@ -163,8 +176,10 @@ final class BalanceStockWorthReport extends PowerGridComponent
                 'invoiceitembatches.invoice_cost_price as total_sold_cost_price',
                 'st_in.stock_transfer_in as total_stock_transfer_in',
                 'st_out.stock_transfer_out as total_stock_transfer_out',
-                DB::raw('(AVG(stockopenings.'.$column.') * ('.$sumcolumn_opening.')) as opening_stock_worth'),
-                DB::raw('(AVG(stockopenings.'.$column.') * ('.$sumcolumn_closing.')) as closing_stock_worth')
+                'stockopenings.opening_stock_worth as opening_stock_worth',
+                'stock_closing.closing_stock_worth as closing_stock_worth'
+               // DB::raw('(AVG(stockopenings.'.$column.') * ('.$sumcolumn_opening.')) as opening_stock_worth'),
+               // DB::raw('(AVG(stock_closing.'.$column.') * ('.$sumcolumn_closing.')) as closing_stock_worth')
             )
             ->leftJoinSub($invoices,'invoiceitembatches',function($join){
                 $join->on('invoiceitembatches.stock_id','=','stocks.id');
@@ -174,13 +189,23 @@ final class BalanceStockWorthReport extends PowerGridComponent
                 $join->on('purchaseitems.stock_id','=','stocks.id');
             })
 
+            /*
             ->leftjoin('stockopenings as stock_closing','stock_closing.stock_id','=','stocks.id')
 
-            ->leftJoin('stockopenings','stockopenings.stock_id','=','stocks.id')
+            ->leftJoin('stockopenings as stockopenings','stockopenings.stock_id','=','stocks.id')
 
             ->where('stockopenings.date_added',$date[0])
 
             ->where('stock_closing.date_added', $closing_date)
+            */
+
+            ->leftJoinSub($openingStock, 'stockopenings', function($join){
+                $join->on('stockopenings.stock_id','=','stocks.id');
+            })
+
+            ->leftJoinSub($closingStock, 'stock_closing', function($join){
+                $join->on('stock_closing.stock_id','=','stocks.id');
+            })
 
             ->leftJoinSub($stock_transfer_in,'st_in',function($join){
                 $join->on('st_in.stock_id','=','stocks.id');
@@ -189,7 +214,7 @@ final class BalanceStockWorthReport extends PowerGridComponent
                 $join->on('st_out.stock_id','=','stocks.id');
             })
             ->where($price_column,'>',0)
-            //->whereIn('stocks.id',[2686,3609, 4389,1088])
+            //->whereIn('stocks.id',[30,33])
             ->groupBy('stocks.id')->get();
 
          return $report;
@@ -220,20 +245,37 @@ final class BalanceStockWorthReport extends PowerGridComponent
             ->add('carton')
             ->add('box')
             ->add('name')
-            ->add('total_stock_transfer_in')
-            ->add('total_stock_transfer_out')
-            ->add('opening_stock_worth')
-            ->add('purchase_stock_worth')
-            ->add('total_sold_cost_price')
-            ->add('closing_stock_worth')
+            ->add('total_stock_transfer_in', function ($r) {
+                return is_null($r->total_stock_transfer_in) ? 0.00 : $r->total_stock_transfer_in;
+            })
+            ->add('total_stock_transfer_out', function ($r) {
+                return is_null($r->total_stock_transfer_out) ? 0.00 : $r->total_stock_transfer_out;
+            })
+            ->add('opening_stock_worth', function ($r) {
+                return is_null($r->opening_stock_worth) ? 0.00 : $r->opening_stock_worth;
+            })
+            ->add('purchase_stock_worth', function ($r) {
+                return is_null($r->purchase_stock_worth) ? 0.00 : $r->purchase_stock_worth;
+            })
+            ->add('total_sold_cost_price', function ($r) {
+                return is_null($r->total_sold_cost_price) ? 0.00 : $r->total_sold_cost_price;
+            })
+            ->add('closing_stock_worth', function ($r) {
+                return is_null($r->closing_stock_worth) ? 0.00 : $r->closing_stock_worth;
+            })
+            ->add('calculation_clumn', function($r) {
+                return
+                    ($r->closing_stock_worth ?? 0)." - (".($r->total_stock_transfer_out ?? 0)."+".($r->total_sold_cost_price ?? 0).
+                    " - ".($r->opening_stock_worth ?? 0)."+".($r->purchase_stock_worth ?? 0)."+".($r->total_stock_transfer_in ?? 0).")";
+            })
             ->add('compare' , function($r){
-                $a = $r->total_stock_transfer_out +$r->total_sold_cost_price;
+                $a = ($r->total_stock_transfer_out ?? 0) + ($r->total_sold_cost_price ?? 0);
 
-                $b = $r->opening_stock_worth+$r->purchase_stock_worth+$r->total_stock_transfer_in;
+                $b = ($r->opening_stock_worth ?? 0)+($r->purchase_stock_worth ?? 0)+($r->total_stock_transfer_in ?? 0);
 
                 $re = $b-$a;
 
-                return money($r->closing_stock_worth - $re);
+                return money(($r->closing_stock_worth ?? 0) - $re);
             });
     }
 
@@ -263,6 +305,7 @@ final class BalanceStockWorthReport extends PowerGridComponent
             Column::make('Purchase Stock Cost', 'purchase_stock_worth'),
             Column::make('Goods Stock Cost', 'total_sold_cost_price'),
             Column::make('Closing Stock Cost', 'closing_stock_worth'),
+            Column::make('Calculation', 'calculation_clumn'),
             Column::make('Result', 'compare'),
         ];
     }

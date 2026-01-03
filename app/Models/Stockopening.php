@@ -45,7 +45,8 @@ class Stockopening extends Model
 		'quantity' => 'int',
 		'supplier_id' => 'int',
 		'total' => 'float',
-		'date_added' => 'datetime'
+		'date_added' => 'datetime',
+        'retail_store' => 'int',
 	];
 
 	protected $fillable = [
@@ -58,7 +59,8 @@ class Stockopening extends Model
 		'quantity',
 		'supplier_id',
 		'total',
-		'date_added'
+		'date_added',
+        'retail_store'
 	];
 
 	public function stock()

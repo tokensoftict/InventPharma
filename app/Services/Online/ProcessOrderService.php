@@ -29,7 +29,7 @@ class ProcessOrderService
         "wholesales",
     ];
 
-    public static array $onlineRetailSalesDepartment = ['retail'];
+    public static array $onlineRetailSalesDepartment = ['retail', 'retail_store'];
     public static array $OnlineStoreIDMapper = [
         6 => 'SUPERMARKET',
         5 => 'WHOLESALES'

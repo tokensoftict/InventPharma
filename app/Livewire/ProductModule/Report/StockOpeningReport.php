@@ -108,6 +108,7 @@ final class StockOpeningReport extends PowerGridComponent
             ->add('wholesales')
             ->add('bulksales')
             ->add('retail')
+            ->add('retail_store')
             ->add('quantity')
             ->add('supplier', function(Stockopening $stockopening){
                 return $stockopening->supplier->name ?? "NILL" ;
@@ -148,6 +149,7 @@ final class StockOpeningReport extends PowerGridComponent
             Column::make('Wholesales', 'wholesales')->sortable(),
             Column::make('Bulksales', 'bulksales')->sortable(),
             Column::make('Retail', 'retail')->sortable(),
+            Column::make('Supermarket Store', 'retail_store')->sortable(),
             Column::make('Average retail cost price', 'average_retail_cost_price'),
             Column::make('Average cost price', 'average_cost_price')->sortable()
                 ->searchable(),

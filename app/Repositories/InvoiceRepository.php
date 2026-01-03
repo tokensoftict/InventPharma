@@ -2,8 +2,6 @@
 
 namespace App\Repositories;
 
-//use App\Jobs\AddLogToCustomerLedger;
-//use App\Jobs\AddLogToProductBinCard;
 use App\Livewire\InvoiceAndSales\InvoiceFormComponent;
 use App\Jobs\AddLogToCustomerLedger;
 use App\Jobs\AddLogToProductBinCard;
@@ -19,16 +17,13 @@ use App\Models\WaitingCustomer;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class InvoiceRepository
 {
-    public function __construct()
-    {
+    public function __construct() {
         //
     }
-
     public static function invoice(Invoice $invoice, InvoiceFormComponent $component)
     {
         if(isset($invoice->id))
@@ -98,7 +93,6 @@ class InvoiceRepository
 
     }
 
-
     public static function invoiceitems(Invoiceitem $invoiceitem)
     {
         if(isset($invoiceitem->id)) {
@@ -160,7 +154,6 @@ class InvoiceRepository
         }
     }
 
-
     public function resolvePriceByQuantity(int $quantity, float $defaultSellingPrice, array $customPrices, Stock $stock, string $department): float
     {
         foreach ($customPrices as $priceRule) {
@@ -181,7 +174,6 @@ class InvoiceRepository
         return $defaultSellingPrice;
     }
 
-
     public function getOptionsTotalAmount(array $selectedOptions): float
     {
         $total = 0;
@@ -200,7 +192,6 @@ class InvoiceRepository
 
         return $total;
     }
-
 
     public function validateInvoiceItems(array $items, string $from)
     {
@@ -269,7 +260,6 @@ class InvoiceRepository
         return ['status' => true, 'results'=> $stocks];
 
     }
-
 
     public function calculateInvoiceTotal(array &$invoiceData, array $items)
     {
@@ -704,5 +694,4 @@ class InvoiceRepository
             return ['status'=>true];
         }
     }
-
 }

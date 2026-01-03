@@ -5,7 +5,9 @@ namespace App\Console\Commands;
 use App\Classes\Settings;
 use App\Models\Stock;
 use App\Models\Stockopening;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 
 class StockOpeningCommand extends Command
 {
@@ -36,6 +38,17 @@ class StockOpeningCommand extends Command
 
         $settings->put('system_status', 'backgroundprocess');
 
+        //first of all delete the opening record more than 6 months
+
+        $cutoffDate = Carbon::now()->subMonths(6);
+
+        /*
+        $deleted = DB::table('stockopenings')
+            ->where('created_at', '<', $cutoffDate)
+            ->delete();
+        */
+        //end deleting 6 month old record
+
         $open = StockOpening::where('date_added',todaysDate())->get();
 
         if($open->count() === 0) {
@@ -53,15 +66,17 @@ class StockOpeningCommand extends Command
                     $total_ws = 0;
                     $total_bk = 0;
                     $total_ms = 0;
+                    $total_retail_store = 0;
 
                     foreach ($batches as $batch) {
-                        $total_qty += ($batch->wholesales + $batch->bulksales + $batch->quantity + round(abs(divide($batch->retail, $stock->box))) );
-                        $average_cost += ($batch->wholesales + $batch->bulksales + $batch->quantity + round(abs(divide($batch->retail, $stock->box))) ) * $batch->cost_price;
-                        $retail_average_cost += $batch->retail * $batch->retail_cost_price;
+                        $total_qty += ($batch->wholesales + $batch->bulksales + $batch->quantity + round(abs(divide(($batch->retail + $batch->retail_store), $stock->box))) );
+                        $average_cost += ($batch->wholesales + $batch->bulksales + $batch->quantity + round(abs(divide(($batch->retail + $batch->retail_store), $stock->box))) ) * $batch->cost_price;
+                        $retail_average_cost += ($batch->retail + $batch->retail_store) * $batch->retail_cost_price;
                         $total_retail_qty += $batch->retail;
                         $total_ws += $batch->wholesales;
                         $total_bk += $batch->bulksales;
                         $total_ms += $batch->quantity;
+                        $total_retail_store +=$batch->retail_store;
                     }
 
                     $tt_average_cost = ($average_cost == 0 ? 0 : round(divide($average_cost , $total_qty)));
@@ -75,6 +90,7 @@ class StockOpeningCommand extends Command
                         'wholesales' => $total_ws,
                         'bulksales' => $total_bk,
                         'retail' => $total_retail_qty,
+                        'retail_store' => $total_retail_store,
                         'quantity' => $total_ms,
                         'total' => $total_qty,
                         'date_added' => date('Y-m-d'),

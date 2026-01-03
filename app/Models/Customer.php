@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  * Class Customer
  * 
  * @property int $id
+ * @property float $loyalty_points
  * @property string|null $firstname
  * @property string|null $lastname
  * @property string|null $email
@@ -51,7 +52,8 @@ class Customer extends Model
 		'retail_customer' => 'bool',
 		'city_id' => 'int',
 		'credit_balance' => 'float',
-		'deposit_balance' => 'float'
+		'deposit_balance' => 'float',
+        'loyalty_points' => 'float',
 	];
 
 	protected $fillable = [
@@ -64,7 +66,8 @@ class Customer extends Model
 		'retail_customer',
 		'city_id',
 		'credit_balance',
-		'deposit_balance'
+		'deposit_balance',
+        'loyalty_points'
 	];
 
 
