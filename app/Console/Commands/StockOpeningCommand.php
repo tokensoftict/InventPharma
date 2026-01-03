@@ -42,11 +42,14 @@ class StockOpeningCommand extends Command
 
         $cutoffDate = Carbon::now()->subMonths(6);
 
-        /*
         $deleted = DB::table('stockopenings')
             ->where('created_at', '<', $cutoffDate)
             ->delete();
-        */
+
+        $bincard = DB::table('stockbincards')
+            ->where('created_at', '<', $cutoffDate)
+            ->delete();
+
         //end deleting 6 month old record
 
         $open = StockOpening::where('date_added',todaysDate())->get();
