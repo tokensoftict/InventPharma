@@ -75,7 +75,7 @@ class StockOpeningCommand extends Command
                         $total_qty += ($batch->wholesales + $batch->bulksales + $batch->quantity + round(abs(divide(($batch->retail + $batch->retail_store), $stock->box))) );
                         $average_cost += ($batch->wholesales + $batch->bulksales + $batch->quantity + round(abs(divide(($batch->retail + $batch->retail_store), $stock->box))) ) * $batch->cost_price;
                         $retail_average_cost += ($batch->retail + $batch->retail_store) * $batch->retail_cost_price;
-                        $total_retail_qty += $batch->retail;
+                        $total_retail_qty += ($batch->retail + $batch->retail_store);
                         $total_ws += $batch->wholesales;
                         $total_bk += $batch->bulksales;
                         $total_ms += $batch->quantity;
