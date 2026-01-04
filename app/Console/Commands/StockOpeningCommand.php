@@ -64,6 +64,7 @@ class StockOpeningCommand extends Command
 
                     $total_qty = 0;
                     $total_retail_qty = 0;
+                    $total_shelve_retail =0;
                     $average_cost = 0;
                     $retail_average_cost = 0;
                     $total_ws = 0;
@@ -80,6 +81,7 @@ class StockOpeningCommand extends Command
                         $total_bk += $batch->bulksales;
                         $total_ms += $batch->quantity;
                         $total_retail_store +=$batch->retail_store;
+                        $total_shelve_retail +=$batch->retail;
                     }
 
                     $tt_average_cost = ($average_cost == 0 ? 0 : round(divide($average_cost , $total_qty)));
@@ -92,7 +94,7 @@ class StockOpeningCommand extends Command
                         'average_cost_price' => $tt_average_cost,
                         'wholesales' => $total_ws,
                         'bulksales' => $total_bk,
-                        'retail' => $total_retail_qty,
+                        'retail' => $total_shelve_retail,
                         'retail_store' => $total_retail_store,
                         'quantity' => $total_ms,
                         'total' => $total_qty,
