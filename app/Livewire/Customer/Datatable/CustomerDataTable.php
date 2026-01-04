@@ -72,6 +72,8 @@ class CustomerDataTable extends ExportDataTableComponent
                        return $date ? convert_date($date) : "N/A";
                    })
                 ->sortable(),
+            Column::make("Loyalty Point", "loyalty_points")
+                ->sortable(),
 
             Column::make("Action","id")
                 ->format(function($value, $row, Column $column) {

@@ -101,7 +101,7 @@ class PaymentRepository
 
         if($payment->invoice_type == Invoice::class){
 
-            $payment->invoice()->update([
+            $payment->invoice->update([
                 'payment_id' => $payment->id,
                 'status_id' =>  (auth()->user()->department_id === 4 ? status('Complete') : status('Paid')),
                 'total_amount_paid' =>$paymentItems['total']
@@ -109,7 +109,7 @@ class PaymentRepository
 
             if(count($invoicePaymentStatus) > 0){
                 foreach ($invoicePaymentStatus as $status){
-                    $payment->invoice()->update([
+                    $payment->invoice->update([
                         'status_id' =>  $status,
                     ]);
                 }
@@ -690,7 +690,7 @@ class PaymentRepository
             logActivity($payment->invoice->id,  $payment->invoice->invoice_number, "Invoice payment was deleted");
             $payment->invoice->wipePayment();
         }else{
-            $payment->invoice()->delete();
+            $payment->invoice->delete();
             $payment->delete();
         }
 

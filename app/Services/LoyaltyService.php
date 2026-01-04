@@ -15,16 +15,17 @@ class LoyaltyService
      * @param Customer $customer
      * @param Invoice $invoice
      * @param string|null $reference
-     * @return float|int
+     * @return false|float|int
      * @throws \Throwable
      */
-    public final function earnPoints(Customer $customer, Invoice $invoice,  string $reference = null)
+    public final function earnPoints(Customer $customer, Invoice $invoice,  string $reference = null) : float|int|bool
     {
-
-
-
         $pointsRate = app(Settings::class)->store();
-        $points = floor($invoice->sub_total / $pointsRate->point_rate ?? 10);
+        $point_rate =  $pointsRate->point_rate ?? 0;
+
+        if($point_rate === 0) return false;
+
+        $points = floor($invoice->sub_total / $point_rate);
 
         if ($points <= 0) {
             return 0;
@@ -44,6 +45,8 @@ class LoyaltyService
                 $customer->decrement('loyalty_points', $transactionExist->points);// remove the point that was there before
                 $transactionExist->points = $points;
                 $transactionExist->customer_id = $customer->id;
+                $transactionExist->action_type = get_class($invoice);
+                $transactionExist->action_id = $invoice->id;
                 $transactionExist->save();
                 $customer->increment('loyalty_points', $points);
 
@@ -54,6 +57,8 @@ class LoyaltyService
                     LoyaltyTransaction::create([
                         'customer_id' => $customer->id,
                         'points' => $points,
+                        'action_type' => get_class($invoice),
+                        'action_id' => $invoice->id,
                         'type' => 'earn',
                         'reference' => $reference,
                         'description' => 'Points earned from invoice paid',
@@ -114,4 +119,25 @@ class LoyaltyService
             ]);
         });
     }
+
+
+    public final function deletePoint(Customer $customer, Invoice $invoice,  string $reference = null)
+    {
+        DB::transaction(function () use ($customer, $reference, $invoice) {
+
+            $transactionExist = LoyaltyTransaction::query()
+                ->where([
+                    'action_type' => get_class($invoice),
+                    'action_id' => $invoice->id,
+                    'type' => 'earn'
+                ])->first();
+
+            if($transactionExist) {
+                $customer->decrement('loyalty_points', $transactionExist->points);
+                $transactionExist->delete();
+            }
+        });
+
+    }
+
 }

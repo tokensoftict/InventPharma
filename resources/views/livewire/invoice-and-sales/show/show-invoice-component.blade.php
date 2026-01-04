@@ -171,17 +171,13 @@
                                 </li>
                             @endcan
 
-                            @can('setWaitingListInvoiceToPicking', $this->invoice)
-                                <li>
-                                    <a href="{{ route('invoiceandsales.pickWaitingListInvoice',$this->invoice->id) }}" href="javascript:void(0);" onclick="return confirm('Are you sure you want set the invoice queue status to picking, this can not be reversed');" class="dropdown-item confirm-text">Start Picking</a>
-                                </li>
-                            @endcan
 
-                            @can('setWaitingListInvoiceToCompletePicking', $this->invoice)
-                                <li>
-                                    <a href="{{ route('invoiceandsales.completePickingWaitingListInvoice',$this->invoice->id) }}" href="javascript:void(0);" onclick="return confirm('Are you sure you want set the invoice queue status to complete picking, this can not be reversed');" class="dropdown-item confirm-text">Complete Picking</a>
-                                </li>
-                            @endcan
+                                @can('delete', $this->invoice)
+                                    <li>
+                                        <a href="{{ route('invoiceandsales.destroy', $this->invoice->id) }}" href="javascript:void(0);" onclick="return confirm('Are you sure want to delete this invoice, this can not be reversed');"  class="dropdown-item confirm-text">Delete Invoice</a>
+                                    </li>
+                                @endcan
+
 
                         </ul>
                     </div>

@@ -209,7 +209,7 @@ class ProductRepository
 
 // attach has Options to product to indicate if stock as option ot not
         $stocks->transform(function ($stock) use ($productOptions) {
-            $options = $productOptions->get($stock->id, collect());
+            $options = $productOptions->get($stock->id, collect())->values();
             $stock->hasOptions = $options->count() > 0;
             $stock->dependent_products = [];
             return $stock;
@@ -225,7 +225,7 @@ class ProductRepository
 // attach dependent product to product if exist
     if( $customPriceColumn == "wholesales") {
         $stocks->transform(function ($stock) use ($dependentProduct, $cost_price, $selling_price) {
-            $getProducts = $dependentProduct->get($stock->id, collect())->pluck('stock_id')->toArray();
+            $getProducts = $dependentProduct->get($stock->id, collect())->pluck('stock_id')->values()->toArray();
             $dependentProducts = DB::table('stocks')
                 ->select(
                     'stocks.retail_store as retail_store',

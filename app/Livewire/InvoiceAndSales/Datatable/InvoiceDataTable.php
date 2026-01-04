@@ -168,7 +168,7 @@ class InvoiceDataTable extends ExportDataTableComponent
                             }
 
                             if (auth()->user()->can('delete', $row)) {
-                                $html .= '<li><a href="' . route('invoiceandsales.destroy', $row->id) . '" href="javascript:" class="dropdown-item">Delete Invoice</a></li>';
+                                $html .= '<li><a href="' . route('invoiceandsales.destroy', $row->id) . '" href="javascript:" class="dropdown-item" onclick="return confirm(\'Are you sure want to delete this invoice, this can not be reversed\');" >Delete Invoice</a></li>';
                             }
 
                             if (auth()->user()->can('canAddToWaitingList', $row)) {

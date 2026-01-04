@@ -22,6 +22,21 @@ class InvoiceObserver
                 $invoice,
             );
         }
+
+
+        if($invoice->status_id == status("Deleted")) {
+            $loyaltyPointService = app(LoyaltyService::class);
+
+            $loyaltyPointService->deletePoint($invoice->customer, $invoice);
+        }
     }
+
+
+    public function deleted(Invoice $invoice): void
+    {
+        $loyaltyPointService = app(LoyaltyService::class);
+        $loyaltyPointService->deletePoint($invoice->customer, $invoice);
+    }
+
 
 }
