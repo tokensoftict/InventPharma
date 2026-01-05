@@ -12,7 +12,7 @@ use Exception;
 use Junges\Kafka\Facades\Kafka;
 use Junges\Kafka\Message\Message;
 
-class PushDataServer implements ShouldQueue
+class PushDataServer //implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
