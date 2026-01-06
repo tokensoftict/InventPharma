@@ -264,9 +264,17 @@ final class BalanceStockWorthReport extends PowerGridComponent
                 return is_null($r->closing_stock_worth) ? 0.00 : $r->closing_stock_worth;
             })
             ->add('calculation_clumn', function($r) {
+                //(%s + %s + %s) - %s - (%s + %s)
                 return
-                    "(".($r->opening_stock_worth ?? 0)." + ".($r->purchase_stock_worth ?? 0)." + ".($r->total_stock_transfer_in ?? 0)."))". " - "
-                    .($r->closing_stock_worth ?? 0)." - ((".(($r->total_stock_transfer_out ?? 0)." + ".($r->total_sold_cost_price ?? 0)).")";
+                    sprintf(
+                        "%s - ((%s + %s + %s) - (%s + %s))",
+                        number_format($r->closing_stock_worth ?? 0, 6, '.', ''),
+                        number_format($r->opening_stock_worth ?? 0, 6, '.', ''),
+                        number_format($r->purchase_stock_worth ?? 0, 6, '.', ''),
+                        number_format($r->total_stock_transfer_in ?? 0, 6, '.', ''),
+                        number_format($r->total_stock_transfer_out ?? 0, 2, '.', ''),
+                        number_format($r->total_sold_cost_price ?? 0, 2, '.', '')
+                    );
             })
             ->add('compare' , function($r){
                 //$a = ($r->total_stock_transfer_out ?? 0) + ($r->total_sold_cost_price ?? 0);
@@ -278,12 +286,13 @@ final class BalanceStockWorthReport extends PowerGridComponent
                 $summation = (
                 ($r->closing_stock_worth ?? 0)
                 -
-                ((($r->opening_stock_worth ?? 0)+($r->purchase_stock_worth ?? 0)+($r->total_stock_transfer_in ?? 0))
+                (
+                    (($r->opening_stock_worth ?? 0)+($r->purchase_stock_worth ?? 0)+($r->total_stock_transfer_in ?? 0))
                     -
-                (($r->total_stock_transfer_out ?? 0) + ($r->total_sold_cost_price ?? 0)))
+                    (($r->total_stock_transfer_out ?? 0) + ($r->total_sold_cost_price ?? 0))
+                )
+
                 );
-
-
 
                 return money($summation);
             });
