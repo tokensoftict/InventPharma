@@ -265,9 +265,8 @@ final class BalanceStockWorthReport extends PowerGridComponent
             })
             ->add('calculation_clumn', function($r) {
                 return
-                    ($r->closing_stock_worth ?? 0)." - ((".(($r->total_stock_transfer_out ?? 0)." + ".($r->total_sold_cost_price ?? 0)).")". " - "
-                    ."(".($r->opening_stock_worth ?? 0)." + ".($r->purchase_stock_worth ?? 0)." + ".($r->total_stock_transfer_in ?? 0)."))"
-                    ;
+                    "(".($r->opening_stock_worth ?? 0)." + ".($r->purchase_stock_worth ?? 0)." + ".($r->total_stock_transfer_in ?? 0)."))". " - "
+                    .($r->closing_stock_worth ?? 0)." - ((".(($r->total_stock_transfer_out ?? 0)." + ".($r->total_sold_cost_price ?? 0)).")";
             })
             ->add('compare' , function($r){
                 $a = ($r->total_stock_transfer_out ?? 0) + ($r->total_sold_cost_price ?? 0);
