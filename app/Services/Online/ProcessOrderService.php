@@ -52,6 +52,11 @@ class ProcessOrderService
             $order['store'] = self::$OnlineStoreIDMapper[$order['app_id']];
         }
 
+
+        $cost_price_column =  $order['store'] == "WHOLESALES" ?  "cost_price" : "retail_cost_price";
+
+
+
         $invoice = Invoice::with(['invoiceitembatches','invoiceitembatches.stock','invoiceitems', 'customer', 'payment', 'customer', 'user'])->where('invoice_number',$order['invoice_no'])->first();
 
         //this invoice exist we need to really delete it from the database
@@ -158,9 +163,9 @@ class ProcessOrderService
 
         $total_sub = 0;
 
-        $invoiceData['invoiceitems'] = collect($products)->map(function($item, $key) use($customer, &$total_cost, &$total_sub) {
+        $invoiceData['invoiceitems'] = collect($products)->map(function($item, $key) use($customer, &$total_cost, &$total_sub, $cost_price_column) {
 
-            $cost =  abs((collect($item['batches'])->sum('cost_price')) / count($item['batches']));
+            $cost =  abs((collect($item['batches'])->sum($cost_price_column)) / count($item['batches']));
 
             $total_cost += ($cost * $item['item']['quantity']);
             $total_sub  +=($cost *  $item['item']['price']);
@@ -171,9 +176,9 @@ class ProcessOrderService
                 'customer_id' => $customer,
                 'added_by' => auth()->user()->id,
                 'discount_added_by' => null,
-                'cost_price' => abs((collect($item['batches'])->sum('cost_price')) / count($item['batches'])),
+                'cost_price' => abs((collect($item['batches'])->sum($cost_price_column)) / count($item['batches'])),
                 'selling_price' => $item['item']['price'],
-                'profit' => $item['item']['price'] - $item['stock']->cost_price,
+                'profit' => $item['item']['price'] - $item['stock']->{$cost_price_column},
                 'discount_value' => 0,
                 'discount_amount' => 0,
                 'discount_type' => 'Fixed',
