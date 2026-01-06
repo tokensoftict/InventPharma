@@ -97,7 +97,7 @@
                     </thead>
                     <tbody>
                     <template x-for="(item,index) in purchaseitems" :key="item.stock_id">
-                        <tr>
+                        <tr :class="(parseFloat(item.qty) > parseFloat(item.qty_to_buy_1m) && parseFloat(item.qty_to_buy_1m) > 0) ? 'table-danger' : ''">
                             <td class="text-start" x-text="item.name"></td>
                             <td class="text-end">
                                 <input x-model="purchaseitems[index]['qty']"  x-on:keyup="calculateTotal()" type="number" class="form-control text-end">
@@ -168,6 +168,8 @@
                 bulk_price : "",
                 whole_price : "",
                 retail_price : "",
+                highest_qty_sold : "",
+                qty_to_buy_1m : "",
                 allqty : 0,
                 quantity : "",
                 expiry_date: "",
@@ -201,12 +203,13 @@
                 $('#select2').on('change',function(eventData){
                     var data = $(this).select2('data');
                     if(data[0] !==undefined) {
-                        console.log(data);
                         obj.stock_id = data.id;
                         obj.cost_price = data[0].cost_price;
                         obj.retail_price = data[0].retail_price,
                             obj.bulk_price = data[0].bulk_price,
                             obj.whole_price = data[0].whole_price,
+                            obj.highest_qty_sold = parseFloat(data[0].highest_qty_sold),
+                            obj.qty_to_buy_1m = parseFloat(data[0].qty_to_buy_1m),
                             obj.quantity = 1;
                         obj.name = data.name;
                         obj.selectStock = data[0];
@@ -268,6 +271,8 @@
                 'bulk_price' : this.bulk_price,
                 'whole_price' : this.whole_price,
                 'retail_price' : this.retail_price,
+                'highest_qty_sold' : this.highest_qty_sold,
+                'qty_to_buy_1m' : this.qty_to_buy_1m,
                 'batch_no' : this.batch_no,
                 'user_id' : '{{ auth()->id() }}',
                 'total' : this.quantity * this.cost_price,
@@ -283,7 +288,10 @@
             this.allqty = "";
             this.expiry_date = "";
             this.batch_no = "";
-            this.totalPurchase();
+            this.highest_qty_sold = "";
+            this.qty_to_buy_1m = "";
+            console.log()
+            this.totalPurchase(this.purchaseitems);
             $('#select2').empty().trigger('change');
 
 

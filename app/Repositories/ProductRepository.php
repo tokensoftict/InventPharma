@@ -278,8 +278,18 @@ class ProductRepository
             'retail', 'retail_store'  => 'retail_cost_price',
         };
 
+        $highest_qty_sold_column = match (request()->column){
+            'wholesales', 'bulk-sales', 'quantity', '', NULL => 'highest_qty_sold',
+            'retail', 'retail_store'  => 'highest_qty_sold_retail',
+        };
+
+        $near_os_table = match (request()->column){
+            'wholesales', 'bulk-sales', 'quantity', '', NULL => 'nearoutofstocks',
+            'retail', 'retail_store'  => 'retailnearoutofstock',
+        };
+
         $stocks = DB::table('stocks')
-            ->select('id', 'whole_price','bulk_price', 'retail_price', 'name', 'box', 'location' ,'name as text',
+            ->select('id', 'whole_price','bulk_price', 'retail_price', 'name', 'box', 'location', DB::raw("$highest_qty_sold_column as highest_qty_sold") ,'name as text',
                 DB::raw('ROUND((((retail/box) + (retail_store/box) + wholesales + quantity + bulksales)),0) as allqty')
             )->where(function($query) use(&$name){
                 foreach ($name as $char) {
@@ -302,9 +312,16 @@ class ProductRepository
             ->keyBy('stock_id');
 
 
-        return $stocks->transform(function ($stock)  use ($query, $cost_price) {
+        $qty_to_buy_1m_query = DB::table($near_os_table)->select("stock_id", "qty_to_buy_1m")
+            ->whereIn('stock_id', $stockIds)
+            ->get()->keyBy('stock_id');
+
+
+        return $stocks->transform(function ($stock)  use ($query, $cost_price, $qty_to_buy_1m_query) {
             $price = $query->get($stock->id, collect());
             $stock->cost_price = isset($price?->{$cost_price}) ? $price?->{$cost_price} : 0;
+            $qty_to_buy_1m = $qty_to_buy_1m_query->get($stock->id)?->qty_to_buy_1m ?? NULL;
+            $stock->qty_to_buy_1m = $qty_to_buy_1m;
             return $stock;
         })->toJson();
     }

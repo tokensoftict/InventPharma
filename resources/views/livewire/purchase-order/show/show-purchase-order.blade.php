@@ -86,7 +86,7 @@
                 </thead>
                 <tbody>
                 @foreach($this->purchase->purchaseitems as $item)
-                    <tr>
+                    <tr class="{{ ($item->qty > $item->qty_to_buy_1m and  $item->qty_to_buy_1m > 0) ? "table-danger" : "" }}">
                         <td>{{ $loop->iteration }}</td>
                         <td>{{ $item->name }} </td>
                         <td class="text-end">{{ $item->qty }}</td>

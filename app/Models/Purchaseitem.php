@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property Carbon|null $expiry_date
  * @property int $qty
  * @property float|null $cost_price
+ * @property float|null $highest_qty_sold
+ * @property float|null $qty_to_buy_1m
  * @property int|null $user_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -41,7 +43,9 @@ class Purchaseitem extends Model
 		'stock_id' => 'int',
 		'qty' => 'int',
 		'cost_price' => 'float',
-		'user_id' => 'int'
+		'user_id' => 'int',
+        'qty_to_buy_1m' => 'float',
+        'highest_qty_sold' => 'float',
 	];
 
 	protected $fillable = [
@@ -55,6 +59,8 @@ class Purchaseitem extends Model
         'bulk_price',
         'retail_price',
         'whole_price',
+        'qty_to_buy_1m',
+        'highest_qty_sold',
 	];
 
     //protected $with = ['stock'];

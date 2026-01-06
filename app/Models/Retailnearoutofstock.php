@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $threshold_type
  * @property string $os_type
  * @property int $qty_to_buy
+ * @property float|null $qty_to_buy_1m
  * @property int|null $supplier_id
  * @property float|null $threshold_value
  * @property float|null $current_qty
@@ -52,7 +53,8 @@ class Retailnearoutofstock extends Model
 		'is_grouped' => 'bool',
 		'last_qty_purchased' => 'int',
 		'last_purchase_date' => 'datetime',
-		'purchaseitem_id' => 'int'
+		'purchaseitem_id' => 'int',
+        'qty_to_buy_1m' => 'float',
 	];
 
 	protected $fillable = [
@@ -69,7 +71,8 @@ class Retailnearoutofstock extends Model
 		'is_grouped',
 		'last_qty_purchased',
 		'last_purchase_date',
-		'purchaseitem_id'
+		'purchaseitem_id',
+        'qty_to_buy_1m'
 	];
 
 	public function purchaseitem()

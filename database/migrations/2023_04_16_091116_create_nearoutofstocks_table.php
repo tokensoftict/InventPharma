@@ -18,7 +18,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('stock_id')->constrained()->cascadeOnDelete();
             $table->biginteger("stockgroup_id")->constrained()->cascadeOnDelete();
-            $table->enum('threshold_type',['NORMAL','THRESHOLD']);
+            $table->enum('threshold_type',['NORMAL','THRESHOLD', 'NOT-NORMAL']);
             $table->enum('os_type',['SINGLE','GROUP']);
             $table->integer('qty_to_buy');
             $table->foreignId('supplier_id')->nullable()->constrained()->nullOnDelete();

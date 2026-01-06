@@ -128,6 +128,12 @@ final class NearOsDatatable extends PowerGridComponent
             ->add('threshold_value')
             ->add('current_qty')
             ->add('current_sold')
+            ->add('qty_to_buy_1m', function(Nearoutofstock $nearoutofstock){
+                return !is_null($nearoutofstock->qty_to_buy_1m) ?  $nearoutofstock->qty_to_buy_1m : "N/A";
+            })
+            ->add('highest_qty', function(Nearoutofstock $nearoutofstock){
+                return  $nearoutofstock->stockgroup_id === NULL ? ($nearoutofstock->stock->highest_qty_sold ?? "N/A") : "N/A";
+            })
             ->add('group_os_id')
             ->add('is_grouped')
             ->add('last_qty_purchased')
@@ -183,7 +189,9 @@ final class NearOsDatatable extends PowerGridComponent
             Column::make('Box', 'box','box')->sortable(),
             Column::make('Carton', 'carton','carton')->sortable(),
             Column::make('Category Name', 'category_name','category_name')->sortable(),
+            Column::make('Highest Daily Qty', 'highest_qty'),
             Column::make('Qty to Buy', 'qty_to_buy')->sortable(),
+            Column::make('Qty to Buy 1M', 'qty_to_buy_1m')->sortable(),
             Column::make('Supplier', 'supplier_name', 'supplier_name')->sortable()->searchable(),
             Column::make('Threshold type', 'threshold_type')->sortable(),
             Column::make('Threshold value', 'threshold_value')->sortable(),

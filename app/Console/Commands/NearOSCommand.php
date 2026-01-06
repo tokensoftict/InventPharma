@@ -29,7 +29,10 @@ class NearOSCommand extends Command
     protected $description = 'Compute Near Out of stock for PS GDC';
 
     public static $department = [
-        'retail' => ['retail'],
+        'retail' => [
+            'retail',
+            'retail_store'
+        ],
         'others' =>   [
             "bulksales",
             "quantity",
@@ -44,6 +47,7 @@ class NearOSCommand extends Command
      */
     public function handle(Settings $settings)
     {
+        ini_set('memory_limit', '-1');
 
         $store = $settings->store();
 
@@ -55,13 +59,6 @@ class NearOSCommand extends Command
         $settings->put('nearos_status', 'backgroundprocess');
 
         Nearoutofstock::truncate();
-
-        $day = $store->threshold_days;
-        $supply_days = $store->supply_days;
-        $threshold_day = $store->qty_to_buy_threshold;
-        $from =  date('Y-m-d', strtotime(' - '.$day.' days'));
-        $to = todaysDate();
-
 
         $stocks = Stock::where('status',"1")->where('reorder',1);
 
@@ -111,15 +108,25 @@ class NearOSCommand extends Command
                 }
                 $thresholad_score = round(abs(($qty/$day) * $supply_days));
 
+                $daily_qty_sold =  abs($qty/$day);
+
                 $now_qty = $stock->totalBalance();
 
+                if(is_null($stock->highest_qty_sold) or $daily_qty_sold > $stock->highest_qty_sold) { // only update the highest_qty_sold column if there is a new value
+                    $stock->highest_qty_sold = $daily_qty_sold;
+                    $stock->save();
+                    $stock->fresh();
+                }
+
                 //for last qty purchased
-                $po = Purchaseitem::with(['purchase'])->where('stock_id',$stock->id)->whereHas('purchase',function($q){
+                $po = Purchaseitem::with(['purchase'])->where('stock_id',$stock->id)->whereHas('purchase',function($q) {
                     $q->where('status_id',status('Complete'));
                 })
                     ->orderBy('id','DESC')
                     ->limit(1)->first();
 
+
+                $qty_to_buy_1m = round(abs($stock->highest_qty_sold * $day));
 
                 if($thresholad_score > $now_qty){
                     $qty_to_buy = $qty * $threshold_day;
@@ -140,7 +147,8 @@ class NearOSCommand extends Command
                         'last_po_batch'=>(isset($po->id) ? $po->id : NULL),
                         'threshold_value'=> $thresholad_score,
                         'current_qty'=> $stock->totalBalance(),
-                        'supplier_id'=> !empty($last_supplier->supplier_id) ? $last_supplier->supplier_id : NULL
+                        'supplier_id'=> !empty($last_supplier->supplier_id) ? $last_supplier->supplier_id : NULL,
+                        'qty_to_buy_1m' => $qty_to_buy_1m
                     ];
                     Nearoutofstock::create($insert);
                 }else if($now_qty < 2){
@@ -161,7 +169,8 @@ class NearOSCommand extends Command
                         'group_os_id'=>$stock->stockgroup_id,
                         'threshold_value'=> $thresholad_score,
                         'current_qty'=> $stock->totalBalance(),
-                        'supplier_id'=> !empty($last_supplier->supplier_id) ? $last_supplier->supplier_id : NULL
+                        'supplier_id'=> !empty($last_supplier->supplier_id) ? $last_supplier->supplier_id : NULL,
+                        'qty_to_buy_1m' => $qty_to_buy_1m
                     ];
                     Nearoutofstock::create($insert);
                 }else{
@@ -184,7 +193,8 @@ class NearOSCommand extends Command
                         'group_os_id'=>$stock->stockgroup_id,
                         'threshold_value'=> $thresholad_score,
                         'current_qty'=> $stock->totalBalance(),
-                        'supplier_id'=> !empty($last_supplier->supplier_id) ? $last_supplier->supplier_id : NULL
+                        'supplier_id'=> !empty($last_supplier->supplier_id) ? $last_supplier->supplier_id : NULL,
+                        'qty_to_buy_1m' => $qty_to_buy_1m
                     ];
                     Nearoutofstock::create($insert);
                 }
@@ -265,7 +275,8 @@ class NearOSCommand extends Command
                         'box' => $group->getLastBox(),
                         'threshold_value' => $thresholad_score,
                         'current_qty' => $now_qty,
-                        'supplier_id'=> !empty($poItem->purchase->supplier_id) ? $poItem->purchase->supplier_id : NULL
+                        'supplier_id'=> !empty($poItem->purchase->supplier_id) ? $poItem->purchase->supplier_id : NULL,
+                        'qty_to_buy_1m' => NULL
                     ];
                     Nearoutofstock::create($insert);
                     continue;
@@ -286,7 +297,8 @@ class NearOSCommand extends Command
                         'box' => $group->getLastBox(),
                         'threshold_value' => $thresholad_score,
                         'current_qty' => $now_qty,
-                        'supplier_id'=> !empty($poItem->purchase->supplier_id) ? $poItem->purchase->supplier_id : NULL
+                        'supplier_id'=> !empty($poItem->purchase->supplier_id) ? $poItem->purchase->supplier_id : NULL,
+                        'qty_to_buy_1m' => NULL
                     ];
                     Nearoutofstock::create($insert);
 

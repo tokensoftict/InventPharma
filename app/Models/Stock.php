@@ -46,6 +46,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property bool $status
  * @property bool $image_uploaded
  * @property int|null $batched
+ * @property float|null $highest_qty_sold
+ * @property float|null $highest_qty_sold_retail
  * @property bool $reorder
  * @property int|null $user_id
  * @property Carbon|null $created_at
@@ -105,7 +107,9 @@ class Stock extends Model
 		'status' => 'bool',
 		'batched' => 'int',
 		'reorder' => 'bool',
-		'user_id' => 'int'
+		'user_id' => 'int',
+        'highest_qty_sold' => 'float',
+        'highest_qty_sold_retail' => 'float',
 	];
 
 
@@ -144,7 +148,9 @@ class Stock extends Model
         'image_path',
         'image_uploaded',
         'image_download_status',
-        'minimum_quantity'
+        'minimum_quantity',
+        'highest_qty_sold',
+        'highest_qty_sold_retail',
 	];
 
     protected $with = ['promotion_items'];
