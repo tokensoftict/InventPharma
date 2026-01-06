@@ -151,7 +151,7 @@ trait StockModelTrait
 
         foreach ($departments as $department){
 
-            if($department === 'retail') {
+            if($department === 'retail' || $department === 'retail_store') {
                 $cost_price_column = cost_price_column(4);
             }else{
                 $cost_price_column = cost_price_column();
