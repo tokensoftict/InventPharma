@@ -8,6 +8,7 @@ use App\Traits\SimpleDatatableComponentTrait;
 use Illuminate\Database\Eloquent\Builder;
 use App\Classes\Column;
 use App\Models\Stock;
+use Illuminate\Support\Facades\DB;
 
 
 class ProductComponentDatatable extends ExportDataTableComponent
@@ -22,7 +23,7 @@ class ProductComponentDatatable extends ExportDataTableComponent
 
     public function builder(): Builder
     {
-        return Stock::query()->select('*')->filterdata($this->filters);
+        return Stock::query()->with('user')->select('*')->filterdata($this->filters);
 
     }
 
@@ -86,9 +87,9 @@ class ProductComponentDatatable extends ExportDataTableComponent
             Column::make("Carton", "carton")
                 ->format(fn($value, $row, Column $column)=> $value)
                 ->sortable(),
-            Column::make("Updated By", "user.name")
-                ->format(fn($value, $row, Column $column)=> $value)
-                ->sortable(),
+//            Column::make("Updated By", "user.name")
+//                ->format(fn($value, $row, Column $column)=> $value)
+//                ->sortable(),
             Column::make("Action","id")
                 ->format(function($value, $row, Column $column){
                     $html = 'No Action';
