@@ -11,10 +11,13 @@ abstract class ExportDataTableComponent extends DataTableComponent
 
     public function getExportBuilder() : Builder
     {
+        set_time_limit(0);
+        ini_set('memory_limit', '1024M');
         $this->setupColumnSelect();
         $this->setupPagination();
         $this->setupReordering();
         $this->baseQuery();
+        $this->setBuilder($this->selectFields());
        return $this->getBuilder();
     }
 

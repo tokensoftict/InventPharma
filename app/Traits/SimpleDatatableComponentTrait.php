@@ -154,8 +154,9 @@ trait SimpleDatatableComponentTrait
         }
 
         $value = $column->getValue($row);
+
         if($value === null and Str::contains($column->getFrom(), '.')) {
-            $value = $row->{Str::afterLast($column->getFrom(), '.')};
+            $value = $row->{Str::beforeLast($column->getFrom(), '.')}->{Str::afterLast($column->getFrom(), '.')};
         }
 
         if ($column->hasFormatter()) {
@@ -201,6 +202,7 @@ trait SimpleDatatableComponentTrait
                 }
                 $data[] = $columns_to_value;
             }
+
         });
 
         return ['data' => $data, 'headings' => $headings];
