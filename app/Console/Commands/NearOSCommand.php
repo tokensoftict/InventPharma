@@ -235,6 +235,7 @@ class NearOSCommand extends Command
                     }
                 }
 
+
                 //for retail department
                 $_product = DB::table('invoiceitembatches as batch_item')
                     ->select(DB::raw('SUM(batch_item.quantity/st.box) as qty'))
@@ -257,9 +258,17 @@ class NearOSCommand extends Command
                 }
 
                 $thresholad_score = round(abs(($qty / $day) * $supply_days));
+                $daily_qty_sold =  abs($qty/$day);
 
                 $poItem = $group->lastpoItem();
 
+                if(is_null($group->highest_qty_sold) or $daily_qty_sold > $group->highest_qty_sold) { // only update the highest_qty_sold column if there is a new value
+                    $group->highest_qty_sold = $daily_qty_sold;
+                    $group->save();
+                    $group->fresh();
+                }
+
+                $qty_to_buy_1m = round(abs($group->highest_qty_sold * $day));
                 if ($thresholad_score > $now_qty) {
                     $qty_to_buy = $qty * $threshold_day;
                     $insert = [
@@ -276,7 +285,7 @@ class NearOSCommand extends Command
                         'threshold_value' => $thresholad_score,
                         'current_qty' => $now_qty,
                         'supplier_id'=> !empty($poItem->purchase->supplier_id) ? $poItem->purchase->supplier_id : NULL,
-                        'qty_to_buy_1m' => NULL
+                        'qty_to_buy_1m' => $qty_to_buy_1m
                     ];
                     Nearoutofstock::create($insert);
                     continue;
@@ -298,7 +307,7 @@ class NearOSCommand extends Command
                         'threshold_value' => $thresholad_score,
                         'current_qty' => $now_qty,
                         'supplier_id'=> !empty($poItem->purchase->supplier_id) ? $poItem->purchase->supplier_id : NULL,
-                        'qty_to_buy_1m' => NULL
+                        'qty_to_buy_1m' => $qty_to_buy_1m
                     ];
                     Nearoutofstock::create($insert);
 

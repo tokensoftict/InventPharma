@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property int $id
  * @property string|null $name
  * @property bool $status
+ * @property float|int $highest_qty_sold
+ * @property float|int $highest_qty_sold_retail
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @protected Nearoutofstock[] $nearoutofstock
@@ -39,7 +41,9 @@ class Stockgroup extends Model
 
     protected $fillable = [
         'name',
-        'status'
+        'status',
+        'highest_qty_sold_retail',
+        'highest_qty_sold',
     ];
 
 
@@ -246,7 +250,7 @@ class Stockgroup extends Model
         if($this->stocks()->exists()) {
             $total = 0;
             foreach($this->stocks()->where('status',1)->get() as $stocks){
-                $total+=$stocks->wholesales + $stocks->bulksales + $stocks->quantity + round(abs((divide($stocks->retail, $stocks->box))));
+                $total+=$stocks->wholesales + $stocks->bulksales + $stocks->quantity + round(abs((divide(($stocks->retail+$stocks->retail_store), $stocks->box))));
             }
             return $total;
         }
@@ -309,7 +313,7 @@ class Stockgroup extends Model
                     $op->where('date_added',date('Y-m-d'));
                 }
                 foreach($op->get() as $st) {
-                    $total += ($st->retail / $st->stock->box);
+                    $total += (($st->retail + $stocks->retail_store) / $st->stock->box);
                 }
             }
             return $total;
@@ -329,7 +333,7 @@ class Stockgroup extends Model
                     $op->where('date_added',date('Y-m-d'));
                 }
                 foreach($op->get() as $st) {
-                    $total += ($st->retail / $st->stock->box);
+                    $total += (($st->retail + $stocks->retail_store) / $st->stock->box);
                 }
             }
             return $total;
@@ -342,7 +346,7 @@ class Stockgroup extends Model
         if($this->stocks()->exists()) {
             $total = 0;
             foreach($this->stocks()->get() as $stocks){
-                $total+=round(abs((divide($stocks->retail,$stocks->box))));
+                $total+=round(abs((divide(($stocks->retail + $stocks->retail_store),$stocks->box))));
             }
             return $total;
         }

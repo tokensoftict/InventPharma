@@ -302,4 +302,26 @@ class ProductReportController extends Controller
         return view('reports.product.unavailable_stock', $data);
     }
 
+
+
+    public function one_stock_report(Request $request)
+    {
+        $data = [
+            'title' => 'Quantity One Month Log Report',
+            'subtitle' => 'View Quantity One Month Log Report By Date Range and Stock',
+            'filters' => [
+                'from' =>monthlyDateRange()[0],
+                'to'=>monthlyDateRange()[1],
+                'filters' => [
+                    'between.purchases.date_created' => monthlyDateRange(),
+                ]
+            ]
+        ];
+        if($request->get('filter'))
+        {
+            $data['filters'] = $request->get('filter');
+            $data['filters']['filters']['between.purchases.date_created'] = Arr::only(array_values( $request->get('filter')), [0,1]);
+        }
+        return view('reports.product.qty1m_report', $data);
+    }
 }

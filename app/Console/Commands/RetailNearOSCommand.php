@@ -213,9 +213,16 @@ class RetailNearOSCommand extends Command
             }
 
             $thresholad_score = round(abs(($qty / $day) * $supply_days));
+            $daily_qty_sold =  abs($qty/$day);
 
             $poItem = $group->getlastpo_item();
 
+            if(is_null($group->highest_qty_sold_retail) or $daily_qty_sold > $group->highest_qty_sold_retail) { // only update the highest_qty_sold column if there is a new value
+                $group->highest_qty_sold_retail = $daily_qty_sold;
+                $group->save();
+                $group->fresh();
+            }
+            $qty_to_buy_1m = round(abs($group->highest_qty_sold_retail * $day));
             if ($thresholad_score > $now_qty) {
                 $qty_to_buy = $qty * $threshold_day;
                 $insert = [
@@ -231,7 +238,8 @@ class RetailNearOSCommand extends Command
                     'box' => $group->getLastBox(),
                     'threshold_value' => $thresholad_score,
                     'current_qty' => $now_qty,
-                    'supplier_id'=> !empty($poItem->purchase->supplier_id) ? $poItem->purchase->supplier_id : NULL
+                    'supplier_id'=> !empty($poItem->purchase->supplier_id) ? $poItem->purchase->supplier_id : NULL,
+                    'qty_to_buy_1m' => $qty_to_buy_1m
                 ];
                 Retailnearoutofstock::create($insert);
                 continue;
@@ -252,7 +260,8 @@ class RetailNearOSCommand extends Command
                     'box' => $group->getLastBox(),
                     'threshold_value' => $thresholad_score,
                     'current_qty' => $now_qty,
-                    'supplier_id'=> !empty($poItem->purchase->supplier_id) ? $poItem->purchase->supplier_id : NULL
+                    'supplier_id'=> !empty($poItem->purchase->supplier_id) ? $poItem->purchase->supplier_id : NULL,
+                    'qty_to_buy_1m' => $qty_to_buy_1m
                 ];
                Retailnearoutofstock::create($insert);
                 continue;
