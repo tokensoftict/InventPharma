@@ -507,6 +507,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::match(['get','post'],'product_price_change_history', ['as' => 'product_price_change_history', 'uses' => 'ProductReportController@product_price_change_history', 'custom_label'=>'Stock Price Change History Report']);
 
                 Route::match(['get','post'],'supplierDBOverviewReport', ['as' => 'supplierDBOverviewReport', 'uses' => 'ProductReportController@supplierDBOverviewReport', 'custom_label'=>'Supplier DB Overview Report']);
+                Route::match(['get','post'],'one_stock_report', ['as' => 'one_stock_report', 'uses' => 'ProductReportController@one_stock_report', 'custom_label'=>'One Month (1M) Stock Report']);
 
             });
 

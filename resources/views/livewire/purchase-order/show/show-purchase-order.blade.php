@@ -75,6 +75,8 @@
                     <th>#</th>
                     <th>Name</th>
                     <th class="text-end">Quantity</th>
+                    <th class="text-end">Qty 1M</th>
+                    <th class="text-end">Highest Quantity Sold</th>
                     <th class="text-end">Cost Price</th>
                     <th class="text-end">Bulk Price</th>
                     <th class="text-end">Wholesales Price</th>
@@ -90,6 +92,8 @@
                         <td>{{ $loop->iteration }}</td>
                         <td>{{ $item->name }} </td>
                         <td class="text-end">{{ $item->qty }}</td>
+                        <td class="text-end">{{ $item->qty_to_buy_1m }}</td>
+                        <td class="text-end">{{ $item->highest_qty_sold }}</td>
                         <td class="text-end">{{ number_format($item->cost_price,2) }}</td>
                         <td class="text-end">{{ number_format($item->bulk_price,2) }}</td>
                         <td class="text-end">{{ number_format($item->whole_price,2) }}</td>
@@ -110,10 +114,14 @@
                     <th></th>
                     <th></th>
                     <th></th>
+                    <th></th>
+                    <th></th>
                     <th class="text-end">Sub Total</th>
                     <th class="text-end">{{ number_format((new \App\Repositories\PurchaseOrderRepository())->totalPo($this->purchase),2) }}</th>
                 </tr>
                 <tr>
+                    <th></th>
+                    <th></th>
                     <th></th>
                     <th></th>
                     <th></th>

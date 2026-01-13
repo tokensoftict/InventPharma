@@ -19,6 +19,12 @@
         </div>
         <div class="col-sm-2">
             <div class="mb-3">
+                <label style="white-space: nowrap;">1M Quantity</label>
+                <input type="number" readonly class="form-control" x-model="qty_to_buy_1m" id="av_qty"/>
+            </div>
+        </div>
+        <div class="col-sm-2">
+            <div class="mb-3">
                 <label>Recent Cost Price</label>
                 <input  type="number" x-model="cost_price" class="form-control" id="cost_price"/>
             </div>
@@ -85,6 +91,7 @@
                     <tr>
                         <th>Product Name</th>
                         <th class="text-center">Quantity</th>
+                        <th class="text-center">Qty 1M</th>
                         <th class="text-end">Cost Price</th>
                         <th class="text-end">Bulk Price</th>
                         <th class="text-end">Wholesales Price</th>
@@ -102,6 +109,7 @@
                             <td class="text-end">
                                 <input x-model="purchaseitems[index]['qty']"  x-on:keyup="calculateTotal()" type="number" class="form-control text-end">
                             </td>
+                            <td class="text-end" x-text="item.qty_to_buy_1m"></td>
                             <td lass="text-end"><input x-model="purchaseitems[index]['cost_price']" x-on:keyup="totalPurchase()" type="number" class="form-control text-end"></td>
                             @if(!userCanView('product.changeSellingPrice'))
                                 <td class="text-end" x-text="money(item.bulk_price)"></td>
@@ -121,6 +129,7 @@
                     </tbody>
                     <tfoot>
                     <tr>
+                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>
