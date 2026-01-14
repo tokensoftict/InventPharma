@@ -24,7 +24,7 @@ class OneMonthStockReportDatatable extends ExportDataTableComponent
     {
         return Purchaseitem::query()
             //DB::raw('purchaseitems.qty > purchaseitems.qty_to_buy_1m')
-            ->whereColumn("qty", ">", "qty_to_buy_1m")
+            ->whereColumn("qty", ">", "qty_1m_result")
             ->whereHas("purchase", function (Builder $builder) {
                 $builder->where('status_id', status('Complete'));
             })
