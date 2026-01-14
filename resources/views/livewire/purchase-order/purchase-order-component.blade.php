@@ -92,6 +92,7 @@
                         <th>Product Name</th>
                         <th class="text-center">Quantity</th>
                         <th class="text-center">Qty 1M</th>
+                        <th class="text-center">(Qty 1M - Qty)</th>
                         <th class="text-end">Cost Price</th>
                         <th class="text-end">Bulk Price</th>
                         <th class="text-end">Wholesales Price</th>
@@ -104,12 +105,13 @@
                     </thead>
                     <tbody>
                     <template x-for="(item,index) in purchaseitems" :key="item.stock_id">
-                        <tr :class="(parseFloat(item.qty) > parseFloat(item.qty_to_buy_1m) && parseFloat(item.qty_to_buy_1m) > 0) ? 'table-danger' : ''">
+                        <tr :class="(parseFloat(item.qty) > parseFloat(item.qty_1m_result)) ? 'table-danger' : ''">
                             <td class="text-start" x-text="item.name"></td>
                             <td class="text-end">
                                 <input x-model="purchaseitems[index]['qty']"  x-on:keyup="calculateTotal()" type="number" class="form-control text-end">
                             </td>
                             <td class="text-end" x-text="item.qty_to_buy_1m"></td>
+                            <td class="text-end" x-text="item.qty_1m_result"></td>
                             <td lass="text-end"><input x-model="purchaseitems[index]['cost_price']" x-on:keyup="totalPurchase()" type="number" class="form-control text-end"></td>
                             @if(!userCanView('product.changeSellingPrice'))
                                 <td class="text-end" x-text="money(item.bulk_price)"></td>
@@ -129,6 +131,7 @@
                     </tbody>
                     <tfoot>
                     <tr>
+                        <td></td>
                         <td></td>
                         <td></td>
                         <td></td>
@@ -179,6 +182,7 @@
                 retail_price : "",
                 highest_qty_sold : "",
                 qty_to_buy_1m : "",
+                qty_1m_result : "",
                 allqty : 0,
                 quantity : "",
                 expiry_date: "",
@@ -285,7 +289,8 @@
                 'batch_no' : this.batch_no,
                 'user_id' : '{{ auth()->id() }}',
                 'total' : this.quantity * this.cost_price,
-                'status_id' : '{{ status("Pending") }}'
+                'status_id' : '{{ status("Pending") }}',
+                'qty_1m_result' : this.qty_to_buy_1m - this.allqty
             });
 
             this.expiry_date = "";
@@ -299,7 +304,7 @@
             this.batch_no = "";
             this.highest_qty_sold = "";
             this.qty_to_buy_1m = "";
-            console.log()
+            this.qty_1m_result = "";
             this.totalPurchase(this.purchaseitems);
             $('#select2').empty().trigger('change');
 

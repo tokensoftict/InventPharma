@@ -69,6 +69,7 @@ class PurchaseOrderRepository
                 'whole_price' =>  $purchaseitem->whole_price ?? $purchaseitem->stock->whole_price,
                 'highest_qty_sold' => $purchaseitem->highest_qty_sold,
                 'qty_to_buy_1m' => $purchaseitem->qty_to_buy_1m,
+                'qty_1m_result' => $purchaseitem->qty_1m_result,
                 'user_id' => $purchaseitem->user_id,
                 'total' => ($purchaseitem->qty * $purchaseitem->cost_price)
             ];
@@ -86,6 +87,7 @@ class PurchaseOrderRepository
                 'whole_price' => "",
                 'highest_qty_sold' => "",
                 'qty_to_buy_1m' => "",
+                'qty_1m_result' => "",
                 'user_id' => auth()->id(),
                 'total' => 0
             ];

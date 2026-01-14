@@ -21,6 +21,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property float|null $cost_price
  * @property float|null $highest_qty_sold
  * @property float|null $qty_to_buy_1m
+ * @property float|null $qty_1m_result
  * @property int|null $user_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -46,6 +47,7 @@ class Purchaseitem extends Model
 		'user_id' => 'int',
         'qty_to_buy_1m' => 'float',
         'highest_qty_sold' => 'float',
+        'qty_1m_result' => 'float',
 	];
 
 	protected $fillable = [
@@ -61,6 +63,7 @@ class Purchaseitem extends Model
         'whole_price',
         'qty_to_buy_1m',
         'highest_qty_sold',
+        'qty_1m_result',
 	];
 
     //protected $with = ['stock'];
