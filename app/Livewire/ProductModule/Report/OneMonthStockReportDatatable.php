@@ -55,6 +55,9 @@ class OneMonthStockReportDatatable extends ExportDataTableComponent
            Column::make("Qty 1M", "qty_to_buy_1m")
                ->format(fn($value, $row, Column $column)=> number_format($value,2))
                ->sortable(),
+           Column::make("Result(Qty 1m - Av. Qty)", "qty_1m_result")
+               ->format(fn($value, $row, Column $column)=> number_format($value,2))
+               ->sortable(),
            Column::make("Highest Qty Sold", "highest_qty_sold")
                ->format(fn($value, $row, Column $column)=> number_format($value,2))
                ->sortable(),
