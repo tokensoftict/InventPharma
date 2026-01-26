@@ -325,7 +325,14 @@ class InvoiceFormComponent extends Component
 
     public function parseCustomerFromQrCode($code)
     {
-        $customer = json_decode(decrypt($code), true);
+        $decryptCode = false;
+        try {
+            $decryptCode = decrypt($code);
+        } catch (\Exception $e) {
+            return ['status' => false, "message" => ""];
+        }
+
+        $customer = json_decode($decryptCode, true);
         if($customer) {
             $customer = Customer::where('phone_number', $customer['phone'])->first();
             if($customer) {

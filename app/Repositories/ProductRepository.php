@@ -295,7 +295,9 @@ class ProductRepository
                 foreach ($name as $char) {
                     $query->where('stocks.name', 'LIKE', "%$char%");
                 }
-            })->get();
+            })
+            ->where("status", "1")
+            ->get();
 
         $stockIds = $stocks->pluck('id')->toArray();
 

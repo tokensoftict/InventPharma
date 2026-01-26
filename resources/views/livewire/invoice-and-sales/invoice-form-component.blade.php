@@ -708,7 +708,9 @@
                     obj.searchCustomerString = "";
                     obj.searchCustomers = [];
                 }else {
-                    error(response.message);
+                    if(response.message.length > 0) {
+                        error(response.message);
+                    }
                 }
             });
         },

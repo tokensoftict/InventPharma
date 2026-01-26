@@ -160,7 +160,8 @@ class ProductComponent extends Component
             ]
         );
 
-        return redirect()->route('product.edit', $this->product->id);
+        //return redirect()->route('product.edit', $this->product->id);
+        return redirect()->route('product.available', $this->product->id);
 
     }
 
