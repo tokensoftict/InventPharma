@@ -72,6 +72,8 @@ trait ModelFilterTraits
                 $model->newonlinePush(); // if the model is syncing with online push any update
             }
 
+
+
         });
 
         self::deleted(function($model){
