@@ -52,8 +52,8 @@
                                     <th class="text-center" style="width: 15%;">Qty</th>
                                     <th class="text-center" style="width: 5%;">Box</th>
                                     <th class="text-center" style="width: 5%;">Carton</th>
-                                    <th class="text-center" style="width: 5%;">Av. Qty</th>
-                                    <th class="text-end" style="width: 7%;">Rate</th>
+                                    <th class="text-center" style="width: 7%;">Av. Qty</th>
+                                    <th class="text-center" style="width: 15%;">Rate</th>
                                     <th class="text-end" style="width: 8%;">Total</th>
                                     <th class="text-end" style="width: 5%;">Action</th>
                                 </tr>
@@ -88,7 +88,7 @@
                                         <td class="text-center" x-text="item.box"></td>
                                         <td class="text-center" x-text="item.carton"></td>
                                         <td class="text-center" x-text="item.av_qty"></td>
-                                        <td class="text-end" x-text="money(item.selling_price)"></td>
+                                        <td class="text-center" x-text="money(item.selling_price)"></td>
                                         <td class="text-end" x-text="money(item.selling_price * item.quantity)"></td>
                                         <td class="text-end">
                                             <!-- Only show delete button for parent products -->
@@ -148,12 +148,24 @@
 
                             <div class="mb-3">
                                 <label>Search For Customer :</label>
-                                <input class="form-control input-sm" id="customer-search-text" x-model="searchCustomerString" class="form-control" x-on:keyup.debounce="searchCustomer(this.value)"  placeholder="Search for customer by phone number, name or email address">
+                                <input class="form-control input-sm" id="customer-search-text" x-model="searchCustomerString"  x-on:keyup.debounce="searchCustomer(this.value)"  placeholder="Search for customer by phone number, name or email address">
 
                                 @if(userCanView('customer.create'))
                                     <a href="#" wire:click="newCustomer" class="text-success" style="display: block;text-align: center">Add New Customer</a>
                                 @endif
                             </div>
+
+{{--                            <div class="mb-3">--}}
+{{--                                <label>Select Prescriber:</label>--}}
+{{--                                <select class="form-control" x-model="prescriber_id" x-init="select2" id="select2">--}}
+{{--                                    <option value="">-Select One-</option>--}}
+{{--                                    @foreach($prescribers as $prescriber)--}}
+{{--                                        <option value="{{ $prescriber['id'] }}">{{ $prescriber['name'] }}</option>--}}
+{{--                                    @endforeach--}}
+{{--                                </select>--}}
+{{--                            </div>--}}
+
+
                             <template x-if="(searchCustomers.length > 0)">
                                 <div  class="np-result-container" style="margin-top: -40px">
                                     <template x-for="customer in searchCustomers">
@@ -415,6 +427,7 @@
             searchproduct : [],
             searchCustomers : [],
             errors : {},
+            {{--prescriber_id : @this.get('invoiceData.prescriber_id') ? @this.get('invoiceData.prescriber_id') : null,--}}
             customer_id : @this.get('invoiceData.customer_id') ? @this.get('invoiceData.customer_id') : {firstname : ""},
             netTotal :  @this.get('InvoiceData.sub_total') ?  @this.get('InvoiceData.invoiceitems') : 0.00,
             quantity : [],
@@ -555,6 +568,10 @@
                 );
 
                 this.totalInvoice();
+            },
+            select2()
+            {
+                $('#select2').select2();
             },
             totalInvoice()
             {

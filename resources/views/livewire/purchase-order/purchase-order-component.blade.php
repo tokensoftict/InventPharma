@@ -1,5 +1,5 @@
 <div x-data="purchase" x-init="totalPurchase()">
-    {{-- The whole world belongs to you. --}}
+
     <hr/>
 
     <div class="row mt-5">

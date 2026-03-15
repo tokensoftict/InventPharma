@@ -60,6 +60,7 @@ class InvoiceRepository
                 'online_order_status' =>  $invoice->online_order_status,
                 'online_order_debit' =>  $invoice->online_order_debit,
                 'onliner_order_id'=>  $invoice->onliner_order_id,
+//                'prescriber_id' => $invoice->prescriber_id,
                 //'invoiceitems' => $invoice->invoiceitems->map->only(array_keys(self::invoiceitems(new Invoiceitem())))->toJson(),
                 'invoiceitems' => $invoice->invoiceitems->map(function($item){
                     return self::invoiceitems($item);
@@ -88,6 +89,7 @@ class InvoiceRepository
                 'invoice_date' => todaysDate(),
                 'sales_time' => Carbon::now()->toDateTimeLocalString(),
                 'invoiceitems' =>  collect([])->toJson(),
+//                'prescriber_id' => NULL,
             ];
         }
 
@@ -226,7 +228,7 @@ class InvoiceRepository
                         $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
                             quantity:$stocks[$product->id]['item']['quantity'],
                             defaultSellingPrice:$product->{selling_price_column(4)},
-                            customPrices: $product->stockquantityprices->toArray(),
+                            customPrices: $product->stockquantityprices()->where('department', $from)->get()->toArray(),
                             stock: $product,
                             department: $from,
                         );
@@ -238,7 +240,7 @@ class InvoiceRepository
                         $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
                             quantity:$stocks[$product->id]['item']['quantity'],
                             defaultSellingPrice:$product->{selling_price_column()},
-                            customPrices: $product->stockquantityprices->toArray(),
+                            customPrices: $product->stockquantityprices()->where('department', $from)->get()->toArray(),
                             stock: $product,
                             department: $from,
                         );

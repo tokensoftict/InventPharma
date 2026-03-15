@@ -5,6 +5,7 @@ namespace App\Livewire\ProductModule\Batch;
 use App\Jobs\AddLogToProductBinCard;
 use App\Models\Batchstock;
 use App\Models\Stock;
+use Carbon\Carbon;
 use Livewire\Component;
 use App\Traits\LivewireAlert;
 use App\Models\Stockbatch as batch;
@@ -36,9 +37,9 @@ class StockBatch extends Component
                 $q->orwhere("wholesales",">",0)
                     ->orwhere("bulksales",">",0)
                     ->orwhere("retail",">",0)
-                    ->orwhere("quantity",">",0);
+                    ->orwhere("quantity",">",0)
+                    ->orwhere("retail_store",">",0);
             })
-
             ->get();
 
         if($batches->count() == 0){
@@ -46,6 +47,10 @@ class StockBatch extends Component
         }
 
         $this->batches = $batches->toArray();
+
+        foreach($this->batches as $key =>$batch){
+            $this->batches[$key]["expiry_date"] = (new Carbon($this->batches[$key]["expiry_date"]))->format('Y-m-d');
+        }
 
         $this->dept = department_by_quantity_column($this->selectedDepartment)->label;
 

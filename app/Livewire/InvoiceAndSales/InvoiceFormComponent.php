@@ -7,6 +7,7 @@ use App\Models\City;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\OutOfStockLog;
+use App\Models\Prescriber;
 use App\Models\ProductNotAvailable;
 use App\Models\Stock;
 use App\Models\StockOption;
@@ -34,6 +35,7 @@ class InvoiceFormComponent extends Component
 
     public string $d = "";
     public array $selectedDepartment = [];
+    public array $prescribers = [];
     public $cities;
     private InvoiceRepository $invoiceRepository;
     public String $firstname = "";
@@ -51,7 +53,7 @@ class InvoiceFormComponent extends Component
     {
         $this->invoice_number = generateUniqueNumber();
         $this->invoiceData = InvoiceRepository::invoice($this->invoice, $this);
-
+        $this->prescribers = Prescriber::query()->select('id', 'name')->where('status', 1)->get()->toArray();
         $this->cities = City::all();
     }
 

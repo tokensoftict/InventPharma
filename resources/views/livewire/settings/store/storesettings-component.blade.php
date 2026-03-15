@@ -93,6 +93,7 @@
                     @error('store.point_rate') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
 
+
                 <div class="mb-3">
                     <label>Store Address Line</label>
                     <textarea name="first_address"  required class="form-control" wire:model="store.first_address" placeholder="Store Address"></textarea>

@@ -173,9 +173,9 @@
 
             @if(userCanView('product.changeSellingPrice'))
                 <div class="col-lg-12">
-                    <h4>Product Price Settings</h4>
+                    <h4 class="mt-2">Product Price Settings</h4>
                     <hr/>
-                    <div class="row">
+                    <div class="row mt-2">
                         @if(department_by_quantity_column('bulksales', false)->status)
                             <div class="col-lg-3 col-sm-6 col-12">
                                 <div class="mb-3">
@@ -194,7 +194,6 @@
                                 </div>
                             </div>
                         @endif
-
                         @if(department_by_quantity_column('retail', false)->status)
                             <div class="col-lg-3 col-sm-6 col-12">
                                 <div class="mb-3">
@@ -204,7 +203,6 @@
                                 </div>
                             </div>
                         @endif
-
                         <div class="col-lg-3 col-sm-6 col-12">
                             <div class="mb-3">
                                 <label>Bundle Price</label>
@@ -222,6 +220,25 @@
                             </div>
                         </div>
                     </div>
+
+{{--                    <div class="row mt-2">--}}
+{{--                        <div class="col-lg-3 col-sm-6 col-12">--}}
+{{--                            <div class="mb-3">--}}
+{{--                                <label>Custom Price Settings</label>--}}
+{{--                                <div  class="form-control">--}}
+{{--                                    <div class="btn-group">--}}
+{{--                                        <button type="button" id="otherproductsettings" class="btn btn-primary btn-sm dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">--}}
+{{--                                           Custom Price Settings--}}
+{{--                                        </button>--}}
+{{--                                        <ul class="dropdown-menu">--}}
+{{--                                            <li><a class="dropdown-item" href="javascript:void(0);" wire:click="openBundlePriceModal('retail')">Retail</a></li>--}}
+{{--                                            <li><a class="dropdown-item" href="javascript:void(0);" wire:click="openBundlePriceModal('wholesales')">Wholesales</a></li>--}}
+{{--                                        </ul>--}}
+{{--                                    </div>--}}
+{{--                                </div>--}}
+{{--                            </div>--}}
+{{--                        </div>--}}
+{{--                    </div>--}}
                 </div>
             @endif
 
@@ -452,219 +469,218 @@
                 </div>
             </div>
         </div>
+    </div>
+    <script>
+        let barCodeOpen = false;
+        let otherproductsettingsModal = "";
+        let dependentProductSettingsModal = "";
 
-        <script>
-            let barCodeOpen = false;
-            let otherproductsettingsModal = "";
-            let dependentProductSettingsModal = "";
-
-            window.addEventListener('openBundleSettingsModal', (e) => {
-                otherproductsettingsModal.show();
-            });
-            window.addEventListener('closeBundleSettingsModal', (e) => {
-                otherproductsettingsModal.hide();
-            });
-
-
-            window.addEventListener("load", function (){
-                $(document).ready(function(){
-                    let myModal = "";
-                    myModal = new bootstrap.Modal(document.getElementById("simpleBarcodeModal"), {});
-
-                    otherproductsettingsModal = new bootstrap.Modal(document.getElementById("orderPriceSettings"), {});
-                    dependentProductSettingsModal = new bootstrap.Modal(document.getElementById("dependentProductSettings"), {});
-
-                    document.getElementById("simpleBarcodeModal").addEventListener('shown.bs.modal', function () {
-                        barCodeOpen = true
-                    })
-
-                    document.getElementById("simpleBarcodeModal").addEventListener('hidden.bs.modal', function () {
-                        barCodeOpen = false
-                    })
-
-                    $('#barcode').on('click', function (){
-                        myModal.show();
-                    });
+        window.addEventListener('openBundleSettingsModal', (e) => {
+            otherproductsettingsModal.show();
+        });
+        window.addEventListener('closeBundleSettingsModal', (e) => {
+            otherproductsettingsModal.hide();
+        });
 
 
-                    $('#dependentProduct').on('click', function (){
-                        dependentProductSettingsModal.show();
-                    });
+        window.addEventListener("load", function (){
+            $(document).ready(function(){
+                let myModal = "";
+                myModal = new bootstrap.Modal(document.getElementById("simpleBarcodeModal"), {});
 
-                    document.getElementById("dependentProductSettings").addEventListener('show.bs.modal', function (){
-                        var path = '{{ route('findpurchasestock') }}'+"?column={{ '' }}&select2=yes"
-                        var obj = this;
-                        if (!$('#dependent_product_select').hasClass('select2-hidden-accessible')) {
-                            const select2 = $('#dependent_product_select').select2({
-                                dropdownParent: $('#dependentProductSettings'),
-                                placeholder: 'Select product',
-                                width: '100%',
-                                ajax: {
-                                    url: path,
-                                    dataType: 'json',
-                                    delay: 250,
-                                    data: function (data) {
-                                        return {
-                                            searchTerm: data.term // search term
-                                        };
-                                    },
-                                    processResults: function (response) {
-                                        return {
-                                            results:response
-                                        };
-                                    },
-                                }
-                            });
+                otherproductsettingsModal = new bootstrap.Modal(document.getElementById("orderPriceSettings"), {});
+                dependentProductSettingsModal = new bootstrap.Modal(document.getElementById("dependentProductSettings"), {});
 
+                document.getElementById("simpleBarcodeModal").addEventListener('shown.bs.modal', function () {
+                    barCodeOpen = true
+                })
+
+                document.getElementById("simpleBarcodeModal").addEventListener('hidden.bs.modal', function () {
+                    barCodeOpen = false
+                })
+
+                $('#barcode').on('click', function (){
+                    myModal.show();
+                });
+
+
+                $('#dependentProduct').on('click', function (){
+                    dependentProductSettingsModal.show();
+                });
+
+                document.getElementById("dependentProductSettings").addEventListener('show.bs.modal', function (){
+                    var path = '{{ route('findpurchasestock') }}'+"?column={{ '' }}&select2=yes"
+                    var obj = this;
+                    if (!$('#dependent_product_select').hasClass('select2-hidden-accessible')) {
+                        const select2 = $('#dependent_product_select').select2({
+                            dropdownParent: $('#dependentProductSettings'),
+                            placeholder: 'Select product',
+                            width: '100%',
+                            ajax: {
+                                url: path,
+                                dataType: 'json',
+                                delay: 250,
+                                data: function (data) {
+                                    return {
+                                        searchTerm: data.term // search term
+                                    };
+                                },
+                                processResults: function (response) {
+                                    return {
+                                        results:response
+                                    };
+                                },
+                            }
+                        });
+
+                        @this.set("dependentProduct.stock_id",select2.val());
+                        select2.on("select2:select", (event) => {
                             @this.set("dependentProduct.stock_id",select2.val());
-                            select2.on("select2:select", (event) => {
-                                @this.set("dependentProduct.stock_id",select2.val());
-                            });
+                        });
 
-                        }
-                    })
+                    }
+                })
+            });
+
+            $(document).scannerDetection({
+                timeBeforeScanTest: 200, // wait for the next character for upto 200ms
+                endChar: [13], // be sure the scan is complete if key 13 (enter) is detected
+                avgTimeByChar: 40, // it's not a barcode if a character takes longer than 40ms
+                ignoreIfFocusOn: 'input', // turn off scanner detection if an input has focus
+                startChar: [16], // Prefix character for the cabled scanner (OPL6845R)
+                endChar: [40],
+                onComplete: function(barcode){
+                    captureBarcode(barcode);
+                }, // main callback function
+                scanButtonKeyCode: 116, // the hardware scan button acts as key 116 (F5)
+                scanButtonLongPressThreshold: 5, // assume a long press if 5 or more events come in sequence
+                onScanButtonLongPressed: function(){
+                    alert('key pressed');
+                }, // callback for long pressing the scan button
+                onError: function(string){}
+            });
+
+            $('#saveBarcode').on('click', function(){
+                @this.saveBarcode().then(function(response){
+                    setTimeout(function(){
+                        window.location.reload();
+                    },2000)
                 });
+            });
 
-                $(document).scannerDetection({
-                    timeBeforeScanTest: 200, // wait for the next character for upto 200ms
-                    endChar: [13], // be sure the scan is complete if key 13 (enter) is detected
-                    avgTimeByChar: 40, // it's not a barcode if a character takes longer than 40ms
-                    ignoreIfFocusOn: 'input', // turn off scanner detection if an input has focus
-                    startChar: [16], // Prefix character for the cabled scanner (OPL6845R)
-                    endChar: [40],
-                    onComplete: function(barcode){
-                        captureBarcode(barcode);
-                    }, // main callback function
-                    scanButtonKeyCode: 116, // the hardware scan button acts as key 116 (F5)
-                    scanButtonLongPressThreshold: 5, // assume a long press if 5 or more events come in sequence
-                    onScanButtonLongPressed: function(){
-                        alert('key pressed');
-                    }, // callback for long pressing the scan button
-                    onError: function(string){}
-                });
+        })
 
-                $('#saveBarcode').on('click', function(){
-                    @this.saveBarcode().then(function(response){
-                        setTimeout(function(){
-                            window.location.reload();
-                        },2000)
-                    });
-                });
+        function deleteBarcode(code){
+            @this.barcodes = @this.barcodes.filter(item => item !== code)
+        }
 
-            })
-
-            function deleteBarcode(code){
-                @this.barcodes = @this.barcodes.filter(item => item !== code)
-            }
-
-            function captureBarcode(barcode) {
-                if(barCodeOpen === false)
-                {
-                    alert('Click on capture barcode scanner to capture barcode');
+        function captureBarcode(barcode) {
+            if(barCodeOpen === false)
+            {
+                alert('Click on capture barcode scanner to capture barcode');
+            }else{
+                    <?php
+                if(!isset($this->product->id)) {
+                    ?>
+                alert('Please save this product before, creating barcode')
+                    <?php
                 }else{
-                        <?php
-                    if(!isset($this->product->id)) {
-                        ?>
-                    alert('Please save this product before, creating barcode')
-                        <?php
-                    }else{
-                        ?>
-                    @this.validateBarcode(barcode).then(function(resp){
-                        if(resp.status == false){
+                    ?>
+                @this.validateBarcode(barcode).then(function(resp){
+                    if(resp.status == false){
 
-                        }
-                    });
-                        <?php
-                    }
-                        ?>
-                }
-            }
-        </script>
-        <script>
-            function getPriceRangeData() {
-                const rows = document.querySelectorAll('#priceTableBody tr');
-
-                // ✅ User deleted all rows
-                if (rows.length === 0) {
-                    return [];
-                }
-
-                const data = [];
-
-                // 1. Collect quantity + price from inputs
-                rows.forEach(row => {
-                    const quantityInput = row.querySelector('input[placeholder="Quantity"]');
-                    const priceInput = row.querySelector('input[placeholder="Price"]');
-
-                    const quantity = parseFloat(quantityInput.value);
-                    const price = parseFloat(priceInput.value);
-
-                    if (!isNaN(quantity) && !isNaN(price)) {
-                        data.push({ quantity, price });
                     }
                 });
-
-                // ✅ Rows exist but user cleared all values
-                if (data.length === 0) {
-                    return [];
+                    <?php
                 }
+                    ?>
+            }
+        }
+    </script>
+    <script>
+        function getPriceRangeData() {
+            const rows = document.querySelectorAll('#priceTableBody tr');
 
-                // 2. Sort by quantity (ascending)
-                data.sort((a, b) => a.quantity - b.quantity);
-
-                // 3. Build min–max ranges
-                return data.map((current, index) => ({
-                    min_qty: current.quantity,
-                    max_qty: data[index + 1] ? data[index + 1].quantity : 10000,
-                    price: current.price
-                }));
+            // ✅ User deleted all rows
+            if (rows.length === 0) {
+                return [];
             }
 
+            const data = [];
 
-            document.addEventListener('DOMContentLoaded', function () {
-                const addBtn = document.getElementById('addPriceBtn');
-                const saveProductPrice = document.getElementById('saveProductPrice');
-                const tableBody = document.getElementById('priceTableBody');
+            // 1. Collect quantity + price from inputs
+            rows.forEach(row => {
+                const quantityInput = row.querySelector('input[placeholder="Quantity"]');
+                const priceInput = row.querySelector('input[placeholder="Price"]');
 
-                addBtn.addEventListener('click', function () {
-                    const row = document.createElement('tr');
+                const quantity = parseFloat(quantityInput.value);
+                const price = parseFloat(priceInput.value);
 
-                    row.innerHTML = `
+                if (!isNaN(quantity) && !isNaN(price)) {
+                    data.push({ quantity, price });
+                }
+            });
+
+            // ✅ Rows exist but user cleared all values
+            if (data.length === 0) {
+                return [];
+            }
+
+            // 2. Sort by quantity (ascending)
+            data.sort((a, b) => a.quantity - b.quantity);
+
+            // 3. Build min–max ranges
+            return data.map((current, index) => ({
+                min_qty: current.quantity,
+                max_qty: data[index + 1] ? data[index + 1].quantity : 10000,
+                price: current.price
+            }));
+        }
+
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const addBtn = document.getElementById('addPriceBtn');
+            const saveProductPrice = document.getElementById('saveProductPrice');
+            const tableBody = document.getElementById('priceTableBody');
+
+            addBtn.addEventListener('click', function () {
+                const row = document.createElement('tr');
+
+                row.innerHTML = `
             <td></td>
             <td><input type="number" value="" min="2" class="form-control form-control-sm min_qty" placeholder="Quantity"></td>
             <td><input type="number" value="0" step="0.0000001" min="2" class="form-control form-control-sm min_qty" placeholder="Price"></td>
             <td><button type="button" class="btn btn-danger btn-sm delete-row">Delete</button></td>
         `;
 
-                    tableBody.appendChild(row);
-                    updateRowNumbers();
-                });
-
-                tableBody.addEventListener('click', function (e) {
-                    if (e.target.classList.contains('delete-row')) {
-                        e.target.closest('tr').remove();
-                        updateRowNumbers();
-                    }
-                });
-
-                function updateRowNumbers() {
-                    [...tableBody.rows].forEach((row, index) => {
-                        row.cells[0].textContent = index + 1;
-                    });
-                }
-
-                saveProductPrice.addEventListener("click", function (e) {
-                    const data = getPriceRangeData();
-                        @this.saveProductPrice(data).then((response) => {
-                            if (response === true) {
-                                otherproductsettingsModal.hide();
-                            }
-                        })
-
-                });
+                tableBody.appendChild(row);
+                updateRowNumbers();
             });
 
+            tableBody.addEventListener('click', function (e) {
+                if (e.target.classList.contains('delete-row')) {
+                    e.target.closest('tr').remove();
+                    updateRowNumbers();
+                }
+            });
 
-        </script>
-    </div>
+            function updateRowNumbers() {
+                [...tableBody.rows].forEach((row, index) => {
+                    row.cells[0].textContent = index + 1;
+                });
+            }
+
+            saveProductPrice.addEventListener("click", function (e) {
+                const data = getPriceRangeData();
+                @this.saveProductPrice(data).then((response) => {
+                    if (response === true) {
+                        otherproductsettingsModal.hide();
+                    }
+                })
+
+            });
+        });
+
+
+    </script>
 </div>

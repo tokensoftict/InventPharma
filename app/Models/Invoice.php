@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $id
  * @property string $invoice_number
  * @property int|null $customer_id
+ * @property int|null $prescriber_id
  * @property int|null $payment_id
  * @property string|null $department
  * @property string|null $in_department
@@ -80,6 +81,7 @@ class Invoice extends Model
 
 	protected $casts = [
 		'customer_id' => 'int',
+        'prescriber_id' => 'int',
 		'payment_id' => 'int',
 		'discount_amount' => 'float',
 		'discount_value' => 'float',
@@ -108,7 +110,7 @@ class Invoice extends Model
 		'online_order_debit' => 'int',
 		'onliner_order_id' => 'int',
 		'before_customer_id' => 'int',
-        'retail_printed' => 'bool'
+        'retail_printed' => 'bool',
 	];
 
 	protected $fillable = [
@@ -146,7 +148,9 @@ class Invoice extends Model
         'retail_printed',
         'scan_user_id',
         'scan_date',
-        'scan_time'
+        'scan_time',
+        'prescriber_id',
+        'prescriber_payment_status'
 	];
 
     public function payment()
@@ -203,6 +207,11 @@ class Invoice extends Model
 	public function customer()
 	{
 		return $this->belongsTo(Customer::class);
+	}
+
+    public function prescriber()
+	{
+		return $this->belongsTo(Prescriber::class);
 	}
 
 	public function status()

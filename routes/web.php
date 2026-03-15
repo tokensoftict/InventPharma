@@ -188,7 +188,19 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{id}/product_option_fields/toggle', ['as' => 'toggle_product_option_fields', 'uses' => 'ProductOptionController@toggle_product_option_fields', 'custom_label'=>'Toggle Product Option Fields']);
                 Route::get('{id}/product_option_fields/update', ['as' => 'update_product_option_fields', 'uses' => 'ProductOptionController@update_product_option_fields', 'custom_label'=>'Update Product Option Fields']);
             });
-
+//            Route::prefix('prescribers')->as('prescribers.')->group(function () {
+//                Route::get('', ['as' => 'index', 'uses' => 'PrescriberController@index', 'visible' => true, 'custom_label'=>'Prescribers']);
+//                Route::get('create', ['as' => 'create', 'uses' => 'PrescriberController@create']);
+//                Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'PrescriberController@toggle']);
+//                Route::put('{id}', ['as' => 'update', 'uses' => 'PrescriberController@update']);
+//            });
+//            Route::prefix('custom-price')->as('customprice.')->group(function () {
+//                Route::get('', ['as' => 'index', 'uses' => 'CustomPriceController@index', 'visible' => true, 'custom_label'=>'Custom Price']);
+//                Route::get('create', ['as' => 'create', 'uses' => 'CustomPriceController@create']);
+//                Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'CustomPriceController@toggle']);
+//                Route::get('{id}/toggle_default_price', ['as' => 'toggle_default_price', 'uses' => 'CustomPriceController@toggle_default_price', 'custom_label'=>'Toggle Default Custom Price']);
+//                Route::put('{id}', ['as' => 'update', 'uses' => 'CustomPriceController@update']);
+//            });
         });
         Route::prefix('CustomerManager')->namespace('CustomerManager')->group(function () {
             Route::prefix('customer')->as('customer.')->group(function () {

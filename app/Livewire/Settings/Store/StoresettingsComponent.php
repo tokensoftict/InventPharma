@@ -28,6 +28,8 @@ class StoresettingsComponent extends Component
     {
         //$this->settings->all()
         $this->store = $this->settings->all();
+
+
        /*
         $this->store =  [
             'name' => NULL,
