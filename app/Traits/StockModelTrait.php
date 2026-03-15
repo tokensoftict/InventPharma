@@ -420,7 +420,7 @@ trait StockModelTrait
             $stockPrices['supermarket'] = [
                 "app_id" => 6,
                 "price" => $this->retail_price,
-                "quantity" => $this->getRetailQuantity(),
+                "quantity" => $this->getRetailOnlineQuantity(),
                 "status" => $this->status,
                 "expiry_date" => $re_expiry_date,
             ];
@@ -507,6 +507,11 @@ trait StockModelTrait
     public function getRetailQuantity()
     {
         return round(divide($this->stockbatches()->sum(DB::raw('retail + retail_store')),$this->box), 0);
+    }
+
+    public function getRetailOnlineQuantity()
+    {
+        return $this->stockbatches()->sum(DB::raw('retail + retail_store'));
     }
 
     public function cacheTotalBalance(){
