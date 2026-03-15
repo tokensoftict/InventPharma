@@ -6,6 +6,10 @@
 
 namespace App\Models;
 
+use App\Enums\KafkaAction;
+use App\Enums\KafkaTopics;
+use App\Jobs\PushDataServer;
+use App\Traits\ModelFilterTraits;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
@@ -39,6 +43,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class StockOptionValue extends Model
 {
+    use ModelFilterTraits;
+
 	protected $table = 'stock_option_values';
 
 	protected $casts = [
@@ -92,4 +98,11 @@ class StockOptionValue extends Model
 	{
 		return $this->belongsTo(StockOption::class);
 	}
+
+    public function updateonlinePush()
+    {
+        if(($this->stock->bulk_price > 0 || $this->stock->retail_price > 0)) {
+            dispatch(new PushDataServer(['KAFKA_ACTION' => KafkaAction::UPDATE_STOCK, 'KAFKA_TOPICS'=> KafkaTopics::STOCKS, 'action' => 'update', 'table' => 'stock', 'data' => $this->stock->getBulkPushData(), 'endpoint' => 'stocks', 'url'=>onlineBase()."dataupdate/add_or_update_stock"]));
+        }
+    }
 }
