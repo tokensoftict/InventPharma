@@ -529,7 +529,7 @@ class InvoiceRepository
             ]));
         }
         if(config('app.sync_with_online')== 1) {
-            dispatch(new PushStockUpdateToServer(array_column($invoice->invoiceitems->toArray(), 'stock_id')));
+            dispatch(new PushStockUpdateToServer(array_column($invoice->invoiceitems()->get()->toArray(), 'stock_id')));
         }
 
         //$this->initiateBinCard($invoice);
