@@ -387,8 +387,9 @@ trait StockModelTrait
             'max'=>"0",
             'carton'=>$this->carton,
             'sachet'=>1,
-            'custom_price' => $this->stockquantityprices->where('department', 'retail')->map->only(['price','min_qty', 'max_qty', 'department'])->toArray(),
-            'stock_option_values' => $this->buildProductOptions()->toArray()
+            'custom_price' => $this->stockquantityprices()->get()->map->only(['price','min_qty', 'max_qty', 'department'])->toArray(),
+            'stock_option_values' => $this->buildProductOptions()->toArray(),
+            'dependent_products' => $this->dependent_products()->get()->map->only(['stock_id', 'parent', 'child'])->toArray(),
         ];
 
         $stockPrices = [];
@@ -527,9 +528,29 @@ trait StockModelTrait
 
     public function updateonlinePush()
     {
-        if(($this->bulk_price > 0 || $this->retail_price > 0)) {
-            dispatch(new PushDataServer(['KAFKA_ACTION' => KafkaAction::UPDATE_STOCK, 'KAFKA_TOPICS'=> KafkaTopics::STOCKS, 'action' => 'update', 'table' => 'stock', 'data' => $this->getBulkPushData(), 'endpoint' => 'stocks', 'url'=>onlineBase()."dataupdate/add_or_update_stock"]));
+        if($this->wasChanged([
+            'name',
+            'description',
+            'category_id',
+            'manufacturer_id',
+            'classification_id',
+            'stockgroup_id',
+            'brand_id',
+            'whole_price',
+            'bulk_price',
+            'retail_price',
+            'expiry',
+            'piece',
+            'box',
+            'carton',
+            'sachet',
+            'status'
+        ])) {
+            if (($this->bulk_price > 0 || $this->retail_price > 0)) {
+                dispatch(new PushDataServer(['KAFKA_ACTION' => KafkaAction::UPDATE_STOCK, 'KAFKA_TOPICS' => KafkaTopics::STOCKS, 'action' => 'update', 'table' => 'stock', 'data' => $this->getBulkPushData(), 'endpoint' => 'stocks', 'url' => onlineBase() . "dataupdate/add_or_update_stock"]));
+            }
         }
+
     }
 
     public function checkifStockcanTransfer($qty,$from,$to){
