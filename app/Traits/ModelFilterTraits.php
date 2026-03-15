@@ -82,6 +82,11 @@ trait ModelFilterTraits
                 $function_name = $instance->table;
                 $function_name();
             }
+
+            if(method_exists($model, 'updateonlinePush') && config('app.sync_with_online')== 1) {
+                $model->updateonlinePush();
+            }
+
         });
 
         self::updated(function($model) {
@@ -123,6 +128,7 @@ trait ModelFilterTraits
                 }
             }
         });
+
 
         if (!defined('STDIN') && \auth()->check() && self::class === Stock::class) {
             static::addGlobalScope('checkForPromo', function (Builder $builder){
