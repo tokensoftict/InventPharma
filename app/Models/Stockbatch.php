@@ -6,6 +6,9 @@
 
 namespace App\Models;
 
+use App\Enums\KafkaAction;
+use App\Enums\KafkaTopics;
+use App\Jobs\PushDataServer;
 use App\Traits\ModelFilterTraits;
 use Auth;
 use Carbon\Carbon;
@@ -107,6 +110,22 @@ class Stockbatch extends Model
 
         $this->stock->batched = time();
         $this->stock->update();
+    }
+
+
+    public function updateonlinePush()
+    {
+        if(($this->stock->bulk_price > 0 || $this->stock->retail_price > 0)) {
+            dispatch(new PushDataServer(['KAFKA_ACTION' => KafkaAction::UPDATE_STOCK, 'KAFKA_TOPICS'=> KafkaTopics::STOCKS, 'action' => 'update', 'table' => 'stock', 'data' => $this->stock->getBulkPushData(), 'endpoint' => 'stocks', 'url'=>onlineBase()."dataupdate/add_or_update_stock"]));
+        }
+    }
+
+
+    public function newonlinePush()
+    {
+        if(($this->stock->bulk_price > 0 || $this->stock->retail_price > 0)) {
+            dispatch(new PushDataServer(['KAFKA_ACTION' => KafkaAction::UPDATE_STOCK, 'KAFKA_TOPICS'=> KafkaTopics::STOCKS, 'action' => 'update', 'table' => 'stock', 'data' => $this->stock->getBulkPushData(), 'endpoint' => 'stocks', 'url'=>onlineBase()."dataupdate/add_or_update_stock"]));
+        }
     }
 
 }
