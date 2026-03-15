@@ -115,7 +115,6 @@ class Stockbatch extends Model
 
     public function updateonlinePush()
     {
-        dd("yes update");
         if(($this->stock->bulk_price > 0 || $this->stock->retail_price > 0)) {
             dispatch(new PushDataServer(['KAFKA_ACTION' => KafkaAction::UPDATE_STOCK, 'KAFKA_TOPICS'=> KafkaTopics::STOCKS, 'action' => 'update', 'table' => 'stock', 'data' => $this->stock->getBulkPushData(), 'endpoint' => 'stocks', 'url'=>onlineBase()."dataupdate/add_or_update_stock"]));
         }
@@ -124,7 +123,6 @@ class Stockbatch extends Model
 
     public function newonlinePush()
     {
-        dd("yes new push");
         if(($this->stock->bulk_price > 0 || $this->stock->retail_price > 0)) {
             dispatch(new PushDataServer(['KAFKA_ACTION' => KafkaAction::UPDATE_STOCK, 'KAFKA_TOPICS'=> KafkaTopics::STOCKS, 'action' => 'update', 'table' => 'stock', 'data' => $this->stock->getBulkPushData(), 'endpoint' => 'stocks', 'url'=>onlineBase()."dataupdate/add_or_update_stock"]));
         }
