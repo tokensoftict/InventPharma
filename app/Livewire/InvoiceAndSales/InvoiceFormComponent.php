@@ -6,6 +6,7 @@ use App\Jobs\AddLogToCustomerLedger;
 use App\Models\City;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\MemberGroup;
 use App\Models\OutOfStockLog;
 use App\Models\Prescriber;
 use App\Models\ProductNotAvailable;
@@ -37,6 +38,7 @@ class InvoiceFormComponent extends Component
     public array $selectedDepartment = [];
     public array $prescribers = [];
     public $cities;
+    public $memberGroups;
     private InvoiceRepository $invoiceRepository;
     public String $firstname = "";
     public String $lastname = "";
@@ -44,6 +46,7 @@ class InvoiceFormComponent extends Component
     public String $phone_number = "";
     public String $email = "";
     public String $city_id = "";
+    public String $member_group_id = "";
     public array $selectedProductOption = [];
     public string $selectedProductName = "";
     public array $selectedProductInfo = ["selectedOptions"];
@@ -55,6 +58,7 @@ class InvoiceFormComponent extends Component
         $this->invoiceData = InvoiceRepository::invoice($this->invoice, $this);
         $this->prescribers = Prescriber::query()->select('id', 'name')->where('status', 1)->get()->toArray();
         $this->cities = City::all();
+        $this->memberGroups = MemberGroup::all();
     }
 
     private function initDepartment()
@@ -176,6 +180,8 @@ class InvoiceFormComponent extends Component
         $customer->email = $this->email;
         $customer->phone_number = $this->phone_number;
         $customer->address = $this->address;
+        $customer->city_id = $this->city_id;
+        $customer->member_group_id = $this->member_group_id == "" ? NULL : $this->member_group_id;
 
         $customer->save();
 
@@ -217,6 +223,7 @@ class InvoiceFormComponent extends Component
         $customer->address = $this->address;
         $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
         $customer->city_id = $this->city_id == "" ? NULL : $this->city_id;
+        $customer->member_group_id = $this->member_group_id == "" ? NULL : $this->member_group_id;
 
         $customer->save();
 

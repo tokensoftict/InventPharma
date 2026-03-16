@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  * Class Customer
  * 
  * @property int $id
+ * @property int $member_group_id
  * @property float $loyalty_points
  * @property string|null $firstname
  * @property string|null $lastname
@@ -33,6 +34,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property Carbon|null $updated_at
  * @property Invoice $invoice
  * @property City|null $city
+ * @property MemberGroup|null $member_group
  * @property Collection|Creditpaymentlog[] $creditpaymentlogs
  * @property Collection|CustomerLedger[] $customer_ledgers
  * @property Collection|Invoiceitem[] $invoiceitems
@@ -67,7 +69,8 @@ class Customer extends Model
 		'city_id',
 		'credit_balance',
 		'deposit_balance',
-        'loyalty_points'
+        'loyalty_points',
+        'member_group_id'
 	];
 
 
@@ -140,6 +143,11 @@ class Customer extends Model
         $this->update();
     }
 
+    public function memberGroup()
+    {
+        return $this->belongsTo(MemberGroup::class, 'member_group_id');
+    }
+
     public function getBulkPushData() : array{
         return [
             'local_id'=>$this->id,
@@ -149,6 +157,7 @@ class Customer extends Model
             'address'=>$this->address,
             'phone_number'=>$this->phone_number,
             'loyalty_points' => $this->loyalty_points,
+            'member_group_id' => $this->member_group_id,
         ];
     }
 

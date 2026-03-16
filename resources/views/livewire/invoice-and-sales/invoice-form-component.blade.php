@@ -339,6 +339,15 @@
                                         </select>
                                     </div>
 
+                                    <div class="mb-3">
+                                        <label>Member Group</label>
+                                        <select class="form-control" wire:model="member_group_id">
+                                            <option value="">Select Member Group</option>
+                                            @foreach($this->memberGroups as $member_group)
+                                                <option value="{{ $member_group->id }}">{{ $member_group->label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
 
                                     <div class="mb-3">
                                         <label>Address</label>

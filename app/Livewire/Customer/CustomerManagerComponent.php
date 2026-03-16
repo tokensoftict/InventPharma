@@ -6,6 +6,7 @@ use App\Classes\Settings;
 use App\Models\City;
 use App\Models\Customer;
 
+use App\Models\MemberGroup;
 use App\Traits\LivewireAlert;
 use Livewire\Component;
 
@@ -32,6 +33,8 @@ class CustomerManagerComponent extends Component
 
     public $cities;
 
+    public $memberGroups;
+
     public String $modalName = "Customer";
 
     public string $modelId = "";
@@ -43,6 +46,7 @@ class CustomerManagerComponent extends Component
     public String $phone_number = "";
     public String $email = "";
     public String $city_id = "";
+    public String $member_group_id = "";
 
     public  $customer = NULL;
 
@@ -52,6 +56,7 @@ class CustomerManagerComponent extends Component
         $this->type = "";
 
         $this->cities = City::all();
+        $this->memberGroups = MemberGroup::all();
     }
 
     public function render()
@@ -74,6 +79,7 @@ class CustomerManagerComponent extends Component
         $this->phone_number = $customer->phone_number;
         $this->address  = $customer->address ?? "";
         $this->city_id = $customer->city_id ?? "";
+        $this->member_group_id = $customer->member_group_id ?? "";
 
 
         $this->saveButton = "Update";
@@ -93,6 +99,7 @@ class CustomerManagerComponent extends Component
         $this->phone_number = "";
         $this->address  ="";
         $this->city_id ="";
+        $this->member_group_id = "";
 
         $this->saveButton = "Save";
 
@@ -126,6 +133,7 @@ class CustomerManagerComponent extends Component
         $customer->address = $this->address;
         $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
         $customer->city_id = $this->city_id == "" ? NULL : $this->city_id;
+        $customer->member_group_id = $this->member_group_id == "" ? NULL : $this->member_group_id;
 
         $customer->save();
 
@@ -197,6 +205,7 @@ class CustomerManagerComponent extends Component
         $customer->address = $this->address;
         $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
         $customer->city_id = $this->city_id == "" ? NULL : $this->city_id;
+        $customer->member_group_id = $this->member_group_id == "" ? NULL : $this->member_group_id;
 
         $customer->save();
 
