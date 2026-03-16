@@ -147,7 +147,8 @@ class Customer extends Model
             'lastname'=>$this->lastname,
             'email'=>$this->email,
             'address'=>$this->address,
-            'phone_number'=>$this->phone_number
+            'phone_number'=>$this->phone_number,
+            'loyalty_points' => $this->loyalty_points,
         ];
     }
 

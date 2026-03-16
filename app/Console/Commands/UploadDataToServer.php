@@ -56,89 +56,89 @@ class UploadDataToServer extends Command
 
         //now we begin with manufacture
 
-        $this->info('Gathering Manufacturer Data');
-
-        $manufacturers = Manufacturer::all();
-        $all_data = [];
-        foreach($manufacturers as $manufacturer){
-            $all_data[] = $manufacturer->getBulkPushData();
-        }
-        $this->info('Gathering Manufacturer Data Complete');
-        $this->info('Parsing Manufacturer Data');
-        $this->info('Parsing Manufacturer Data Complete');
-        $this->info('Posting Manufacturer Data to '.onlineBase('manufacturers'));
-        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_MANUFACTURER, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
-            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
+//        $this->info('Gathering Manufacturer Data');
+//
+//        $manufacturers = Manufacturer::all();
+//        $all_data = [];
+//        foreach($manufacturers as $manufacturer){
+//            $all_data[] = $manufacturer->getBulkPushData();
+//        }
+//        $this->info('Gathering Manufacturer Data Complete');
+//        $this->info('Parsing Manufacturer Data');
+//        $this->info('Parsing Manufacturer Data Complete');
+//        $this->info('Posting Manufacturer Data to '.onlineBase('manufacturers'));
+//        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_MANUFACTURER, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+//            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
 
 
 
         //now we begin with category data
-        $this->info('Gathering Category Data');
-        $categories = Category::all();
-        $all_data = [];
-        foreach($categories as $category){
-            $all_data[] = $category->getBulkPushData();
-        }
-        $this->info('Gathering Category Data Complete');
-        $this->info('Parsing Category Data');
-        $this->info('Parsing Category Data Complete');
-        $this->info('Posting Category Data to '.onlineBase('productcategories'));
-        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_CATEGORY, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
-            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
+//        $this->info('Gathering Category Data');
+//        $categories = Category::all();
+//        $all_data = [];
+//        foreach($categories as $category){
+//            $all_data[] = $category->getBulkPushData();
+//        }
+//        $this->info('Gathering Category Data Complete');
+//        $this->info('Parsing Category Data');
+//        $this->info('Parsing Category Data Complete');
+//        $this->info('Posting Category Data to '.onlineBase('productcategories'));
+//        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_CATEGORY, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+//            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
 
 
         //now we begin with classification data
 
-        $this->info('Gathering Classification Data');
-        $classifications = Classification::all();
-        $all_data = [];
-        foreach($classifications as $classification){
-            $all_data[] = $classification->getBulkPushData();
-        }
-        $this->info('Gathering Classification Data Complete');
-        $this->info('Parsing Classification Data');
-        $this->info('Parsing Classification Data Complete');
-        $this->info('Posting Classification Data to '.onlineBase("classifications"));
-        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_CLASSIFICATION, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
-            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
+//        $this->info('Gathering Classification Data');
+//        $classifications = Classification::all();
+//        $all_data = [];
+//        foreach($classifications as $classification){
+//            $all_data[] = $classification->getBulkPushData();
+//        }
+//        $this->info('Gathering Classification Data Complete');
+//        $this->info('Parsing Classification Data');
+//        $this->info('Parsing Classification Data Complete');
+//        $this->info('Posting Classification Data to '.onlineBase("classifications"));
+//        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_CLASSIFICATION, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+//            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
 
 
-//
-//        $this->info('Gathering Customer Data');
-//        $customer =   Customer::query();
-//        $customerCount = round(($customer->count() / 2000));
-//        Customer::query()->chunk(2000, function($customers) use (&$customerCount){
-//            $all_data = [];
-//            foreach($customers as $customer){
-//                $all_data[] = $customer->getBulkPushData();
-//            }
-//            $this->info('Gathering Customer Data Complete');
-//            $this->info('Parsing Customer Data');
-//            $this->info('Parsing Customer Data Complete');
-//            $this->info('Posting Customer Data to '.onlineBase('customers'));
-//            dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_CUSTOMER, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
-//                'action'=>'new','table'=>'existing_customer', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
-//            $this->info('Chunk '. $customerCount. ' send successfully');
-//            $customerCount --;
-//        });
+
+        $this->info('Gathering Customer Data');
+        $customer =   Customer::query();
+        $customerCount = round(($customer->count() / 2000));
+        Customer::query()->chunk(2000, function($customers) use (&$customerCount){
+            $all_data = [];
+            foreach($customers as $customer){
+                $all_data[] = $customer->getBulkPushData();
+            }
+            $this->info('Gathering Customer Data Complete');
+            $this->info('Parsing Customer Data');
+            $this->info('Parsing Customer Data Complete');
+            $this->info('Posting Customer Data to '.onlineBase('customers'));
+            dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::UPDATE_CUSTOMER, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+                'action'=>'new','table'=>'existing_customer', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
+            $this->info('Chunk '. $customerCount. ' send successfully');
+            $customerCount --;
+        });
 
 
 
 
         //now we begin with group data
 
-        $this->info('Gathering Stock Group Data');
-        $stockgroups = StockGroup::all();
-        $all_data = [];
-        foreach($stockgroups as $stockgroup){
-            $all_data[] = $stockgroup->getBulkPushData();
-        }
-        $this->info('Gathering Stock Group Data Complete');
-        $this->info('Parsing Stock Group Data');
-        $this->info('Parsing Stock Group Data Complete');
-        $this->info('Posting Stock Group Data to '.onlineBase("productgroups"));
-        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_STOCK_GROUP, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
-            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
+//        $this->info('Gathering Stock Group Data');
+//        $stockgroups = StockGroup::all();
+//        $all_data = [];
+//        foreach($stockgroups as $stockgroup){
+//            $all_data[] = $stockgroup->getBulkPushData();
+//        }
+//        $this->info('Gathering Stock Group Data Complete');
+//        $this->info('Parsing Stock Group Data');
+//        $this->info('Parsing Stock Group Data Complete');
+//        $this->info('Posting Stock Group Data to '.onlineBase("productgroups"));
+//        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_STOCK_GROUP, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+//            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
 
 
 
