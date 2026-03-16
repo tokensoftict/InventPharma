@@ -20,6 +20,14 @@
                                     </div>
                                 @endif
 
+                                    @if($value['type'] === "color")
+                                        <div class="mb-3">
+                                            <label class="form-label">{{ $value['label'] }}</label>
+                                            <input type="color" class="form-control" type="{{ $value['type'] }}" wire:model="formData.{{ $key }}"  name="{{ $key }}"  placeholder="{{ $value['label'] }}">
+                                            @error("formData.$key") <span class="text-danger">{{ $message }}</span> @enderror
+                                        </div>
+                                    @endif
+
                                 @if($value['type'] === "password")
                                     <div class="mb-3">
                                         <label class="form-label">{{ $value['label'] }}</label>

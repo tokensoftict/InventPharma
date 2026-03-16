@@ -44,7 +44,7 @@
                             <td>{{ $loop->iteration }}</td>
                             <td>{{ $classification->name }}</td>
                             <td>
-                                @if(userCanView('classification.toggle()'))
+                                @if(userCanView('classification.toggle'))
                                 <div class="form-check form-switch mb-3" dir="ltr">
                                     <input wire:change="toggle({{ $classification->id }})" id="user{{ $classification->id }}" type="checkbox" class="form-check-input" id="customSwitch1" {{ $classification->status ? 'checked' : '' }}>
                                     <label class="form-check-label" for="customSwitch1">{{ $classification->status ? 'Active' : 'Inactive' }}</label>

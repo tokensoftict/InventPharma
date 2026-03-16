@@ -188,6 +188,14 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{id}/product_option_fields/toggle', ['as' => 'toggle_product_option_fields', 'uses' => 'ProductOptionController@toggle_product_option_fields', 'custom_label'=>'Toggle Product Option Fields']);
                 Route::get('{id}/product_option_fields/update', ['as' => 'update_product_option_fields', 'uses' => 'ProductOptionController@update_product_option_fields', 'custom_label'=>'Update Product Option Fields']);
             });
+            Route::prefix('member-group')->as('member-group.')->group(function () {
+                Route::get('', ['as' => 'index', 'uses' => 'MemberGroupController@index', 'visible' => true, 'custom_label'=>'Member Groups']);
+                Route::get('create', ['as' => 'create', 'uses' => 'MemberGroupController@create']);
+                Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'MemberGroupController@toggle']);
+                Route::put('{id}', ['as' => 'update', 'uses' => 'MemberGroupController@update']);
+            });
+
+
 //            Route::prefix('prescribers')->as('prescribers.')->group(function () {
 //                Route::get('', ['as' => 'index', 'uses' => 'PrescriberController@index', 'visible' => true, 'custom_label'=>'Prescribers']);
 //                Route::get('create', ['as' => 'create', 'uses' => 'PrescriberController@create']);
