@@ -458,7 +458,7 @@ class InvoiceController extends Controller
 
             LogActivity($invoice->id, $invoice->invoice_number,"Online invoice, update sent to server ".$invoice->status);
 
-            //ProcessOrderService::sendBackCancelOrderMessage($invoice->onliner_order_id, $invoice->invoice_number);
+            ProcessOrderService::sendBackCancelOrderMessage($invoice->onliner_order_id, $invoice->invoice_number);
 
         }
 
