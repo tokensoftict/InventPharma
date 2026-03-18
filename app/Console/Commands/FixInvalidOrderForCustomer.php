@@ -34,7 +34,7 @@ class FixInvalidOrderForCustomer extends Command
 
 
         $startDay = "2026-03-17";
-        $endDay = "2022-03-18";
+        $endDay = "2026-03-18";
 
         $in =Invoice::query()->whereBetween("invoice_date", [$startDay, $endDay])
             ->where("customer_id", 2151)->whereNotNull("onliner_order_id")
