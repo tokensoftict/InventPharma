@@ -32,18 +32,12 @@ class FixInvalidOrderForCustomer extends Command
     public function handle()
     {
 
-        $customerId = text(
-            label: 'Input Customer Id',
-            placeholder: 'Customer Id',
-            default: '',
-            required: true
-        );
 
         $startDay = "2026-03-17";
         $endDay = "2022-03-18";
 
         Invoice::query()->whereBetween("invoice_date", [$startDay, $endDay])
-            ->where("customer_id", $customerId)->whereNotNull("onliner_order_id")
+            ->where("customer_id", 2151)->whereNotNull("onliner_order_id")
             ->where('status_id', status('Draft'))
             ->chunk(100, function ($invoice) {
                 foreach ($invoice as $invoice) {
