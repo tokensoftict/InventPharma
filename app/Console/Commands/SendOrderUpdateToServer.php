@@ -51,6 +51,8 @@ class SendOrderUpdateToServer extends Command
                 } else if($invoice->status_id == status('Dispatched')){
                     $this->info("processing Dispatched invoice #" . $invoice->id);
                     ProcessOrderService::sendBackOrderDispatchedMessage($invoice->onliner_order_id, NULL, $invoice->carton_no);
+                } else {
+                    $this->info("current status invoice id " . $invoice->status->name);
                 }
             }
         });
