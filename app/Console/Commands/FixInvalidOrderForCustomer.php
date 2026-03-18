@@ -44,6 +44,7 @@ class FixInvalidOrderForCustomer extends Command
 
         Invoice::query()->whereBetween("invoice_date", [$startDay, $endDay])
             ->where("customer_id", $customerId)->whereNotNull("onliner_order_id")
+            ->where('status_id', status('Draft'))
             ->chunk(100, function ($invoice) {
                 foreach ($invoice as $invoice) {
                    DB::transaction(function () use ($invoice) {
