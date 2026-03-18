@@ -36,11 +36,14 @@ class FixInvalidOrderForCustomer extends Command
         $startDay = "2026-03-17";
         $endDay = "2022-03-18";
 
-        Invoice::query()->whereBetween("invoice_date", [$startDay, $endDay])
+        $in =Invoice::query()->whereBetween("invoice_date", [$startDay, $endDay])
             ->where("customer_id", 2151)->whereNotNull("onliner_order_id")
-            ->where('status_id', status('Draft'))
-            ->chunk(100, function ($invoice) {
-                foreach ($invoice as $invoice) {
+            ->where('status_id', status('Draft'));
+
+        $this->info("found total invoice ". $in->count());
+
+        $in->chunk(100, function ($invoices) {
+                foreach ($invoices as $invoice) {
                     $this->info("processing invoice #" . $invoice->id);
                    DB::transaction(function () use ($invoice) {
                        $order = Http::get("https://pa.psgdc.store/?order_id=$invoice->onliner_order_id")->json();
