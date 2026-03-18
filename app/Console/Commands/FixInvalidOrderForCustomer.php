@@ -48,7 +48,7 @@ class FixInvalidOrderForCustomer extends Command
                    DB::transaction(function () use ($invoice) {
                        $order = Http::get("https://pa.psgdc.store/?order_id=$invoice->onliner_order_id")->json();
                        $invoice->invoice_date = (new Carbon($order['order_date']))->format('Y-m-d');
-                       if($order->customer_type == "App\\Models\\SupermarketUser") {
+                       if($order['customer_type'] == "App\\Models\\SupermarketUser") {
                            $invoice->status_id = status('Complete');
                        } else {
                            $invoice->status_id = status('Dispatched');
