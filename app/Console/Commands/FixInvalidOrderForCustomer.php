@@ -33,8 +33,8 @@ class FixInvalidOrderForCustomer extends Command
     {
 
         $customerId = text(
-            label: 'Input the email address of the account manager you want to transfer client from',
-            placeholder: 'From Email Address',
+            label: 'Customer ID',
+            placeholder: 'Customer ID',
             default: '',
             required: true
         );
