@@ -32,12 +32,18 @@ class FixInvalidOrderForCustomer extends Command
     public function handle()
     {
 
+        $customerId = text(
+            label: 'Input the email address of the account manager you want to transfer client from',
+            placeholder: 'From Email Address',
+            default: '',
+            required: true
+        );
 
         $startDay = "2026-03-17";
         $endDay = "2026-03-18";
 
         $in =Invoice::query()->whereBetween("invoice_date", [$startDay, $endDay])
-            ->where("customer_id", 2151)->whereNotNull("onliner_order_id")
+            ->where("customer_id", $customerId)->whereNotNull("onliner_order_id")
             ->where('status_id', status('Draft'));
 
         $this->info("found total invoice ". $in->count());
