@@ -41,6 +41,7 @@ class FixInvalidOrderForCustomer extends Command
             ->where('status_id', status('Draft'))
             ->chunk(100, function ($invoice) {
                 foreach ($invoice as $invoice) {
+                    $this->info("processing invoice #" . $invoice->id);
                    DB::transaction(function () use ($invoice) {
                        $order = Http::get("https://pa.psgdc.store/?order_id=$invoice->onliner_order_id")->json();
                        $invoice->invoice_date = (new Carbon($order['order_date']))->format('Y-m-d');
