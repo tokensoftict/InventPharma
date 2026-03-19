@@ -180,7 +180,7 @@ class InvoiceFormComponent extends Component
         $customer->email = $this->email;
         $customer->phone_number = $this->phone_number;
         $customer->address = $this->address;
-        $customer->city_id = $this->city_id;
+        $customer->city_id = $this->city_id == "" ? null : $this->city_id;
         $customer->member_group_id = $this->member_group_id == "" ? NULL : $this->member_group_id;
 
         $customer->save();
