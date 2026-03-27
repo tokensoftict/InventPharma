@@ -34,5 +34,5 @@ enum KafkaAction
 
     const CREATE_MEMBER_GROUP = "CREATE_MEMBER_GROUP";
     const UPDATE_MEMBER_GROUP = "UPDATE_MEMBER_GROUP";
-
+    const UPLOAD_IMAGE = "UPLOAD_IMAGE";
 }

@@ -234,6 +234,7 @@ class ProductController extends Controller
                         'Category' => $st->category_id ? $st->category->name : 'N/A',
                         'Manufacturer' => $st->manufacturer_id ? $st->manufacturer->name  : 'N/A',
                         'Classification' => $st->classification_id ? $st->classification->name : 'N/A',
+                        'Major Classification' => $st->classification_id ? $st->classification->major_classification : 'N/A',
                         'Group' => $st->stockgroup_id ? $st->stockgroup->name : "N/A",
                         'Retail Price'=> $st->retail_price,
                         'Whole Sales Price'=>$st->whole_price,

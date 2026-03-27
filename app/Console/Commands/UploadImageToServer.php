@@ -3,8 +3,12 @@
 namespace App\Console\Commands;
 
 use App\Models\Stock;
-use CURLFile;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+use App\Enums\KafkaAction;
+use App\Enums\KafkaTopics;
+use App\Jobs\PushDataServer;
 
 class UploadImageToServer extends Command
 {
@@ -20,7 +24,7 @@ class UploadImageToServer extends Command
      *
      * @var string
      */
-    protected $description = 'Upload Product Image to Server';
+    protected $description = 'Upload Product Image to Server (Contabo Bucket)';
 
     /**
      * Execute the console command.
@@ -29,49 +33,59 @@ class UploadImageToServer extends Command
      */
     public function handle()
     {
-        $stockImage = Stock::where("image_uploaded", 0)->whereNotNull('image_path')->orderBy('id', 'desc')->first();
+        $stockImage = Stock::where("image_uploaded", 0)
+            ->whereNotNull('image_path')
+            ->orderBy('id', 'desc')
+            ->first();
 
-        $image = public_path($stockImage->image_path);
-
-        $url = 'https://admin.generaldrugcentre.com/api/data/uploadImage';
-
-        $path = explode("/",$stockImage->image_path);
-
-        $label = $path[count($path) -1];
-
-        $ch = curl_init($url);
-
-        $image =$this->makeCurlFile($image);
-
-        $data = array('image' => $image, 'local_id' => $stockImage->id);
-
-        curl_setopt($ch, CURLOPT_POST,1);
-
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-
-        $result = curl_exec($ch);
-
-        if (curl_errno($ch)) {
-            $this->info('Error output :'.$stockImage->id);
-            $stockImage->image_uploaded = 2;
-        }else{
-            $this->info('Uploaded'.$stockImage->id);
-            $stockImage->image_uploaded = 1;
+        if (!$stockImage) {
+            $this->info('No images to upload.');
+            return Command::SUCCESS;
         }
 
-        curl_close ($ch);
+        $imagePath = public_path($stockImage->image_path);
 
-        $stockImage->update();
+        if (!File::exists($imagePath)) {
+            $this->error('File does not exist: ' . $imagePath);
+            $stockImage->image_uploaded = 2; // Error state
+            $stockImage->save();
+            return Command::FAILURE;
+        }
+
+        try {
+            $extension = File::extension($imagePath);
+            $fileName = $stockImage->id . '.' . $extension;
+            $destinationPath = 'psgdc/' . $fileName;
+
+            // Upload to Contabo bucket, replacing if it exists
+            $uploaded = Storage::disk('contabo')->putFileAs(
+                'psgdc',
+                new \Illuminate\Http\File($imagePath),
+                $fileName
+            );
+
+            if ($uploaded) {
+                $this->info('Uploaded ' . $stockImage->id . ' to ' . $destinationPath);
+                $stockImage->image_uploaded = 1;
+
+                // Dispatch Kafka message to sync with mystore
+                dispatch(new PushDataServer([
+                    'KAFKA_ACTION' => KafkaAction::UPLOAD_IMAGE,
+                    'KAFKA_TOPICS' => KafkaTopics::STOCKS,
+                    'local_stock_id' => $stockImage->id,
+                    'image_path' => $destinationPath
+                ]));
+            } else {
+                $this->error('Failed to upload ' . $stockImage->id);
+                $stockImage->image_uploaded = 2;
+            }
+        } catch (\Exception $e) {
+            $this->error('Error uploading ' . $stockImage->id . ': ' . $e->getMessage());
+            $stockImage->image_uploaded = 2;
+        }
+
+        $stockImage->save();
 
         return Command::SUCCESS;
-    }
-
-
-    private function makeCurlFile($file){
-        $mime = mime_content_type($file);
-        $info = pathinfo($file);
-        $name = $info['basename'];
-        $output = new CURLFile($file, $mime, $name);
-        return $output;
     }
 }

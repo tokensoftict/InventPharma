@@ -34,6 +34,7 @@
                     <tr>
                         <th>#</th>
                         <th>Name</th>
+                        <th>Major Classification</th>
                         <th>Status</th>
                         <th>Action</th>
                     </tr>
@@ -43,6 +44,7 @@
                         <tr>
                             <td>{{ $loop->iteration }}</td>
                             <td>{{ $classification->name }}</td>
+                            <td>{{ $classification->major_classification }}</td>
                             <td>
                                 @if(userCanView('classification.toggle'))
                                 <div class="form-check form-switch mb-3" dir="ltr">

@@ -19,10 +19,19 @@ class ClassificationComponent extends Component
         $this->modalName = "Classifications";
         $this->data = [
             'name' => ['label' => 'Name', 'type'=>'text'],
+            'major_classification' => [
+                'label' => 'Major Classification',
+                'type'=>'select',
+                'options'=>[
+                    ['id' => 'PHARMACY', 'name' => 'PHARMACY'],
+                    ['id' => 'SUPERMARKET', 'name' => 'SUPERMARKET']
+                ]
+            ],
         ];
 
         $this->newValidateRules = [
             'name' => 'required|min:1',
+            'major_classification' => 'required',
         ];
 
         $this->updateValidateRules = $this->newValidateRules;

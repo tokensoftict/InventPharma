@@ -39,14 +39,16 @@ class Classification extends Model
 
 	protected $fillable = [
 		'name',
-		'status'
+		'status',
+        'major_classification'
 	];
 
     public function getBulkPushData() : array{
         return [
             'id'=>$this->id,
             'name'=> $this->name,
-            'status'=>$this->status
+            'status'=>$this->status,
+            'major_classification'=>$this->major_classification
         ];
     }
 
