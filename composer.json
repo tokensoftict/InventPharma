@@ -13,6 +13,7 @@
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.7",
+        "league/flysystem-aws-s3-v3": "^3.32",
         "livewire/livewire": "^3.5",
         "maatwebsite/excel": "^3.1",
         "mateusjunges/laravel-kafka": "^2.5",
