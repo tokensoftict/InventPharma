@@ -57,7 +57,7 @@ class UploadImageToServer extends Command
         try {
             $extension = File::extension($imagePath);
             $fileName = $stockImage->id . '.' . $extension;
-            $destinationPath = 'psgdc/' . $fileName;
+            $destinationPath = 'images/' . $fileName;
 
             // Upload to Contabo bucket, replacing if it exists
             $uploaded = Storage::disk('contabo')->putFileAs(
