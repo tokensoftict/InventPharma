@@ -74,8 +74,11 @@ class UploadImageToServer extends Command
                 dispatch(new PushDataServer([
                     'KAFKA_ACTION' => KafkaAction::UPLOAD_IMAGE,
                     'KAFKA_TOPICS' => KafkaTopics::STOCKS,
-                    'local_stock_id' => $stockImage->id,
-                    'image_path' => $destinationPath
+                    'action' => "update",
+                    'data' => [
+                        'local_stock_id' => $stockImage->id,
+                        'image_path' => $destinationPath
+                    ],
                 ]));
             }
             else {
