@@ -390,6 +390,7 @@ trait StockModelTrait
             'custom_price' => $this->stockquantityprices()->get()->map->only(['price','min_qty', 'max_qty', 'department'])->toArray(),
             'stock_option_values' => $this->buildProductOptions()->toArray(),
             'dependent_products' => $this->dependent_products()->get()->map->only(['stock_id', 'parent', 'child'])->toArray(),
+            'stock_barcodes' => $this->stockbarcodes()->get()->map->only(['barcode'])->pluck('barcode')->toArray(),
         ];
 
         $stockPrices = [];
