@@ -33,12 +33,11 @@ class UploadImageToServer extends Command
      */
     public function handle()
     {
-        // $stockImage = Stock::where("image_uploaded", 0)
-        //     ->whereNotNull('image_path')
-        //     ->orderBy('id', 'desc')
-        //     ->first();
+        $stockImage = Stock::where("image_uploaded", 0)
+            ->whereNotNull('image_path')
+            ->orderBy('id', 'desc')
+            ->first();
 
-        $stockImage = Stock::find(6);
 
         if (!$stockImage) {
             $this->info('No images to upload.');
