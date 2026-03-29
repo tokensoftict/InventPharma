@@ -33,10 +33,12 @@ class UploadImageToServer extends Command
      */
     public function handle()
     {
-        $stockImage = Stock::where("image_uploaded", 0)
-            ->whereNotNull('image_path')
-            ->orderBy('id', 'desc')
-            ->first();
+        // $stockImage = Stock::where("image_uploaded", 0)
+        //     ->whereNotNull('image_path')
+        //     ->orderBy('id', 'desc')
+        //     ->first();
+
+        $stockImage = Stock::find(6);
 
         if (!$stockImage) {
             $this->info('No images to upload.');
@@ -75,11 +77,13 @@ class UploadImageToServer extends Command
                     'local_stock_id' => $stockImage->id,
                     'image_path' => $destinationPath
                 ]));
-            } else {
+            }
+            else {
                 $this->error('Failed to upload ' . $stockImage->id);
                 $stockImage->image_uploaded = 2;
             }
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             $this->error('Error uploading ' . $stockImage->id . ': ' . $e->getMessage());
             $stockImage->image_uploaded = 2;
         }
