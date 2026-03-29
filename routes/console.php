@@ -22,4 +22,4 @@ Schedule::command('sync:old_stock')->everyTwoHours();
 
 //Schedule::command('download:product-image')->withoutOverlapping()->everyMinute()->appendOutputTo('storage/app/imageDownload.txt');
 
-//Schedule::command('uploadproduct:image')->withoutOverlapping()->everyMinute()->appendOutputTo('storage/app/imageUpload.txt');
+Schedule::command('uploadproduct:image')->withoutOverlapping()->everyMinute()->appendOutputTo('storage/app/imageUpload.txt');
