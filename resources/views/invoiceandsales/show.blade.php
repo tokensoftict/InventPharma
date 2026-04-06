@@ -4,15 +4,26 @@
 @section('pageHeaderDescription', 'View Invoice Details')
 
 @section('css')
-    <link rel="stylesheet" href="{{ asset('css/dataTables.bootstrap4.min.css') }}">
     <link rel="stylesheet" href="{{ asset('plugins/select2/css/select2.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ asset('DataTables/datatables.min.css') }}"/>
 @endsection
 
 @section('js')
-
-    <script src="{{ asset('js/jquery.dataTables.min.js') }}"></script>
-    <script src="{{ asset('js/dataTables.bootstrap4.min.js') }}"></script>
+    <script type="text/javascript" src="{{asset('DataTables/datatables.min.js') }}"></script>
     <script src="{{ asset('plugins/select2/js/select2.min.js') }}"></script>
+
+    <script>
+        $(document).ready(function(){
+            $('#invoiceItems').DataTable({
+                buttons: [
+                    'copy', 'excel', 'pdf'
+                ],
+                dom:  "<'row be-datatable-header'<'col-sm-4'l><'col-sm-4 text-right'B><'col-sm-4 text-right'f>>" +
+                    "<'row be-datatable-body'<'col-sm-12'tr>>" +
+                    "<'row be-datatable-footer'<'col-sm-5'i><'col-sm-7'p>>",
+            });
+        })
+    </script>
 @endsection
 
 @section('content')

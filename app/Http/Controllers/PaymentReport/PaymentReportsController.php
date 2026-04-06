@@ -128,7 +128,7 @@ class PaymentReportsController extends Controller
             $data['filters'] = $request->get('filter');
             $data['filters']['filters']['between.invoice_date'] = Arr::only(array_values( $request->get('filter')), [0,1]);
         }
-        return setPageContent('reports.payment.profitandloss', $data);
+        return view('reports.payment.profitandloss', $data);
     }
 
     public function profit_and_loss_by_department(Request $request)

@@ -283,7 +283,7 @@
                     <h3>Invoice Items</h3>
                     <hr/>
                     <div class="table-responsive" wire:ignore.self>
-                        <table class="table table-striped datanew table-hover table-bordered" >
+                        <table class="table table-striped datanew table-hover table-bordered" id="invoiceItems">
                             <thead>
                             <tr>
                                 <th>#</th>
