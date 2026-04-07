@@ -51,7 +51,7 @@ final class NearOsDatatable extends PowerGridComponent
                     END) AS name')
                 ]
             )
-            ->where("nearoutofstocks.threshold_type", "<>", "")
+            ->where("nearoutofstocks.threshold_type", "<>", "NOT-NORMAL")
             ->where('is_grouped',0)
             ->leftJoin('stocks', function ($stocks) {
                 $stocks->on('nearoutofstocks.stock_id', '=', 'stocks.id');

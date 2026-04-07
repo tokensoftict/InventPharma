@@ -48,7 +48,7 @@ final class RetailNearOsDatatable extends PowerGridComponent
                         ELSE stocks.name
                     END) AS name')
                 ]
-            )->where("retailnearoutofstock.threshold_type", "<>", "")
+            )->where("retailnearoutofstock.threshold_type", "<>", "NOT-NORMAL")
             ->leftJoin('stocks', function ($stocks) {
                 $stocks->on('retailnearoutofstock.stock_id', '=', 'stocks.id');
             })
