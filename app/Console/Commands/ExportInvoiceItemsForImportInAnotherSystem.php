@@ -32,7 +32,7 @@ class ExportInvoiceItemsForImportInAnotherSystem extends Command
         $data = [];
         $invoices = Invoice::query()->with(['invoiceitems', 'invoiceitems.stock'])->whereIn('invoice_number', $invoiceNumber)->get();
         foreach ($invoices as $invoice) {
-            foreach ($invoice->items as $item) {
+            foreach ($invoice->invoiceitems as $item) {
                 $data[] = [
                     "ID" => "",
                     'name' => $item->stock->name,
