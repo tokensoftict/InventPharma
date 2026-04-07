@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Exports\Stockexport;
 use App\Models\Invoice;
 use Illuminate\Console\Command;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ExportInvoiceItemsForImportInAnotherSystem extends Command
 {
@@ -31,22 +32,24 @@ class ExportInvoiceItemsForImportInAnotherSystem extends Command
         $data = [];
         $invoices = Invoice::query()->with(['invoiceitems', 'invoiceitems.stock'])->whereIn('invoice_number', $invoiceNumber)->get();
         foreach ($invoices as $invoice) {
-            $data[] = [
-                "ID" => "",
-                'name' => $invoice->invoiceitems->stock->name,
-                'Category' => "",
-                'Manufacturer' => "",
-                'Classification' => "",
-                'Major Classification' => "",
-                'Group' => "",
-                'Retail Price' => $invoice->invoiceitems->stock->retail_price,
-                'Whole Sales Price' => $invoice->invoiceitems->stock->whole_price,
-                'Bulk Sales Price' => $invoice->invoiceitems->stock->bulk_price,
-                'Status' => "1",
-                'Quantity' => $invoice->invoiceitems->quantity,
-                'Last purchase Date' => "",
-                'Box'=> $invoice->invoiceitems->stock->box
-            ];
+            foreach ($invoice->items as $item) {
+                $data[] = [
+                    "ID" => "",
+                    'name' => $item->stock->name,
+                    'Category' => "",
+                    'Manufacturer' => "",
+                    'Classification' => "",
+                    'Major Classification' => "",
+                    'Group' => "",
+                    'Retail Price' => $item->stock->retail_price,
+                    'Whole Sales Price' => $item->stock->whole_price,
+                    'Bulk Sales Price' => $item->stock->bulk_price,
+                    'Status' => "1",
+                    'Quantity' => $item->quantity,
+                    'Last purchase Date' => "",
+                    'Box'=> $item->stock->box
+                ];
+            }
         }
 
         Excel::store(new Stockexport($data), 'customer_invoice_list' . '.xlsx');
