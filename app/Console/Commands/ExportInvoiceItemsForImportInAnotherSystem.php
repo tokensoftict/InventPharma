@@ -39,7 +39,6 @@ class ExportInvoiceItemsForImportInAnotherSystem extends Command
                     'Category' => "",
                     'Manufacturer' => "",
                     'Classification' => "",
-                    'Major Classification' => "",
                     'Group' => "",
                     'Retail Price' => $item->stock->retail_price,
                     'Whole Sales Price' => $item->stock->whole_price,
