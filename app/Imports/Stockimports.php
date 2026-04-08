@@ -34,7 +34,7 @@ class Stockimports implements ToCollection, WithChunkReading, ShouldQueue,WithHe
      */
     public function collection(Collection $rows)
     {
-        dd($rows);
+       dd($rows);
         foreach ($rows as $row){
 
             if(!isset($row['id'])) continue;
