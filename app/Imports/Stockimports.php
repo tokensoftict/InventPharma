@@ -17,7 +17,7 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use App\Models\Stockbatch as batch;
 
 
-class Stockimports implements ToCollection, WithChunkReading, ShouldQueue,WithHeadingRow
+class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow
 {
 
 
@@ -38,7 +38,6 @@ class Stockimports implements ToCollection, WithChunkReading, ShouldQueue,WithHe
      */
     public function collection(Collection $rows)
     {
-        dd($rows);
         foreach ($rows as $row){
 
             if(!isset($row['id'])) continue;
