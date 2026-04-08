@@ -166,9 +166,9 @@ class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow
                 $batch->stock_id = $stock->id;
                 $batch->expiry_date = $row['expiry_date'];
                 $batch->received_date = date("Y-m-d");
-                $batch->wholesales = $row['quantity'];
+                $batch->wholesales = 0;
                 $batch->bulksales = 0;
-                $batch->retail = 0;
+                $batch->retail = $row['quantity'];
                 $batch->retail_store = 0;
                 $batch->quantity = 0;
                 $batch->retail_cost_price = $row['retail_price'];
