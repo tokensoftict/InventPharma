@@ -28,7 +28,7 @@ class ExportInvoiceItemsForImportInAnotherSystem extends Command
      */
     public function handle()
     {
-        $invoiceNumber = [5972314255,447409294,6560729798,3425754955];
+        $invoiceNumber = [5972314255,447409294,6560729798,3425754955,2721425180,3342458512];
         $data = [];
         $invoices = Invoice::query()->with(['invoiceitems', 'invoiceitems.stock'])->whereIn('invoice_number', $invoiceNumber)->get();
         foreach ($invoices as $invoice) {
