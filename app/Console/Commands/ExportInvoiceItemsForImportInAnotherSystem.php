@@ -31,9 +31,9 @@ class ExportInvoiceItemsForImportInAnotherSystem extends Command
     {
         $invoiceNumber = [5972314255,447409294,6560729798,3425754955,2721425180,3342458512];
         $data = [];
-        $invoices = Invoice::query()->with(['invoiceitems', 'invoiceitems.stock'])->whereIn('invoice_number', $invoiceNumber)->get();
+        $invoices = Invoice::query()->with(['invoiceitems', 'invoiceitems.stock', 'invoiceitembatches', 'invoiceitembatches.stock', 'invoiceitembatches.stockbatch'])->whereIn('invoice_number', $invoiceNumber)->get();
         foreach ($invoices as $invoice) {
-            foreach ($invoice->invoiceitems as $item) {
+            foreach ($invoice->invoiceitembatches as $item) {
                 $data[] = [
                     "ID" => "",
                     'name' => $item->stock->name,
@@ -46,8 +46,9 @@ class ExportInvoiceItemsForImportInAnotherSystem extends Command
                     'Bulk Sales Price' => $item->stock->bulk_price,
                     'Status' => "1",
                     'Quantity' => $item->quantity,
-                    'Last purchase Date' => "",
+                    'Last purchase Date' => date('Y-m-d'),
                     'Box'=> $item->stock->box,
+                    'Expiry Date' => $item->stockbatch->expiry_date,
                 ];
             }
         }
