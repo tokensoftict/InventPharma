@@ -7,6 +7,7 @@ use App\Models\Invoice;
 use Illuminate\Console\Command;
 use Maatwebsite\Excel\Facades\Excel;
 
+
 class ExportInvoiceItemsForImportInAnotherSystem extends Command
 {
     /**
@@ -46,7 +47,7 @@ class ExportInvoiceItemsForImportInAnotherSystem extends Command
                     'Status' => "1",
                     'Quantity' => $item->quantity,
                     'Last purchase Date' => "",
-                    'Box'=> $item->stock->box
+                    'Box'=> $item->stock->box,
                 ];
             }
         }
