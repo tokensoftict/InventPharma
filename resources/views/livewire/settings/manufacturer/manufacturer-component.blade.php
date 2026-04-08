@@ -28,6 +28,15 @@
 
     <div class="card">
         <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bx bx-search"></i></span>
+                        <input type="text" wire:model.live.debounce.300ms="search" class="form-control" placeholder="Search...">
+                    </div>
+                </div>
+            </div>
+
             <div class="table-responsive">
                 <table class="table">
                     <thead>
@@ -54,6 +63,9 @@
                                 @endif
                             </td>
                             <td>
+                                <a class="btn btn-outline-primary btn-sm" href="{{ route('manufacturer.stocks', $manufacturer->id) }}" title="View Stocks">
+                                    <i class="fas fa-list"></i>
+                                </a>
                                 @if(userCanView('manufacturer.update'))
                                     <a class="btn btn-outline-primary btn-sm edit" wire:click="edit({{ $manufacturer->id }})" href="javascript:void(0);" >
 

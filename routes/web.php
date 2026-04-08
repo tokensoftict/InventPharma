@@ -101,6 +101,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'ManufacturerController@toggle']);
                 Route::put('{id}', ['as' => 'update', 'uses' => 'ManufacturerController@update']);
                 Route::delete('{id}', ['as' => 'destroy', 'uses' => 'ManufacturerController@destroy']);
+                Route::get('{manufacturer}/stocks', ['as' => 'stocks', 'uses' => 'ManufacturerController@stocks', 'custom_label'=>'Manage Stocks by Manufacturer']);
             });
             Route::prefix('brand')->as('brand.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'BrandController@index', 'visible' => true, 'custom_label'=>'Brands']);
@@ -112,6 +113,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'BrandController@toggle']);
                 Route::put('{id}', ['as' => 'update', 'uses' => 'BrandController@update']);
                 Route::delete('{id}', ['as' => 'destroy', 'uses' => 'BrandController@destroy']);
+                Route::get('{brand}/stocks', ['as' => 'stocks', 'uses' => 'BrandController@stocks', 'custom_label'=>'Manage Stocks by Brand']);
             });
             Route::prefix('category')->as('category.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'CategoryController@index', 'visible' => true, 'custom_label'=>'Product Category']);
@@ -123,6 +125,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'CategoryController@toggle']);
                 Route::put('{id}', ['as' => 'update', 'uses' => 'CategoryController@update']);
                 Route::delete('{id}', ['as' => 'destroy', 'uses' => 'CategoryController@destroy']);
+                Route::get('{category}/stocks', ['as' => 'stocks', 'uses' => 'CategoryController@stocks', 'custom_label'=>'Manage Stocks by Category']);
             });
             Route::prefix('classification')->as('classification.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'ClassificationController@index', 'visible' => true, 'custom_label'=>'Classification']);
@@ -134,6 +137,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'ClassificationController@toggle']);
                 Route::put('{id}', ['as' => 'update', 'uses' => 'ClassificationController@update']);
                 Route::delete('{id}', ['as' => 'destroy', 'uses' => 'ClassificationController@destroy']);
+                Route::get('{classification}/stocks', ['as' => 'stocks', 'uses' => 'ClassificationController@stocks', 'custom_label'=>'Manage Stocks by Classification']);
             });
             Route::prefix('stockgroup')->as('stockgroup.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'StockGroupController@index', 'visible' => true, 'custom_label'=>'Stock Group']);

@@ -55,9 +55,8 @@ class Manufacturer extends Model
         dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_MANUFACTURER, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL, 'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$this->getBulkPushData()]));
     }
 
-    public function updateonlinePush()
+    public function stocks()
     {
-        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::UPDATE_MANUFACTURER, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,'action'=>'update','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$this->getBulkPushData()]));
+        return $this->hasMany(Stock::class, 'manufacturer_id');
     }
-
 }

@@ -29,6 +29,29 @@ trait SimpleComponentTrait
 
     public array $updateValidateRules;
 
+    public $search = '';
+
+    public function updatingSearch()
+    {
+        if (method_exists($this, 'resetPage')) {
+            $this->resetPage();
+        }
+    }
+
+    public function applySearch($query)
+    {
+        if (!empty($this->search)) {
+            $query->where(function ($q) {
+                foreach ($this->data as $key => $value) {
+                    if (isset($value['type']) && in_array($value['type'], ['text', 'email', 'textarea'])) {
+                        $q->orWhere($key, 'like', '%' . $this->search . '%');
+                    }
+                }
+            });
+        }
+        return $query;
+    }
+
     public function boot()
     {
         $this->listeners = [
@@ -38,8 +61,6 @@ trait SimpleComponentTrait
         ];
 
     }
-
-
 
     public function initControls()
     {
@@ -110,11 +131,20 @@ trait SimpleComponentTrait
         $this->dispatch("closeModal", []);
     }
 
-
-
     public function get()
     {
-       return $this->cacheModel === null ? (method_exists($this,'custom_query') ? $this->custom_query() : $this->model::paginate(Settings::$pagination)) : call_user_func($this->cacheModel);
+        if ($this->cacheModel !== null) {
+            return call_user_func($this->cacheModel);
+        }
+
+        if (method_exists($this, 'custom_query')) {
+            return $this->custom_query();
+        }
+
+        $query = $this->model::query();
+        $query = $this->applySearch($query);
+
+        return $query->paginate(Settings::$pagination);
     }
 
     protected function loadEdit($id)

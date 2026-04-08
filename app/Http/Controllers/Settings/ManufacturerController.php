@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
-use App\Models\ProductCategory;
+use App\Models\Manufacturer;
 use Illuminate\Http\Request;
 
 class ManufacturerController extends Controller
@@ -13,31 +13,14 @@ class ManufacturerController extends Controller
         return setPageContent('settings.manufacturer.index');
     }
 
-
-    public function create(){
-
+    public function listAll(){
+        // Handled by Livewire
     }
 
-
-
-
-    public function toggle($id){
-
-
-
-    }
-
-
-
-
-    public function update(Request $request, $id){
-
-
-    }
-
-
-    public function destroy($id){
-
-
+    public function stocks(Manufacturer $manufacturer){
+        $data = [
+            'manufacturer' => $manufacturer
+        ];
+        return view('settings.manufacturer.stocks', $data);
     }
 }

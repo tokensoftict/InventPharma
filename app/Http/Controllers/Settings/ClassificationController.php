@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
-use App\Models\ProductCategory;
+use App\Models\Classification;
 use Illuminate\Http\Request;
 
 class ClassificationController extends Controller
@@ -13,32 +13,14 @@ class ClassificationController extends Controller
         return setPageContent('settings.classification.index');
     }
 
-
-    public function create(){
-
+    public function listAll(){
+        // Handled by Livewire
     }
 
-
-
-
-    public function toggle($id){
-
-
-
+    public function stocks(Classification $classification){
+        $data = [
+            'classification' => $classification
+        ];
+        return view('settings.classification.stocks', $data);
     }
-
-
-
-
-    public function update(Request $request, $id){
-
-
-    }
-
-
-    public function destroy($id){
-
-
-    }
-
 }

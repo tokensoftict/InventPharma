@@ -59,4 +59,9 @@ class Brand extends Model
         dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::UPDATE_BRAND, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL, 'action'=>'update','table'=>'brands','data'=>$this->getBulkPushData()]));
     }
 
+    public function stocks()
+    {
+        return $this->hasMany(Stock::class, 'brand_id');
+    }
+
 }

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
-use App\Models\ProductCategory;
+use App\Models\Brand;
 use Illuminate\Http\Request;
 
 class BrandController extends Controller
@@ -13,23 +13,14 @@ class BrandController extends Controller
         return setPageContent('settings.brand.index');
     }
 
-
-    public function create(){
-
+    public function listAll(){
+        // Handled by Livewire
     }
 
-    public function toggle($id){
-
+    public function stocks(Brand $brand){
+        $data = [
+            'brand' => $brand
+        ];
+        return view('settings.brand.stocks', $data);
     }
-
-    public function update(Request $request, $id){
-
-
-    }
-
-    public function destroy($id){
-
-
-    }
-
 }

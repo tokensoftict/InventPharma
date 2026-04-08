@@ -60,4 +60,8 @@ class Category extends Model
         dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::UPDATE_CATEGORY, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL, 'action'=>'update','table'=>'product_category', 'endpoint' => 'productcategories', 'data'=>$this->getBulkPushData()]));
     }
 
+    public function stocks()
+    {
+        return $this->hasMany(Stock::class, 'category_id');
+    }
 }

@@ -92,8 +92,9 @@ class UserComponent extends Component
 
     public function get()
     {
-        return User::with(['department','usergroup'])->orderBy('name','ASC')->paginate(Settings::$pagination);
-
+        $query = User::with(['department','usergroup'])->orderBy('name','ASC');
+        $query = $this->applySearch($query);
+        return $query->paginate(Settings::$pagination);
     }
 
 

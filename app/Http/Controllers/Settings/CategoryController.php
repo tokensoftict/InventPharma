@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
-use App\Models\ProductCategory;
+use App\Models\Category;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
@@ -13,32 +13,14 @@ class CategoryController extends Controller
         return setPageContent('settings.category.index');
     }
 
-
-    public function create(){
-
+    public function listAll(){
+        // Handled by Livewire
     }
 
-
-
-
-    public function toggle($id){
-
-
-
+    public function stocks(Category $category){
+        $data = [
+            'category' => $category
+        ];
+        return view('settings.category.stocks', $data);
     }
-
-
-
-
-    public function update(Request $request, $id){
-
-
-    }
-
-
-    public function destroy($id){
-
-
-    }
-
 }
