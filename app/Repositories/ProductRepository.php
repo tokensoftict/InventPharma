@@ -289,7 +289,7 @@ class ProductRepository
         };
 
         $stocks = DB::table('stocks')
-            ->select('id', 'whole_price','bulk_price', 'retail_price', 'name', 'box', 'location', DB::raw("$highest_qty_sold_column as highest_qty_sold") ,'name as text',
+            ->select('id', 'stockgroup_id','whole_price','bulk_price', 'retail_price', 'name', 'box', 'location', DB::raw("$highest_qty_sold_column as highest_qty_sold") ,'name as text',
                 DB::raw('ROUND((((retail/box) + (retail_store/box) + wholesales + quantity + bulksales)),0) as allqty')
             )->where(function($query) use(&$name){
                 foreach ($name as $char) {
@@ -319,11 +319,16 @@ class ProductRepository
             ->get()->keyBy('stock_id');
 
 
-        return $stocks->transform(function ($stock)  use ($query, $cost_price, $qty_to_buy_1m_query) {
+        return $stocks->transform(function ($stock)  use ($query, $cost_price, $qty_to_buy_1m_query, $near_os_table) {
             $price = $query->get($stock->id, collect());
             $stock->cost_price = isset($price?->{$cost_price}) ? $price?->{$cost_price} : 0;
             $qty_to_buy_1m = $qty_to_buy_1m_query->get($stock->id)?->qty_to_buy_1m ?? NULL;
-            $stock->qty_to_buy_1m = $qty_to_buy_1m;
+            if(!is_null($stock->stockgroup_id)){
+                $qty_1m_group = DB::table($near_os_table)->select( "qty_to_buy_1m")->first()->qty_to_buy_1m ?? NULL;
+                $stock->qty_to_buy_1m = $qty_1m_group;
+            } else {
+                $stock->qty_to_buy_1m = $qty_to_buy_1m;
+            }
             return $stock;
         })->toJson();
     }
