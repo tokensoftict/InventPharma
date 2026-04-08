@@ -43,7 +43,7 @@ class Stockimports implements ToCollection, WithChunkReading, ShouldQueue,WithHe
             } else {
                 $stock = Stock::find($row['id']);
             }
-
+dd($stock);
             if(!$stock) continue;
 
             if(isset($row['name'])){
