@@ -161,7 +161,7 @@ class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow
 
             $stock->save();
 
-            if(isset($row['expiry_date'])) {
+            if(isset($row['quantity'])) {
                 $batch = new batch();
                 $batch->stock_id = $stock->id;
                 $batch->expiry_date = $row['expiry_date'];
