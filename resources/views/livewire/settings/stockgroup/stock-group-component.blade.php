@@ -54,6 +54,10 @@
                                     @endif
                             </td>
                             <td>
+                                <a class="btn btn-outline-primary btn-sm" href="{{ route('stockgroup.stocks', $category->id) }}" title="View Stocks">
+                                    <i class="fas fa-list"></i>
+                                </a>
+
                                 @if(userCanView('stockgroup.update'))
                                 <a class="btn btn-outline-primary btn-sm edit" wire:click="edit({{ $category->id }})" href="javascript:void(0);" >
 

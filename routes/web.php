@@ -144,7 +144,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{id}/edit', ['as' => 'edit', 'uses' => 'StockGroupController@edit']);
                 Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'StockGroupController@toggle']);
                 Route::put('{id}', ['as' => 'update', 'uses' => 'StockGroupController@update']);
-                Route::delete('{id}', ['as' => 'destroy', 'uses' => 'StockGroupController@destroy']);
+                Route::get('{id}/destroy', ['as' => 'destroy', 'uses' => 'StockGroupController@destroy']);
+                Route::get('{stockgroup}/stocks', ['as' => 'stocks', 'uses' => 'StockGroupController@stocks', 'custom_label'=>'Manage Stocks in Group']);
             });
             Route::prefix('payment_method')->as('payment_method.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'PaymentMethodController@index', 'visible' => true, 'custom_label'=>'Payment Methods']);
