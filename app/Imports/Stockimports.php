@@ -34,6 +34,7 @@ class Stockimports implements ToCollection, WithChunkReading, ShouldQueue,WithHe
      */
     public function collection(Collection $rows)
     {
+        dd($rows);
         foreach ($rows as $row){
 
             if(!isset($row['id'])) continue;
@@ -43,7 +44,7 @@ class Stockimports implements ToCollection, WithChunkReading, ShouldQueue,WithHe
             } else {
                 $stock = Stock::find($row['id']);
             }
-dd($stock);
+
             if(!$stock) continue;
 
             if(isset($row['name'])){
