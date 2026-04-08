@@ -251,7 +251,7 @@ class ProductController extends Controller
         }
 
         if($request->method() == "POST"){
-
+dd(request()->file('excel_file'));
             Excel::import(new Stockimports, request()->file('excel_file'));
             return redirect()->route('product.export_stock')->with('success', "Stock has been updated successfully!!..");
 
