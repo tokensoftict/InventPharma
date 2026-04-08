@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
-use App\Models\ProductCategory;
+use App\Models\Stockgroup;
 use Illuminate\Http\Request;
 
 class StockGroupController extends Controller
@@ -13,32 +13,14 @@ class StockGroupController extends Controller
         return setPageContent('settings.stockgroup.index');
     }
 
-
-    public function create(){
-
+    public function listAll(){
+        // This is usually handle by livewire, but route exists
     }
 
-
-
-
-    public function toggle($id){
-
-
-
+    public function stocks(Stockgroup $stockgroup){
+        $data = [
+            'stockgroup' => $stockgroup
+        ];
+        return view('settings.stockgroup.stocks', $data);
     }
-
-
-
-
-    public function update(Request $request, $id){
-
-
-    }
-
-
-    public function destroy($id){
-
-
-    }
-
 }
