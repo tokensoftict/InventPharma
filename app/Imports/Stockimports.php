@@ -22,7 +22,7 @@ class Stockimports implements ToCollection, WithChunkReading, ShouldQueue,WithHe
 
 
     public function __construct(){
-        dd("am here");
+
     }
 
     /**
