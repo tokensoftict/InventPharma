@@ -88,9 +88,15 @@
                 </div>
 
                 <div class="mb-3">
-                    <label>Customer Loyalty Point Rate</label>
+                    <label>Customer Loyalty Point Rate (Wholesale/Others)</label>
                     <input  type="number"  wire:model="store.point_rate" required class="form-control" name="point_rate" placeholder="Customer Loyalty Point Rate"/>
                     @error('store.point_rate') <span class="text-danger">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="mb-3">
+                    <label>Customer Loyalty Point Rate (Retail)</label>
+                    <input  type="number"  wire:model="store.point_rate_retail" required class="form-control" name="point_rate_retail" placeholder="Customer Loyalty Point Rate (Retail)"/>
+                    @error('store.point_rate_retail') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
 
 

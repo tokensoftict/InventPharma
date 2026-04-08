@@ -43,6 +43,7 @@ class LoyaltyTransaction extends Model
 		'type',
 		'action_type',
 		'action_id',
+		'loyalty_type',
 		'reference',
 		'description'
 	];

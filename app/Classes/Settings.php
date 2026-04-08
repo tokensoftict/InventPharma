@@ -29,6 +29,8 @@ class Settings extends Valuestore
         'store.name' => 'required|max:255',
         'store.first_address'=>'required',
         'store.contact_number'=>'required',
+        'store.point_rate' => 'required|numeric|min:0',
+        'store.point_rate_retail' => 'required|numeric|min:0',
     ];
 
     public static $pagination = 10;

@@ -56,6 +56,7 @@ class Customer extends Model
 		'credit_balance' => 'float',
 		'deposit_balance' => 'float',
         'loyalty_points' => 'float',
+        'retail_loyalty_points' => 'float',
 	];
 
 	protected $fillable = [
@@ -70,6 +71,7 @@ class Customer extends Model
 		'credit_balance',
 		'deposit_balance',
         'loyalty_points',
+        'retail_loyalty_points',
         'member_group_id'
 	];
 
@@ -157,6 +159,7 @@ class Customer extends Model
             'address'=>$this->address,
             'phone_number'=>$this->phone_number,
             'loyalty_points' => $this->loyalty_points,
+            'retail_loyalty_points' => $this->retail_loyalty_points,
             'member_group_id' => $this->member_group_id,
         ];
     }
