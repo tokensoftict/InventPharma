@@ -20,6 +20,7 @@ class LoyaltyService
      */
     public final function earnPoints(Customer $customer, Invoice $invoice,  string $reference = null) : float|int|bool
     {
+        return 0;
         $pointsRateSetting = app(Settings::class)->store();
         
         // Use in_department to distinguish loyalty type
