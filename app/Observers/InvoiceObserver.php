@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Invoice;
 use App\Services\LoyaltyService;
+use App\Services\MemberGroupService;
 
 class InvoiceObserver
 {
@@ -21,6 +22,12 @@ class InvoiceObserver
                 $invoice->customer,
                 $invoice,
             );
+
+            // Recalculate Member Groups
+            if ($invoice->customer) {
+                $memberGroupService = app(MemberGroupService::class);
+                $memberGroupService->recalculateForCustomer($invoice->customer);
+            }
         }
 
 
