@@ -18,20 +18,21 @@ class LoyaltyService
      * @return false|float|int
      * @throws \Throwable
      */
-    public final function earnPoints(Customer $customer, Invoice $invoice,  string $reference = null) : float|int|bool
+    public final function earnPoints(Customer $customer, Invoice $invoice, string $reference = null): float|int|bool
     {
-        return
+        return 0;
         $pointsRateSetting = app(Settings::class)->store();
-        
+
         // Use in_department to distinguish loyalty type
         $isRetail = in_array($invoice->in_department, ['retail', 'retail_store']);
         $loyaltyType = $isRetail ? 'retail' : 'other';
         $pointRateField = $isRetail ? 'point_rate_retail' : 'point_rate';
         $customerPointsField = $isRetail ? 'retail_loyalty_points' : 'loyalty_points';
-        
+
         $point_rate = $pointsRateSetting->{$pointRateField} ?? 0;
 
-        if($point_rate == 0) return false;
+        if ($point_rate == 0)
+            return false;
 
         $points = floor($invoice->sub_total / $point_rate);
 
@@ -48,24 +49,24 @@ class LoyaltyService
                     'type' => 'earn'
                 ])->first();
 
-            if($transactionExist) {
+            if ($transactionExist) {
 
                 // remove the old points from whichever bucket they were in
                 $oldField = $transactionExist->loyalty_type === 'retail' ? 'retail_loyalty_points' : 'loyalty_points';
                 $customer->decrement($oldField, $transactionExist->points);
-                
+
                 $transactionExist->points = $points;
                 $transactionExist->customer_id = $customer->id;
                 $transactionExist->action_type = get_class($invoice);
                 $transactionExist->action_id = $invoice->id;
                 $transactionExist->loyalty_type = $loyaltyType;
                 $transactionExist->save();
-                
+
                 $customer->increment($customerPointsField, $points);
 
             } else {
 
-                if($customer->id !== 1) {
+                if ($customer->id !== 1) {
                     $customer->increment($customerPointsField, $points);
                     LoyaltyTransaction::create([
                         'customer_id' => $customer->id,
@@ -94,7 +95,7 @@ class LoyaltyService
      * @return void
      * @throws \Throwable
      */
-    public final function redeemPoints(Customer $customer,  Invoice $invoice, int $points, string $reference = null, string $loyaltyType = 'other')
+    public final function redeemPoints(Customer $customer, Invoice $invoice, int $points, string $reference = null, string $loyaltyType = 'other')
     {
         $field = $loyaltyType === 'retail' ? 'retail_loyalty_points' : 'loyalty_points';
 
@@ -143,7 +144,7 @@ class LoyaltyService
     }
 
 
-    public final function deletePoint(Customer $customer, Invoice $invoice,  string $reference = null)
+    public final function deletePoint(Customer $customer, Invoice $invoice, string $reference = null)
     {
         DB::transaction(function () use ($customer, $reference, $invoice) {
 
@@ -154,7 +155,7 @@ class LoyaltyService
                     'type' => 'earn'
                 ])->first();
 
-            if($transactionExist) {
+            if ($transactionExist) {
                 $field = $transactionExist->loyalty_type === 'retail' ? 'retail_loyalty_points' : 'loyalty_points';
                 $customer->decrement($field, $transactionExist->points);
                 $transactionExist->delete();
