@@ -15,7 +15,8 @@ class MemberGroupHistory extends Model
         'new_member_group_id',
         'type',
         'total_spent',
-        'recalculation_date'
+        'recalculation_date',
+        'is_manual'
     ];
 
     public function customer()

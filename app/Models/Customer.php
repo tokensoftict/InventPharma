@@ -59,6 +59,8 @@ class Customer extends Model
         'retail_loyalty_points' => 'float',
         'member_group_id' => 'int',
         'retail_member_group_id' => 'int',
+        'is_manual_member_group' => 'bool',
+        'is_manual_retail_member_group' => 'bool',
 	];
 
 	protected $fillable = [
@@ -75,7 +77,9 @@ class Customer extends Model
         'loyalty_points',
         'retail_loyalty_points',
         'member_group_id',
-        'retail_member_group_id'
+        'retail_member_group_id',
+        'is_manual_member_group',
+        'is_manual_retail_member_group'
 	];
 
 
@@ -170,6 +174,8 @@ class Customer extends Model
             'retail_loyalty_points' => $this->retail_loyalty_points,
             'member_group_id' => $this->member_group_id,
             'retail_member_group_id' => $this->retail_member_group_id,
+            'is_manual_member_group' => $this->is_manual_member_group,
+            'is_manual_retail_member_group' => $this->is_manual_retail_member_group,
         ];
     }
 

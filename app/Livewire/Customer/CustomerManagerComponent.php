@@ -7,6 +7,8 @@ use App\Models\City;
 use App\Models\Customer;
 
 use App\Models\MemberGroup;
+use App\Models\MemberGroupHistory;
+use App\Services\MemberGroupService;
 use App\Traits\LivewireAlert;
 use Livewire\Component;
 
@@ -107,15 +109,11 @@ class CustomerManagerComponent extends Component
         $this->saveButton = "Save";
 
         $this->dispatch("openModal", []);
-    }
-
-
-    public function update(Customer $customer)
+    }    public function update(Customer $customer)
     {
-        $customer_ = Customer::where('phone_number',$this->phone_number)->where('status',1)->get()->first();
+        $customer_ = Customer::where('phone_number', $this->phone_number)->where('status', 1)->get()->first();
 
-        if($customer_ && $customer_->id  != $customer->id)
-        {
+        if ($customer_ && $customer_->id  != $customer->id) {
             $this->alert(
                 "error",
                 "Customer",
@@ -123,10 +121,54 @@ class CustomerManagerComponent extends Component
                     'position' => 'center',
                     'timer' => 2000,
                     'toast' => false,
-                    'text' =>"Customer Phone Number already exists with name ".$customer_->firstname." ".$customer_->lastname
+                    'text' => "Customer Phone Number already exists with name " . $customer_->firstname . " " . $customer_->lastname
                 ]
             );
             return false;
+        }
+
+        $memberGroupService = app(MemberGroupService::class);
+
+        // Standard Member Group logic
+        if ($customer->member_group_id != $this->member_group_id) {
+            $newGroupId = $this->member_group_id == "" ? NULL : $this->member_group_id;
+            
+            $currentThreshold = $customer->memberGroup ? $customer->memberGroup->min_sales_amount : -1;
+            $newThreshold = 0;
+            if ($newGroupId) {
+                $newGroup = MemberGroup::find($newGroupId);
+                $newThreshold = $newGroup ? $newGroup->min_sales_amount : 0;
+            }
+
+            if ($newThreshold < $currentThreshold) {
+                $this->alert("error", "Customer", ['position' => 'center', 'timer' => 5000, 'text' => "Manual downgrade of Standard Member Group is not allowed."]);
+                return false;
+            }
+
+            $memberGroupService->logHistory($customer, $customer->member_group_id, $newGroupId, 'other', 0, true);
+            $customer->member_group_id = $newGroupId;
+            $customer->is_manual_member_group = true;
+        }
+
+        // Retail Member Group logic
+        if ($customer->retail_member_group_id != $this->retail_member_group_id) {
+            $newRetailId = $this->retail_member_group_id == "" ? NULL : $this->retail_member_group_id;
+            
+            $currentRetailThreshold = $customer->retailMemberGroup ? $customer->retailMemberGroup->retail_min_sales_amount : -1;
+            $newRetailThreshold = 0;
+            if ($newRetailId) {
+                $newGroup = MemberGroup::find($newRetailId);
+                $newRetailThreshold = $newGroup ? $newGroup->retail_min_sales_amount : 0;
+            }
+
+            if ($newRetailThreshold < $currentRetailThreshold) {
+                $this->alert("error", "Customer", ['position' => 'center', 'timer' => 5000, 'text' => "Manual downgrade of Retail Member Group is not allowed."]);
+                return false;
+            }
+
+            $memberGroupService->logHistory($customer, $customer->retail_member_group_id, $newRetailId, 'retail', 0, true);
+            $customer->retail_member_group_id = $newRetailId;
+            $customer->is_manual_retail_member_group = true;
         }
 
         $customer->firstname = $this->firstname;
@@ -136,8 +178,6 @@ class CustomerManagerComponent extends Component
         $customer->address = $this->address;
         $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
         $customer->city_id = $this->city_id == "" ? NULL : $this->city_id;
-        $customer->member_group_id = $this->member_group_id == "" ? NULL : $this->member_group_id;
-        $customer->retail_member_group_id = $this->retail_member_group_id == "" ? NULL : $this->retail_member_group_id;
 
         $customer->save();
 
@@ -209,10 +249,31 @@ class CustomerManagerComponent extends Component
         $customer->address = $this->address;
         $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
         $customer->city_id = $this->city_id == "" ? NULL : $this->city_id;
-        $customer->member_group_id = $this->member_group_id == "" ? NULL : $this->member_group_id;
-        $customer->retail_member_group_id = $this->retail_member_group_id == "" ? NULL : $this->retail_member_group_id;
+
+        $newGroupId = $this->member_group_id == "" ? NULL : $this->member_group_id;
+        $newRetailId = $this->retail_member_group_id == "" ? NULL : $this->retail_member_group_id;
+
+        $customer->member_group_id = $newGroupId;
+        $customer->retail_member_group_id = $newRetailId;
+
+        if ($newGroupId) {
+            $customer->is_manual_member_group = true;
+        }
+        if ($newRetailId) {
+            $customer->is_manual_retail_member_group = true;
+        }
 
         $customer->save();
+
+        if ($newGroupId || $newRetailId) {
+            $memberGroupService = app(MemberGroupService::class);
+            if ($newGroupId) {
+                $memberGroupService->logHistory($customer, NULL, $newGroupId, 'other', 0, true);
+            }
+            if ($newRetailId) {
+                $memberGroupService->logHistory($customer, NULL, $newRetailId, 'retail', 0, true);
+            }
+        }
 
         $this->dispatch("closeModal", []);
 

@@ -22,7 +22,7 @@ class MemberGroupService
      */
     public function recalculateForCustomer(Customer $customer)
     {
-        return 0; // dont this line of code, member group calculation has been stopped for now
+        return; // dont this line of code, member group calculation has been stopped for now
         $eligibleStatuses = [status("Paid"), status("Complete"), status("Dispatched")];
 
         // 1. Calculate totals for both buckets
@@ -53,14 +53,50 @@ class MemberGroupService
 
         // 3. Handle Other Member Group Change
         if ($customer->member_group_id != $newOtherGroupId) {
-            $this->logHistory($customer, $customer->member_group_id, $newOtherGroupId, 'other', $otherTotal);
-            $customer->member_group_id = $newOtherGroupId;
+            $currentGroupThreshold = $customer->memberGroup ? $customer->memberGroup->min_sales_amount : -1;
+            $newGroupThreshold = 0;
+            if ($newOtherGroupId) {
+                $newGroup = MemberGroup::find($newOtherGroupId);
+                $newGroupThreshold = $newGroup ? $newGroup->min_sales_amount : 0;
+            }
+
+            $shouldUpdate = true;
+            if ($customer->is_manual_member_group) {
+                // If manual, ONLY allow upgrades (higher threshold)
+                if ($newGroupThreshold <= $currentGroupThreshold) {
+                    $shouldUpdate = false;
+                }
+            }
+
+            if ($shouldUpdate) {
+                $this->logHistory($customer, $customer->member_group_id, $newOtherGroupId, 'other', $otherTotal);
+                $customer->member_group_id = $newOtherGroupId;
+                // If automated calculation upgrades a manual user, we might want to keep it manual or reset? 
+                // Requirement says "must not reduced with automated script if manually upgraded". 
+                // Upgrading is fine.
+            }
         }
 
         // 4. Handle Retail Member Group Change
         if ($customer->retail_member_group_id != $newRetailGroupId) {
-            $this->logHistory($customer, $customer->retail_member_group_id, $newRetailGroupId, 'retail', $retailTotal);
-            $customer->retail_member_group_id = $newRetailGroupId;
+            $currentRetailThreshold = $customer->retailMemberGroup ? $customer->retailMemberGroup->retail_min_sales_amount : -1;
+            $newRetailThreshold = 0;
+            if ($newRetailGroupId) {
+                $newGroup = MemberGroup::find($newRetailGroupId);
+                $newRetailThreshold = $newGroup ? $newGroup->retail_min_sales_amount : 0;
+            }
+
+            $shouldUpdateRetail = true;
+            if ($customer->is_manual_retail_member_group) {
+                if ($newRetailThreshold <= $currentRetailThreshold) {
+                    $shouldUpdateRetail = false;
+                }
+            }
+
+            if ($shouldUpdateRetail) {
+                $this->logHistory($customer, $customer->retail_member_group_id, $newRetailGroupId, 'retail', $retailTotal);
+                $customer->retail_member_group_id = $newRetailGroupId;
+            }
         }
 
         if ($customer->isDirty(['member_group_id', 'retail_member_group_id'])) {
@@ -89,7 +125,7 @@ class MemberGroupService
     /**
      * Log the membership change in history.
      */
-    protected function logHistory(Customer $customer, $oldId, $newId, $type, $total)
+    public function logHistory(Customer $customer, $oldId, $newId, $type, $total, $isManual = false)
     {
         MemberGroupHistory::create([
             'customer_id' => $customer->id,
@@ -98,6 +134,7 @@ class MemberGroupService
             'type' => $type,
             'total_spent' => $total,
             'recalculation_date' => Carbon::now()->toDateString(),
+            'is_manual' => $isManual,
         ]);
     }
 }
