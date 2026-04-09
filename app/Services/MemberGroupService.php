@@ -22,6 +22,7 @@ class MemberGroupService
      */
     public function recalculateForCustomer(Customer $customer)
     {
+        return 0; // dont this line of code, member group calculation has been stopped for now
         $eligibleStatuses = [status("Paid"), status("Complete"), status("Dispatched")];
 
         // 1. Calculate totals for both buckets
@@ -66,8 +67,8 @@ class MemberGroupService
             $customer->save();
             // Sync is handled by Customer model's boot/observer method usually, 
             // but we'll ensure push is triggered if needed.
-            if(method_exists($customer, 'updateonlinePush')) {
-                 $customer->updateonlinePush();
+            if (method_exists($customer, 'updateonlinePush')) {
+                $customer->updateonlinePush();
             }
         }
     }
