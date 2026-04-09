@@ -21,7 +21,7 @@ class CustomerDataTable extends ExportDataTableComponent
 
     public function builder(): Builder
     {
-        return  Customer::query()->select('*')->with(['creditpaymentlog','invoice', 'payment', 'memberGroup'])->filterdata($this->filters);
+        return  Customer::query()->select('*')->with(['creditpaymentlog','invoice', 'payment', 'memberGroup', 'retailMemberGroup'])->filterdata($this->filters);
     }
 
     public function refresh($what)
@@ -53,7 +53,9 @@ class CustomerDataTable extends ExportDataTableComponent
                 ->sortable(),
             Column::make("City", "city.name")
                 ->sortable(),
-            Column::make("Member Group", "memberGroup.name")
+            Column::make("Member Group", "memberGroup.label")
+                ->sortable(),
+            Column::make("Retail Member Group", "retailMemberGroup.label")
                 ->sortable(),
             Column::make("Credit balance", "credit_balance")
                 ->format(fn($value, $row, Column $column) => money($value))

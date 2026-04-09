@@ -57,6 +57,8 @@ class Customer extends Model
 		'deposit_balance' => 'float',
         'loyalty_points' => 'float',
         'retail_loyalty_points' => 'float',
+        'member_group_id' => 'int',
+        'retail_member_group_id' => 'int',
 	];
 
 	protected $fillable = [
@@ -72,7 +74,8 @@ class Customer extends Model
 		'deposit_balance',
         'loyalty_points',
         'retail_loyalty_points',
-        'member_group_id'
+        'member_group_id',
+        'retail_member_group_id'
 	];
 
 
@@ -150,6 +153,11 @@ class Customer extends Model
         return $this->belongsTo(MemberGroup::class, 'member_group_id');
     }
 
+    public function retailMemberGroup()
+    {
+        return $this->belongsTo(MemberGroup::class, 'retail_member_group_id');
+    }
+
     public function getBulkPushData() : array{
         return [
             'local_id'=>$this->id,
@@ -161,6 +169,7 @@ class Customer extends Model
             'loyalty_points' => $this->loyalty_points,
             'retail_loyalty_points' => $this->retail_loyalty_points,
             'member_group_id' => $this->member_group_id,
+            'retail_member_group_id' => $this->retail_member_group_id,
         ];
     }
 

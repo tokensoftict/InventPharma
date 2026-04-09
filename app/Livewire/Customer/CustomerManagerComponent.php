@@ -47,6 +47,7 @@ class CustomerManagerComponent extends Component
     public String $email = "";
     public String $city_id = "";
     public String $member_group_id = "";
+    public String $retail_member_group_id = "";
 
     public  $customer = NULL;
 
@@ -80,6 +81,7 @@ class CustomerManagerComponent extends Component
         $this->address  = $customer->address ?? "";
         $this->city_id = $customer->city_id ?? "";
         $this->member_group_id = $customer->member_group_id ?? "";
+        $this->retail_member_group_id = $customer->retail_member_group_id ?? "";
 
 
         $this->saveButton = "Update";
@@ -100,6 +102,7 @@ class CustomerManagerComponent extends Component
         $this->address  ="";
         $this->city_id ="";
         $this->member_group_id = "";
+        $this->retail_member_group_id = "";
 
         $this->saveButton = "Save";
 
@@ -134,6 +137,7 @@ class CustomerManagerComponent extends Component
         $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
         $customer->city_id = $this->city_id == "" ? NULL : $this->city_id;
         $customer->member_group_id = $this->member_group_id == "" ? NULL : $this->member_group_id;
+        $customer->retail_member_group_id = $this->retail_member_group_id == "" ? NULL : $this->retail_member_group_id;
 
         $customer->save();
 
@@ -206,6 +210,7 @@ class CustomerManagerComponent extends Component
         $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
         $customer->city_id = $this->city_id == "" ? NULL : $this->city_id;
         $customer->member_group_id = $this->member_group_id == "" ? NULL : $this->member_group_id;
+        $customer->retail_member_group_id = $this->retail_member_group_id == "" ? NULL : $this->retail_member_group_id;
 
         $customer->save();
 
