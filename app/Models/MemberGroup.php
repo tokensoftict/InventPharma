@@ -39,6 +39,7 @@ class MemberGroup extends Model
 
 	protected $casts = [
 		'min_sales_amount' => 'float',
+		'retail_min_sales_amount' => 'float',
 		'status' => 'bool'
 	];
 
@@ -48,6 +49,9 @@ class MemberGroup extends Model
 		'color',
 		'bg_color',
 		'min_sales_amount',
+		'retail_color',
+		'retail_bg_color',
+		'retail_min_sales_amount',
 		'status'
 	];
 
@@ -65,6 +69,9 @@ class MemberGroup extends Model
             'color'=> $this->color,
             'bg_color'=> $this->bg_color,
             'min_sales_amount'=> $this->min_sales_amount,
+            'retail_color'=> $this->retail_color,
+            'retail_bg_color'=> $this->retail_bg_color,
+            'retail_min_sales_amount'=> $this->retail_min_sales_amount,
             'status'=>$this->status,
         ];
     }

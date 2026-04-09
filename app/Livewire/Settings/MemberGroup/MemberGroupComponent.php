@@ -19,9 +19,12 @@ class MemberGroupComponent extends Component
         $this->data = [
             'name' => ['label' => 'Name', 'type'=>'text'],
             'label' => ['label' => 'Label', 'type'=>'text'],
-            'color' => ['label' => 'Color', 'type'=>'color'],
-            'bg_color' => ['label' => 'Background Color', 'type'=>'color'],
-            'min_sales_amount' => ['label' => 'Min. Sales Amount', 'type'=>'text'],
+            'color' => ['label' => 'Other Color', 'type'=>'color'],
+            'bg_color' => ['label' => 'Other Background Color', 'type'=>'color'],
+            'min_sales_amount' => ['label' => 'Other Min. Sales Amount', 'type'=>'text'],
+            'retail_color' => ['label' => 'Retail Color', 'type'=>'color'],
+            'retail_bg_color' => ['label' => 'Retail Background Color', 'type'=>'color'],
+            'retail_min_sales_amount' => ['label' => 'Retail Min. Sales Amount', 'type'=>'text'],
         ];
 
         $this->newValidateRules = [
@@ -30,6 +33,9 @@ class MemberGroupComponent extends Component
             'color' => 'required|min:1',
             'bg_color' => 'required|min:1',
             'min_sales_amount' => 'required|min:1',
+            'retail_color' => 'required|min:1',
+            'retail_bg_color' => 'required|min:1',
+            'retail_min_sales_amount' => 'required|min:1',
         ];
 
         $this->updateValidateRules = $this->newValidateRules;

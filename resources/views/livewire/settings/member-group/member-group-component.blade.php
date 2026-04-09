@@ -45,9 +45,12 @@
                         <th>Name</th>
                         <th>Label</th>
                         <th>Status</th>
-                        <th>Color</th>
-                        <th>BG Color</th>
-                        <th>Minimum Sales Amount</th>
+                        <th>Other Color</th>
+                        <th>Other BG Color</th>
+                        <th>Other Min. Sales Amount</th>
+                        <th>Retail Color</th>
+                        <th>Retail BG Color</th>
+                        <th>Retail Min. Sales Amount</th>
                         <th>Action</th>
                     </tr>
                     </thead>
@@ -70,6 +73,9 @@
                             <td>{{ $member_groups->color }}</td>
                             <td>{{ $member_groups->bg_color }}</td>
                             <td>{{ money($member_groups->min_sales_amount) }}</td>
+                            <td>{{ $member_groups->retail_color }}</td>
+                            <td>{{ $member_groups->retail_bg_color }}</td>
+                            <td>{{ money($member_groups->retail_min_sales_amount) }}</td>
                             <td>
                                 @if(userCanView('member-group.update'))
                                     <a class="btn btn-outline-primary btn-sm edit" wire:click="edit({{ $member_groups->id }})" href="javascript:void(0);" >
