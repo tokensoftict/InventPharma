@@ -100,11 +100,11 @@ class MemberGroupService
         }
 
         if ($customer->isDirty(['member_group_id', 'retail_member_group_id'])) {
-            $customer->save();
+            $customer->saveQuietly();
             // Sync is handled by Customer model's boot/observer method usually, 
             // but we'll ensure push is triggered if needed.
             if (method_exists($customer, 'updateonlinePush')) {
-                $customer->updateonlinePush();
+                //$customer->updateonlinePush();
             }
         }
     }

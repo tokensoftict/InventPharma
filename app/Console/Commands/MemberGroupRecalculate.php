@@ -40,7 +40,7 @@ class MemberGroupRecalculate extends Command
         $bar = $this->output->createProgressBar($customerCount);
         $bar->start();
 
-        Customer::chunkById(200, function ($customers) use ($service, $bar) {
+        Customer::chunk(200, function ($customers) use ($service, $bar) {
             foreach ($customers as $customer) {
                 $service->recalculateForCustomer($customer);
                 $bar->advance();
