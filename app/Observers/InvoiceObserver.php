@@ -18,10 +18,10 @@ class InvoiceObserver
 
             $loyaltyPointService = app(LoyaltyService::class);
 
-            // $loyaltyPointService->earnPoints(
-            //     $invoice->customer,
-            //     $invoice,
-            // );
+             $loyaltyPointService->earnPoints(
+                 $invoice->customer,
+                 $invoice,
+             );
 
             // Recalculate Member Groups
             // if ($invoice->customer) {
@@ -34,15 +34,15 @@ class InvoiceObserver
         if ($invoice->status_id == status("Deleted")) {
             $loyaltyPointService = app(LoyaltyService::class);
 
-            // $loyaltyPointService->deletePoint($invoice->customer, $invoice);
+             $loyaltyPointService->deletePoint($invoice->customer, $invoice);
         }
     }
 
 
     public function deleted(Invoice $invoice): void
     {
-        // $loyaltyPointService = app(LoyaltyService::class);
-        // $loyaltyPointService->deletePoint($invoice->customer, $invoice);
+         $loyaltyPointService = app(LoyaltyService::class);
+         $loyaltyPointService->deletePoint($invoice->customer, $invoice);
     }
 
 
