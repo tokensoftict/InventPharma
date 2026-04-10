@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Enums\KafkaAction;
 use App\Enums\KafkaTopics;
 use App\Jobs\PushDataServer;
+use App\Jobs\PushDataServerNoQueue;
 use App\Models\Stock;
 use Illuminate\Console\Command;
 
@@ -46,7 +47,7 @@ class SyncStockToServer extends Command
             $this->info('Parsing Stock Data');
             $this->info('Parsing Stock Data Complete');
             $this->info('Posting Stock Data to '.onlineBase("stocks"));
-            dispatch(new PushDataServer(['KAFKA_ACTION' => KafkaAction::CREATE_STOCK, 'KAFKA_TOPICS'=> KafkaTopics::STOCKS, 'action' => 'new',
+            dispatch(new PushDataServerNoQueue(['KAFKA_ACTION' => KafkaAction::CREATE_STOCK, 'KAFKA_TOPICS'=> KafkaTopics::STOCKS, 'action' => 'new',
                 'table' => 'stock', 'data' => $all_data, 'endpoint' => 'stocks', 'url'=>onlineBase()."dataupdate/add_or_update_stock"]));
             $this->info('Chunk '. $chunk_numbers. ' send successfully');
             $chunk_numbers --;
