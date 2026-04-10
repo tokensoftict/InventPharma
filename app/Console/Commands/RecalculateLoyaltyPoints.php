@@ -50,17 +50,20 @@ class RecalculateLoyaltyPoints extends Command
         $this->info('Identifying customers with existing points for synchronization...');
         $customerQuery = Customer::where('loyalty_points', '>', 0)
             ->orWhere('retail_loyalty_points', '>', 0);
-        
+
         $totalCustomers = $customerQuery->count();
         $bar = $this->output->createProgressBar($totalCustomers);
         $bar->start();
 
-        $customerQuery->chunkById(500, function($customers) use ($bar) {
-                foreach($customers as $customer) {
-                    $this->appendCustomer($customer->id);
-                    $bar->advance();
-                }
-            });
+        $chunk = 0;
+        $customerQuery->chunkById(500, function ($customers) use (&$bar, &$chunk) {
+            $chunk += 500;
+            $this->info("Processing chunk of customer chunk " . $chunk);
+            foreach ($customers as $customer) {
+                $this->appendCustomer($customer->id);
+                $bar->advance();
+            }
+        });
         $bar->finish();
         $this->newLine();
 
@@ -89,7 +92,10 @@ class RecalculateLoyaltyPoints extends Command
 
         $loyaltyService = app(LoyaltyService::class);
 
-        $invoiceQuery->chunkById(200, function($invoices) use ($loyaltyService, $bar) {
+        $chunk = 0;
+        $invoiceQuery->chunkById(200, function ($invoices) use ($loyaltyService, &$bar, &$chunk) {
+            $chunk += 200;
+            $this->info("Processing chunk of invoice chunk " . $chunk);
             foreach ($invoices as $invoice) {
                 if ($invoice->customer) {
                     // We use the existing logic in LoyaltyService
