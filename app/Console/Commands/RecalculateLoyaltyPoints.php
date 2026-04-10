@@ -52,20 +52,16 @@ class RecalculateLoyaltyPoints extends Command
             ->orWhere('retail_loyalty_points', '>', 0);
 
         $totalCustomers = $customerQuery->count();
-        $bar = $this->output->createProgressBar($totalCustomers);
-        $bar->start();
+        $this->info('Processing for total customer ', $totalCustomers);
 
         $chunk = 0;
-        $customerQuery->chunkById(500, function ($customers) use (&$bar, &$chunk) {
+        $customerQuery->chunk(500, function ($customers) use (&$chunk) {
             $chunk += 500;
-            $this->info("Processing chunk of customer chunk " . $chunk);
+            $this->info("Processing chunk of customer chunk - " . $chunk);
             foreach ($customers as $customer) {
                 $this->appendCustomer($customer->id);
-                $bar->advance();
             }
         });
-        $bar->finish();
-        $this->newLine();
 
         // Step 2: Reset all customers
         $this->info('Resetting customer balances...');
@@ -87,13 +83,10 @@ class RecalculateLoyaltyPoints extends Command
         $totalInvoices = $invoiceQuery->count();
         $this->info("Processing {$totalInvoices} invoices in chunks...");
 
-        $bar = $this->output->createProgressBar($totalInvoices);
-        $bar->start();
-
         $loyaltyService = app(LoyaltyService::class);
 
         $chunk = 0;
-        $invoiceQuery->chunkById(200, function ($invoices) use ($loyaltyService, &$bar, &$chunk) {
+        $invoiceQuery->chunk(200, function ($invoices) use ($loyaltyService, &$bar, &$chunk) {
             $chunk += 200;
             $this->info("Processing chunk of invoice chunk " . $chunk);
             foreach ($invoices as $invoice) {
@@ -106,8 +99,6 @@ class RecalculateLoyaltyPoints extends Command
             }
         });
 
-        $bar->finish();
-        $this->newLine();
 
         $this->pushCustomerUpdate();
 
