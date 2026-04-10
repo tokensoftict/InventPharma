@@ -31,7 +31,7 @@ class KafkaConsumer extends Command
      */
     public function handle()
     {
-        $consumer = Kafka::consumer([KafkaTopics::GENERAL, KafkaTopics::ORDERS, KafkaTopics::STOCKS])
+        $consumer = Kafka::consumer([KafkaTopics::ORDERS])
             ->withConsumerGroupId(config('kafka.consumer_group_id'))
             ->withHandler(function ($message) {
                 $topic = $message->getTopicName();
