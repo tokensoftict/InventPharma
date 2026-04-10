@@ -95,7 +95,7 @@ class RecalculateLoyaltyPoints extends Command
                     $loyaltyService->earnPoints($invoice->customer, $invoice, 'Recalculation');
                     $this->appendCustomer($invoice->customer_id);
                 }
-                $bar->advance();
+
             }
         });
 
