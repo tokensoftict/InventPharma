@@ -48,13 +48,21 @@ class RecalculateLoyaltyPoints extends Command
 
         // Step 1: Capture all customers who currently have points (for sync integrity)
         $this->info('Identifying customers with existing points for synchronization...');
-        Customer::where('loyalty_points', '>', 0)
-            ->orWhere('retail_loyalty_points', '>', 0)
-            ->chunkById(500, function($customers) {
+        $customerQuery = Customer::where('loyalty_points', '>', 0)
+            ->orWhere('retail_loyalty_points', '>', 0);
+        
+        $totalCustomers = $customerQuery->count();
+        $bar = $this->output->createProgressBar($totalCustomers);
+        $bar->start();
+
+        $customerQuery->chunkById(500, function($customers) use ($bar) {
                 foreach($customers as $customer) {
                     $this->appendCustomer($customer->id);
+                    $bar->advance();
                 }
             });
+        $bar->finish();
+        $this->newLine();
 
         // Step 2: Reset all customers
         $this->info('Resetting customer balances...');
