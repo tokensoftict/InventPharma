@@ -22,7 +22,6 @@ class MemberGroupService
      */
     public function recalculateForCustomer(Customer $customer)
     {
-        return; // dont this line of code, member group calculation has been stopped for now
         $eligibleStatuses = [status("Paid"), status("Complete"), status("Dispatched")];
 
         // 1. Calculate totals for both buckets
