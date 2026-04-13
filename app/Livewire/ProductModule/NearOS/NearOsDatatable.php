@@ -218,7 +218,7 @@ final class NearOsDatatable extends PowerGridComponent
     public function view_stock(array $data)
     {
         $this->dispatch('showModal', [
-            'alias' => 'product-module.near-os.view-near-os-grouped-stock',
+            'alias' => 'Product-Module.Near-Os.View-Near-Os-Grouped-Stock',
             'size' => 'modal-xl',
             'params' => [
                 'stockgroup' =>  $data['group_id']
