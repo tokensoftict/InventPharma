@@ -324,7 +324,7 @@ class ProductRepository
             $stock->cost_price = isset($price?->{$cost_price}) ? $price?->{$cost_price} : 0;
             $qty_to_buy_1m = $qty_to_buy_1m_query->get($stock->id)?->qty_to_buy_1m ?? NULL;
             if(!is_null($stock->stockgroup_id)){
-                $qty_1m_group = DB::table($near_os_table)->select( "qty_to_buy_1m")->first()->qty_to_buy_1m ?? NULL;
+                $qty_1m_group = DB::table($near_os_table)->where('stockgroup_id', $stock->stockgroup_id)->select( "qty_to_buy_1m")->first()->qty_to_buy_1m ?? NULL;
                 $stock->qty_to_buy_1m = $qty_1m_group;
             } else {
                 $stock->qty_to_buy_1m = $qty_to_buy_1m;
