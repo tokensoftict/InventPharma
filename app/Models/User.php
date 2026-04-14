@@ -56,4 +56,35 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Usergroup::class);
     }
+
+    public function getBulkPushData(): array
+    {
+        return [
+            'local_id' => $this->id,
+            'name' => $this->name,
+            'email' => $this->email,
+            'phone' => $this->phone,
+            'username' => $this->username,
+            'status' => $this->status,
+            'department_id' => $this->department_id,
+        ];
+    }
+
+    public function newonlinePush()
+    {
+        dispatch(new \App\Jobs\PushDataServer([
+            'KAFKA_ACTION' => \App\Enums\KafkaAction::SYNC_STAFF,
+            'KAFKA_TOPICS' => \App\Enums\KafkaTopics::GENERAL,
+            'data' => $this->getBulkPushData()
+        ]));
+    }
+
+    public function updateonlinePush()
+    {
+        dispatch(new \App\Jobs\PushDataServer([
+            'KAFKA_ACTION' => \App\Enums\KafkaAction::SYNC_STAFF,
+            'KAFKA_TOPICS' => \App\Enums\KafkaTopics::GENERAL,
+            'data' => $this->getBulkPushData()
+        ]));
+    }
 }
