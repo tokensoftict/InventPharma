@@ -32,7 +32,7 @@ class SyncAllStaffToKafka extends Command
     {
         $this->info('Starting staff synchronization...');
 
-        User::chunk(100, function ($users) {
+        User::query()->chunk(100, function ($users) {
             foreach ($users as $user) {
 
                 dispatch(new PushDataServerNoQueue(['KAFKA_ACTION'=>KafkaAction::SYNC_STAFF, 'KAFKA_TOPICS'=> KafkaTopics::GENERAL,
