@@ -34,10 +34,8 @@ class SyncAllStaffToKafka extends Command
 
         User::query()->chunk(100, function ($users) {
             foreach ($users as $user) {
-                dd($user);
-//dd($user->getBulkPushData());
-//                dispatch(new PushDataServerNoQueue(['KAFKA_ACTION'=>KafkaAction::SYNC_STAFF, 'KAFKA_TOPICS'=> KafkaTopics::GENERAL,
-//                    'action'=>'new','table'=>'staffs', 'endpoint' => 'staffs' ,'data'=>$user->getBulkPushData]));
+                dispatch(new PushDataServerNoQueue(['KAFKA_ACTION'=>KafkaAction::SYNC_STAFF, 'KAFKA_TOPICS'=> KafkaTopics::GENERAL,
+                    'action'=>'new','table'=>'staffs', 'endpoint' => 'staffs' ,'data'=>$user->getBulkPushData()]));
             }
             $this->info('Synced ' . $users->count() . ' users...');
         });
