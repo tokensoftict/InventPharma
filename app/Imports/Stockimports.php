@@ -184,6 +184,8 @@ class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow
                 $batch->batch_no = "";
 
                 $batch->save();
+
+                $stock->updateQuantity();
             }
         }
     }
