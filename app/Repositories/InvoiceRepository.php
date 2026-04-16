@@ -196,7 +196,7 @@ class InvoiceRepository
     }
 
     public function validateInvoiceItems(array $items, string $from)
-    {dd($from);
+    {
         $items = collect($items);
 
         $stocks = [];
