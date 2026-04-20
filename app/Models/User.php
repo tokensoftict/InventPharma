@@ -12,7 +12,7 @@ use Laravel\Sanctum\HasApiTokens;
 class User extends Authenticatable
 {
 
-    use  ModelFilterTraits;
+    use ModelFilterTraits;
 
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -43,7 +43,7 @@ class User extends Authenticatable
         'remember_token'
     ];
 
-    public static array $profile_fields = ['department', 'name', 'email', 'username', 'password',  'salary', 'status', 'group_id'];
+    public static array $profile_fields = ['department', 'name', 'email', 'username', 'password', 'salary', 'status', 'group_id'];
 
     //protected $with = ['department', 'usergroup'];
 
@@ -66,6 +66,7 @@ class User extends Authenticatable
             'phone' => $this->phone,
             'username' => $this->username,
             'status' => $this->status,
+            'usergroup_id' => $this->usergroup_id,
             'department_id' => $this->department_id,
         ];
     }

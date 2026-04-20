@@ -32,7 +32,7 @@ class SyncAllStaffToKafka extends Command
     {
         $this->info('Starting staff synchronization...');
 
-        User::query()->whereIn('usergroup_id', [6, 7])->chunk(100, function ($users) {
+        User::query()->chunk(100, function ($users) {
             foreach ($users as $user) {
                 dispatch(new PushDataServerNoQueue([
                     'KAFKA_ACTION' => KafkaAction::SYNC_STAFF,

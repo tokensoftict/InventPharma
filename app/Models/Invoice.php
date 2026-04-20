@@ -254,7 +254,45 @@ class Invoice extends Model
         return $this->hasOne(WaitingCustomer::class, );
     }
 
+    public function getSyncData(): array
+    {
+        $products = [];
+        foreach ($this->invoiceitems as $item) {
+            $products[] = [
+                'local_id' => $item->stock_id,
+                'name' => $item->name,
+                'model' => $item->stock->model ?? '',
+                'quantity' => $item->quantity,
+                'price' => $item->selling_price,
+                'total' => $item->selling_price * $item->quantity,
+                'tax' => 0,
+                'reward' => 0,
+            ];
+        }
 
+        $totals = [
+            ['name' => 'Sub-Total', 'value' => $this->sub_total, 'order_total_id' => 1],
+            ['name' => 'Total', 'value' => $this->total_amount_paid, 'order_total_id' => 2],
+        ];
 
-
+        return [
+            'order' => [
+                'id' => $this->id,
+                'invoice_no' => $this->invoice_number,
+                'customer_local_id' => $this->customer_id,
+                'customer_phone_number' => $this->customer->phone_number ?? '',
+                'department' => $this->department,
+                'in_department' => $this->in_department,
+                'invoice_date' => $this->invoice_date->toDateString(),
+                'total' => $this->total_amount_paid,
+                'created_by' => $this->created_by,
+                'payment_methods' => $this->paymentmethoditems->map(function($item) {
+                    return $item->paymentmethod->name ?? 'Unknown';
+                })->unique()->implode(', '),
+                'comment' => '',
+            ],
+            'products' => $products,
+            'totals' => $totals,
+        ];
+    }
 }
