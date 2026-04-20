@@ -36,7 +36,7 @@ class InvoiceObserver
             // Kafka Sync
             dispatch(new \App\Jobs\PushDataServer([
                 'KAFKA_ACTION' => \App\Enums\KafkaAction::SYNC_LOCAL_ORDER,
-                'KAFKA_TOPICS' => \App\Enums\KafkaTopics::GENERAL,
+                'KAFKA_TOPICS' => \App\Enums\KafkaTopics::ORDERS,
                 'data' => $invoice->getSyncData()
             ]));
         }
