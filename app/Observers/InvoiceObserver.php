@@ -14,6 +14,8 @@ class InvoiceObserver
      */
     public function updated(Invoice $invoice): void
     {
+        if($invoice->customer_id === 1) return;
+
         if (in_array($invoice->status_id, [status("Paid")]) && is_null($invoice->onliner_order_id)) {
 
             $loyaltyPointService = app(LoyaltyService::class);
@@ -29,6 +31,7 @@ class InvoiceObserver
                  $memberGroupService = app(MemberGroupService::class);
                  $memberGroupService->recalculateForCustomer($invoice->customer);
              }
+
 
             // Kafka Sync
             dispatch(new \App\Jobs\PushDataServer([
@@ -49,6 +52,8 @@ class InvoiceObserver
 
     public function deleted(Invoice $invoice): void
     {
+        if($invoice->customer_id === 1) return;
+
          $loyaltyPointService = app(LoyaltyService::class);
          $loyaltyPointService->deletePoint($invoice->customer, $invoice);
     }
