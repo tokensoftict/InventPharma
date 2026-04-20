@@ -14,7 +14,7 @@ class InvoiceObserver
      */
     public function updated(Invoice $invoice): void
     {
-        if (in_array($invoice->status_id, [status("Paid"), status("Complete"), status("Dispatched")]) && is_null($invoice->onliner_order_id)) {
+        if (in_array($invoice->status_id, [status("Paid")]) && is_null($invoice->onliner_order_id)) {
 
             $loyaltyPointService = app(LoyaltyService::class);
 
