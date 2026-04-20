@@ -24,11 +24,11 @@ class InvoiceObserver
              );
 
 
-             //Recalculate Member Groups
-             if ($invoice->customer) {
-                 $memberGroupService = app(MemberGroupService::class);
-                 $memberGroupService->recalculateForCustomer($invoice->customer);
-             }
+            // Recalculate Member Groups
+            // if ($invoice->customer) {
+            //     $memberGroupService = app(MemberGroupService::class);
+            //     $memberGroupService->recalculateForCustomer($invoice->customer);
+            // }
 
             // Kafka Sync
             dispatch(new \App\Jobs\PushDataServer([
