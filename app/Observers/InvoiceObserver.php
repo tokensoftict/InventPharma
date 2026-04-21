@@ -16,29 +16,31 @@ class InvoiceObserver
     {
         if($invoice->customer_id === 1) return;
 
-        if (in_array($invoice->status_id, [status("Paid")]) && is_null($invoice->onliner_order_id)) {
+        if (in_array($invoice->status_id, [status("Paid"), status("Complete"), status("Dispatched")])) {
+            if($invoice->scan_user_id !== NULL) {
+                $loyaltyPointService = app(LoyaltyService::class);
 
-            $loyaltyPointService = app(LoyaltyService::class);
-
-             $loyaltyPointService->earnPoints(
-                 $invoice->customer,
-                 $invoice,
-             );
-
-
-            // Recalculate Member Groups
-             if ($invoice->customer) {
-                 $memberGroupService = app(MemberGroupService::class);
-                 $memberGroupService->recalculateForCustomer($invoice->customer);
-             }
+                $loyaltyPointService->earnPoints(
+                    $invoice->customer,
+                    $invoice,
+                );
 
 
-            // Kafka Sync
-            dispatch(new \App\Jobs\PushDataServer([
-                'KAFKA_ACTION' => \App\Enums\KafkaAction::SYNC_LOCAL_ORDER,
-                'KAFKA_TOPICS' => \App\Enums\KafkaTopics::ORDERS,
-                'data' => $invoice->getSyncData()
-            ]));
+                // Recalculate Member Groups
+                if ($invoice->customer) {
+                    $memberGroupService = app(MemberGroupService::class);
+                    $memberGroupService->recalculateForCustomer($invoice->customer);
+                }
+
+
+                // Kafka Sync
+                dispatch(new \App\Jobs\PushDataServer([
+                    'KAFKA_ACTION' => \App\Enums\KafkaAction::SYNC_LOCAL_ORDER,
+                    'KAFKA_TOPICS' => \App\Enums\KafkaTopics::ORDERS,
+                    'data' => $invoice->getSyncData()
+                ]));
+
+            }
         }
 
 
