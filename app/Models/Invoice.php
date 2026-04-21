@@ -285,7 +285,7 @@ class Invoice extends Model
                 'in_department' => $this->in_department,
                 'invoice_date' => $this->invoice_date->toDateString(),
                 'total' => $this->total_amount_paid,
-                'created_by' => $this->created_by,
+                'created_by' => is_null($this->onliner_order_id) ? $this->created_by : $this->payment->user_id, // use payment use for online invoice
                 'payment_methods' => $this->paymentmethoditems->map(function($item) {
                     return $item->paymentmethod->name ?? 'Unknown';
                 })->unique()->implode(', '),
