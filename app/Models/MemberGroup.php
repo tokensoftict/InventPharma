@@ -72,6 +72,7 @@ class MemberGroup extends Model
             'retail_color'=> $this->retail_color,
             'retail_bg_color'=> $this->retail_bg_color,
             'retail_min_sales_amount'=> $this->retail_min_sales_amount,
+            
             'status'=>$this->status,
         ];
     }

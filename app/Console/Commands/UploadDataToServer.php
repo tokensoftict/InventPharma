@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\Classification;
 use App\Models\Customer;
 use App\Models\Manufacturer;
+use App\Models\MemberGroup;
 use App\Models\Stock;
 use App\Models\Stockgroup;
 
@@ -89,38 +90,52 @@ class UploadDataToServer extends Command
 
         //now we begin with classification data
 
-//        $this->info('Gathering Classification Data');
-//        $classifications = Classification::all();
-//        $all_data = [];
-//        foreach($classifications as $classification){
-//            $all_data[] = $classification->getBulkPushData();
-//        }
-//        $this->info('Gathering Classification Data Complete');
-//        $this->info('Parsing Classification Data');
-//        $this->info('Parsing Classification Data Complete');
-//        $this->info('Posting Classification Data to '.onlineBase("classifications"));
-//        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_CLASSIFICATION, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
-//            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
+        $this->info('Gathering Classification Data');
+        $classifications = Classification::all();
+        $all_data = [];
+        foreach($classifications as $classification){
+            $all_data[] = $classification->getBulkPushData();
+        }
+        $this->info('Gathering Classification Data Complete');
+        $this->info('Parsing Classification Data');
+        $this->info('Parsing Classification Data Complete');
+        $this->info('Posting Classification Data to '.onlineBase("classifications"));
+        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_CLASSIFICATION, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
 
 
 
-        $this->info('Gathering Customer Data');
-        $customer =   Customer::query();
-        $customerCount = round(($customer->count() / 2000));
-        Customer::query()->chunk(2000, function($customers) use (&$customerCount){
-            $all_data = [];
-            foreach($customers as $customer){
-                $all_data[] = $customer->getBulkPushData();
-            }
-            $this->info('Gathering Customer Data Complete');
-            $this->info('Parsing Customer Data');
-            $this->info('Parsing Customer Data Complete');
-            $this->info('Posting Customer Data to '.onlineBase('customers'));
-            dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::UPDATE_CUSTOMER, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
-                'action'=>'new','table'=>'existing_customer', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
-            $this->info('Chunk '. $customerCount. ' send successfully');
-            $customerCount --;
-        });
+        $this->info('Gathering Member Group Data');
+        $membergroups = MemberGroup::all();
+        $all_data = [];
+        foreach($membergroups as $membergroup){
+            $all_data[] = $membergroup->getBulkPushData();
+        }
+        $this->info('Gathering Member Group Data Complete');
+        $this->info('Parsing Member Group Data');
+        $this->info('Parsing Member Group Data Complete');
+        $this->info('Posting Member Group Data to '.onlineBase("member_groups"));
+        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::UPDATE_MEMBER_GROUP, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'member_groups' ,'data'=>$all_data]));
+
+
+//        $this->info('Gathering Customer Data');
+//        $customer =   Customer::query();
+//        $customerCount = round(($customer->count() / 2000));
+//        Customer::query()->chunk(2000, function($customers) use (&$customerCount){
+//            $all_data = [];
+//            foreach($customers as $customer){
+//                $all_data[] = $customer->getBulkPushData();
+//            }
+//            $this->info('Gathering Customer Data Complete');
+//            $this->info('Parsing Customer Data');
+//            $this->info('Parsing Customer Data Complete');
+//            $this->info('Posting Customer Data to '.onlineBase('customers'));
+//            dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::UPDATE_CUSTOMER, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+//                'action'=>'new','table'=>'existing_customer', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
+//            $this->info('Chunk '. $customerCount. ' send successfully');
+//            $customerCount --;
+//        });
 
 
 
