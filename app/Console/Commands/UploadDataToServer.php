@@ -6,6 +6,7 @@ namespace App\Console\Commands;
 use App\Enums\KafkaAction;
 use App\Enums\KafkaTopics;
 use App\Jobs\PushDataServer;
+use App\Jobs\PushDataServerNoQueue;
 use App\Models\Category;
 use App\Models\Classification;
 use App\Models\Customer;
@@ -100,7 +101,7 @@ class UploadDataToServer extends Command
         $this->info('Parsing Classification Data');
         $this->info('Parsing Classification Data Complete');
         $this->info('Posting Classification Data to '.onlineBase("classifications"));
-        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::CREATE_CLASSIFICATION, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+        dispatch(new PushDataServerNoQueue(['KAFKA_ACTION'=> KafkaAction::CREATE_CLASSIFICATION, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
             'action'=>'new','table'=>'manufacturers', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
 
 
@@ -115,7 +116,7 @@ class UploadDataToServer extends Command
         $this->info('Parsing Member Group Data');
         $this->info('Parsing Member Group Data Complete');
         $this->info('Posting Member Group Data to '.onlineBase("member_groups"));
-        dispatch(new PushDataServer(['KAFKA_ACTION'=> KafkaAction::UPDATE_MEMBER_GROUP, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+        dispatch(new PushDataServerNoQueue(['KAFKA_ACTION'=> KafkaAction::UPDATE_MEMBER_GROUP, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
             'action'=>'new','table'=>'manufacturers', 'endpoint' => 'member_groups' ,'data'=>$all_data]));
 
 
