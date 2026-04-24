@@ -116,7 +116,7 @@ class UploadDataToServer extends Command
         $this->info('Parsing Member Group Data');
         $this->info('Parsing Member Group Data Complete');
         $this->info('Posting Member Group Data to '.onlineBase("member_groups"));
-        dispatch(new PushDataServerNoQueue(['KAFKA_ACTION'=> KafkaAction::UPDATE_MEMBER_GROUP, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+        dispatch(new PushDataServerNoQueue(['KAFKA_ACTION'=> KafkaAction::CREATE_MEMBER_GROUP, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
             'action'=>'new','table'=>'manufacturers', 'endpoint' => 'member_groups' ,'data'=>$all_data]));
 
 
