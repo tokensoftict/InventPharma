@@ -106,18 +106,18 @@ class UploadDataToServer extends Command
 
 
 
-        $this->info('Gathering Member Group Data');
-        $membergroups = MemberGroup::all();
-        $all_data = [];
-        foreach($membergroups as $membergroup){
-            $all_data[] = $membergroup->getBulkPushData();
-        }
-        $this->info('Gathering Member Group Data Complete');
-        $this->info('Parsing Member Group Data');
-        $this->info('Parsing Member Group Data Complete');
-        $this->info('Posting Member Group Data to '.onlineBase("member_groups"));
-        dispatch(new PushDataServerNoQueue(['KAFKA_ACTION'=> KafkaAction::CREATE_MEMBER_GROUP, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
-            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'member_groups' ,'data'=>$all_data]));
+//        $this->info('Gathering Member Group Data');
+//        $membergroups = MemberGroup::all();
+//        $all_data = [];
+//        foreach($membergroups as $membergroup){
+//            $all_data[] = $membergroup->getBulkPushData();
+//        }
+//        $this->info('Gathering Member Group Data Complete');
+//        $this->info('Parsing Member Group Data');
+//        $this->info('Parsing Member Group Data Complete');
+//        $this->info('Posting Member Group Data to '.onlineBase("member_groups"));
+//        dispatch(new PushDataServerNoQueue(['KAFKA_ACTION'=> KafkaAction::CREATE_MEMBER_GROUP, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
+//            'action'=>'new','table'=>'manufacturers', 'endpoint' => 'member_groups' ,'data'=>$all_data]));
 
 
 //        $this->info('Gathering Customer Data');
