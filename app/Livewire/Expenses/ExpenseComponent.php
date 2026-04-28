@@ -51,7 +51,7 @@ class ExpenseComponent extends Component
 
         $data = [
             "expense_data.expense_date"=>"bail|required",
-            "expense_data.supplier_id"=>"bail|required",
+            "expense_data.supplier_id"=>"bail",
             "expense_data.department_id"=>"bail|required",
             "expense_data.expenses_type_id"=>"bail|required",
         ];
