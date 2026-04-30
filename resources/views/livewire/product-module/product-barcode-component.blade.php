@@ -72,16 +72,7 @@
 
     <!-- Print Layout Area (Hidden on screen) -->
     @if($selectedBarcode)
-        <div id="barcode-print-area" style="display: none;">
-            @for($i = 0; $i < $numberOfCopies; $i++)
-                <div class="label-container {{ $i < $numberOfCopies - 1 ? 'page-break' : '' }}">
-                    <div class="barcode-wrapper">
-                        {!! DNS1D::getBarcodeSVG($selectedBarcode, 'C128', 2, 50, 'black', false) !!}
-                        <div class="barcode-text">{{ $selectedBarcode }}</div>
-                    </div>
-                </div>
-            @endfor
-        </div>
+        <div id="barcode-print-area" style="display: none;">@for($i = 0; $i < $numberOfCopies; $i++)<div class="label-container {{ $i < $numberOfCopies - 1 ? 'page-break' : '' }}"><div class="barcode-wrapper">{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C128', 2, 50, 'black', false) !!}<div class="barcode-text">{{ $selectedBarcode }}</div></div></div>@endfor</div>
     @endif
 
     <script>
@@ -99,12 +90,12 @@
 
             printWindow.document.write('<html><head><title>Print Barcode</title>');
             printWindow.document.write('<style>');
-            printWindow.document.write('body { margin: 0; padding: 0; background: #fff; }');
-            printWindow.document.write('.label-container { width: ' + width + '; height: ' + height + '; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 1mm; overflow: hidden; }');
+            printWindow.document.write('html, body { margin: 0; padding: 0; background: #fff; height: 100%; overflow: hidden; }');
+            printWindow.document.write('.label-container { width: ' + width + '; height: ' + height + '; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 1mm; overflow: hidden; position: relative; }');
             printWindow.document.write('.barcode-wrapper { text-align: center; width: 100%; }');
-            printWindow.document.write('.barcode-wrapper svg { width: 100%; height: auto; max-height: 60%; }');
-            printWindow.document.write('.barcode-text { font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; margin-top: 2px; letter-spacing: 1px; }');
-            printWindow.document.write('.page-break { page-break-after: always; }');
+            printWindow.document.write('.barcode-wrapper svg { width: 100%; height: auto; max-height: 55%; }');
+            printWindow.document.write('.barcode-text { font-family: Arial, sans-serif; font-size: 10px; font-weight: bold; margin-top: 1px; letter-spacing: 1px; }');
+            printWindow.document.write('.page-break { page-break-after: always; break-after: page; }');
             printWindow.document.write('@page { size: ' + width + ' ' + height + ' portrait; margin: 0; }');
             printWindow.document.write('</style>');
             printWindow.document.write('</head><body>');
