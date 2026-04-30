@@ -81,9 +81,10 @@
             var printWindow = window.open('', '_blank', 'width=600,height=400');
             
             var labelSize = "{{ $labelSize }}";
-            var width = "30mm"; 
+            var width = "25mm"; 
             var height = "50mm";
             
+            if (labelSize === '25x50') { width = '25mm'; height = '50mm'; }
             if (labelSize === '30x40') { width = '30mm'; height = '40mm'; }
             if (labelSize === '30x50') { width = '30mm'; height = '50mm'; }
             if (labelSize === '40x60') { width = '40mm'; height = '60mm'; }
