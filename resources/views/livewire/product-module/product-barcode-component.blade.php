@@ -110,7 +110,7 @@
             printWindow.document.write('<html><head><title>Print Barcode</title>');
             printWindow.document.write('<style>');
             printWindow.document.write('html, body { margin: 0; padding: 0; background: #fff; height: 100%; overflow: hidden; }');
-            printWindow.document.write('.label-container { width: ' + width + '; height: ' + height + '; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 1mm 2mm; margin-top:3mm; margin-left:2mm;  overflow: hidden; position: relative; }');
+            printWindow.document.write('.label-container { width: ' + width + '; height: ' + height + '; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 1mm 2mm; margin-top:3mm; margin-left:1mm;  overflow: hidden; position: relative; }');
             printWindow.document.write('.barcode-wrapper { text-align: center; width: 100%; }');
             printWindow.document.write('.barcode-wrapper svg { width: 90%; height: auto; max-height: 75%; }');
             printWindow.document.write('.barcode-text { font-family: Arial, sans-serif; font-size: 9px; font-weight: bold; margin-top: 1px; letter-spacing: 1px; }');
