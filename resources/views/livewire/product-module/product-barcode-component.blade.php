@@ -53,7 +53,7 @@
                         style="background: #f4f6f9; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 250px;">
                         @if($selectedBarcode)
                             <div style="background: #fff; border: 1px solid #ddd; padding: 10px; display: inline-block;">
-                                <div>{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C128', 2, 80, 'black', false) !!}</div>
+                                <div>{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C128', 2, 100, 'black', false) !!}</div>
                                 <div style="font-size: 16px; font-weight: bold; margin-top: 5px; letter-spacing: 2px;">
                                     {{ $selectedBarcode }}</div>
                             </div>
@@ -85,7 +85,7 @@
             wire:key="print-area-{{ $numberOfCopies }}-{{ $selectedBarcode }}">@for($i = 0; $i < $numberOfCopies; $i++)
                 <div class="label-container {{ $i < $numberOfCopies - 1 ? 'page-break' : '' }}"
                     wire:key="label-{{ $i }}-{{ $selectedBarcode }}">
-                    <div class="barcode-wrapper">{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C128', 3, 100, 'black', false) !!}
+                    <div class="barcode-wrapper">{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C128', 2, 100, 'black', false) !!}
                         <div class="barcode-text">{{ $selectedBarcode }}</div>
                     </div>
             </div>@endfor
@@ -110,7 +110,7 @@
             printWindow.document.write('<html><head><title>Print Barcode</title>');
             printWindow.document.write('<style>');
             printWindow.document.write('html, body { margin: 0; padding: 0; background: #fff; height: 100%; overflow: hidden; }');
-            printWindow.document.write('.label-container { width: ' + width + '; height: ' + height + '; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 1mm 3mm; overflow: hidden; position: relative; }');
+            printWindow.document.write('.label-container { width: ' + width + '; height: ' + height + '; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 1mm 2mm; overflow: hidden; position: relative; }');
             printWindow.document.write('.barcode-wrapper { text-align: center; width: 100%; }');
             printWindow.document.write('.barcode-wrapper svg { width: 90%; height: auto; max-height: 75%; }');
             printWindow.document.write('.barcode-text { font-family: Arial, sans-serif; font-size: 9px; font-weight: bold; margin-top: 1px; letter-spacing: 1px; }');
