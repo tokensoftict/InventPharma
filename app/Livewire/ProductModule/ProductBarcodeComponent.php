@@ -31,7 +31,7 @@ class ProductBarcodeComponent extends Component
     {
         if (isset($this->product)) {
             // Generate a 12-digit random barcode based on product ID
-            $code = mt_rand(100, 999);
+            $code = mt_rand(10000, 99999);
             
             $barcode = new \App\Models\Stockbarcode([
                 'barcode' => $code,
