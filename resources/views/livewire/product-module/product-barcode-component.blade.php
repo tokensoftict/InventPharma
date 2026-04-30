@@ -85,7 +85,7 @@
             wire:key="print-area-{{ $numberOfCopies }}-{{ $selectedBarcode }}">@for($i = 0; $i < $numberOfCopies; $i++)
                 <div class="label-container {{ $i < $numberOfCopies - 1 ? 'page-break' : '' }}"
                     wire:key="label-{{ $i }}-{{ $selectedBarcode }}">
-                    <div class="barcode-wrapper">{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C39', 2, 80, 'black', false) !!}
+                    <div class="barcode-wrapper">{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C39', 4, 70, 'black', false) !!}
                         <div class="barcode-text">{{ $selectedBarcode }}</div>
                     </div>
             </div>@endfor
