@@ -53,7 +53,7 @@
                         style="background: #f4f6f9; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 250px;">
                         @if($selectedBarcode)
                             <div style="background: #fff; border: 1px solid #ddd; padding: 10px; display: inline-block;">
-                                <div>{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C128', 2, 100, 'black', false) !!}</div>
+                                <div>{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C128', 2, 80, 'black', false) !!}</div>
                                 <div style="font-size: 16px; font-weight: bold; margin-top: 5px; letter-spacing: 2px;">
                                     {{ $selectedBarcode }}</div>
                             </div>
