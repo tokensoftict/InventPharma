@@ -31,9 +31,12 @@
                             <input type="number" class="form-control" wire:model.live="numberOfCopies" min="1" max="100">
                         </div>
 
-                        <button type="button" class="btn btn-primary w-100 mt-3" onclick="printBarcode()" wire:loading.attr="disabled" wire:target="numberOfCopies, selectedBarcode, labelSize">
-                            <i class="fas fa-print" wire:loading.remove wire:target="numberOfCopies, selectedBarcode, labelSize"></i>
-                            <span wire:loading wire:target="numberOfCopies, selectedBarcode, labelSize" class="spinner-border spinner-border-sm me-2"></span>
+                        <button type="button" class="btn btn-primary w-100 mt-3" onclick="printBarcode()"
+                            wire:loading.attr="disabled" wire:target="numberOfCopies, selectedBarcode, labelSize">
+                            <i class="fas fa-print" wire:loading.remove
+                                wire:target="numberOfCopies, selectedBarcode, labelSize"></i>
+                            <span wire:loading wire:target="numberOfCopies, selectedBarcode, labelSize"
+                                class="spinner-border spinner-border-sm me-2"></span>
                             Print Barcode
                         </button>
                     </div>
@@ -51,7 +54,8 @@
                         @if($selectedBarcode)
                             <div style="background: #fff; border: 1px solid #ddd; padding: 10px; display: inline-block;">
                                 <div>{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C128', 2, 80, 'black', false) !!}</div>
-                                <div style="font-size: 16px; font-weight: bold; margin-top: 5px; letter-spacing: 2px;">{{ $selectedBarcode }}</div>
+                                <div style="font-size: 16px; font-weight: bold; margin-top: 5px; letter-spacing: 2px;">
+                                    {{ $selectedBarcode }}</div>
                             </div>
                         @else
                             <p class="text-muted">Please select a barcode.</p>
@@ -62,10 +66,13 @@
         @else
             <div class="col-12 d-print-none">
                 <div class="alert alert-warning d-flex flex-column align-items-start">
-                    <div>No barcodes found for this product. Please capture barcodes in the General tab first, or generate a system barcode.</div>
-                    <button type="button" class="btn btn-success mt-3" wire:click="generateBarcode" wire:loading.attr="disabled">
+                    <div>No barcodes found for this product. Please capture barcodes in the General tab first, or generate a
+                        system barcode.</div>
+                    <button type="button" class="btn btn-success mt-3" wire:click="generateBarcode"
+                        wire:loading.attr="disabled">
                         <i class="fas fa-barcode"></i> Generate System Barcode
-                        <span wire:loading wire:target="generateBarcode" class="spinner-border spinner-border-sm ms-2" role="status"></span>
+                        <span wire:loading wire:target="generateBarcode" class="spinner-border spinner-border-sm ms-2"
+                            role="status"></span>
                     </button>
                 </div>
             </div>
@@ -74,19 +81,27 @@
 
     <!-- Print Layout Area (Hidden on screen) -->
     @if($selectedBarcode)
-        <div id="barcode-print-area" style="display: none;" wire:key="print-area-{{ $numberOfCopies }}-{{ $selectedBarcode }}">@for($i = 0; $i < $numberOfCopies; $i++)<div class="label-container {{ $i < $numberOfCopies - 1 ? 'page-break' : '' }}" wire:key="label-{{ $i }}-{{ $selectedBarcode }}"><div class="barcode-wrapper">{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C128', 2, 80, 'black', false) !!}<div class="barcode-text">{{ $selectedBarcode }}</div></div></div>@endfor</div>
+        <div id="barcode-print-area" style="display: none;"
+            wire:key="print-area-{{ $numberOfCopies }}-{{ $selectedBarcode }}">@for($i = 0; $i < $numberOfCopies; $i++)
+                <div class="label-container {{ $i < $numberOfCopies - 1 ? 'page-break' : '' }}"
+                    wire:key="label-{{ $i }}-{{ $selectedBarcode }}">
+                    <div class="barcode-wrapper">{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C128', 4, 100, 'black', false) !!}
+                        <div class="barcode-text">{{ $selectedBarcode }}</div>
+                    </div>
+            </div>@endfor
+        </div>
     @endif
 
     <script>
         function printBarcode() {
             var printContents = document.getElementById('barcode-print-area').innerHTML;
             var printWindow = window.open('', '_blank', 'width=600,height=400');
-            
+
             var labelSize = "{{ $labelSize }}";
-            var width = "50mm"; 
+            var width = "50mm";
             var height = "25mm";
             var orientation = "landscape";
-            
+
             if (labelSize === '50x25') { width = '50mm'; height = '25mm'; }
             if (labelSize === '40x30') { width = '40mm'; height = '30mm'; }
             if (labelSize === '50x30') { width = '50mm'; height = '30mm'; }
@@ -105,11 +120,11 @@
             printWindow.document.write('</head><body>');
             printWindow.document.write(printContents);
             printWindow.document.write('</body></html>');
-            
+
             printWindow.document.close();
             printWindow.focus();
-            
-            setTimeout(function() {
+
+            setTimeout(function () {
                 printWindow.print();
                 printWindow.close();
             }, 250);
