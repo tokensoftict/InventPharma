@@ -81,13 +81,14 @@
             var printWindow = window.open('', '_blank', 'width=600,height=400');
             
             var labelSize = "{{ $labelSize }}";
-            var width = "25mm"; 
-            var height = "50mm";
+            var width = "50mm"; 
+            var height = "25mm";
+            var orientation = "landscape";
             
-            if (labelSize === '25x50') { width = '25mm'; height = '50mm'; }
-            if (labelSize === '30x40') { width = '30mm'; height = '40mm'; }
-            if (labelSize === '30x50') { width = '30mm'; height = '50mm'; }
-            if (labelSize === '40x60') { width = '40mm'; height = '60mm'; }
+            if (labelSize === '50x25') { width = '50mm'; height = '25mm'; }
+            if (labelSize === '40x30') { width = '40mm'; height = '30mm'; }
+            if (labelSize === '50x30') { width = '50mm'; height = '30mm'; }
+            if (labelSize === '60x40') { width = '60mm'; height = '40mm'; }
 
             printWindow.document.write('<html><head><title>Print Barcode</title>');
             printWindow.document.write('<style>');
@@ -97,7 +98,7 @@
             printWindow.document.write('.barcode-wrapper svg { width: 100%; height: auto; max-height: 55%; }');
             printWindow.document.write('.barcode-text { font-family: Arial, sans-serif; font-size: 10px; font-weight: bold; margin-top: 1px; letter-spacing: 1px; }');
             printWindow.document.write('.page-break { page-break-after: always; break-after: page; }');
-            printWindow.document.write('@page { size: ' + width + ' ' + height + ' portrait; margin: 0; }');
+            printWindow.document.write('@page { size: ' + width + ' ' + height + ' ' + orientation + '; margin: 0; }');
             printWindow.document.write('</style>');
             printWindow.document.write('</head><body>');
             printWindow.document.write(printContents);
