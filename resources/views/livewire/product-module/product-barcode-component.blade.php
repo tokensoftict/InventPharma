@@ -53,7 +53,7 @@
                         style="background: #f4f6f9; padding: 20px; display: flex; align-items: center; justify-content: center; min-height: 250px;">
                         @if($selectedBarcode)
                             <div style="background: #fff; border: 1px solid #ddd; padding: 10px; display: inline-block;">
-                                <div>{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C39', 2, 150, 'black', false) !!}</div>
+                                <div>{!! DNS1D::getBarcodeSVG("333", 'C39', 2, 150, 'black', false) !!}</div>
                                 <div style="font-size: 16px; font-weight: bold; margin-top: 5px; letter-spacing: 2px;">
                                     {{ $selectedBarcode }}</div>
                             </div>
@@ -85,7 +85,7 @@
             wire:key="print-area-{{ $numberOfCopies }}-{{ $selectedBarcode }}">@for($i = 0; $i < $numberOfCopies; $i++)
                 <div class="label-container {{ $i < $numberOfCopies - 1 ? 'page-break' : '' }}"
                     wire:key="label-{{ $i }}-{{ $selectedBarcode }}">
-                    <div class="barcode-wrapper">{!! DNS1D::getBarcodeSVG($selectedBarcode, 'C39', 2, 150, 'black', false) !!}
+                    <div class="barcode-wrapper">{!! DNS1D::getBarcodeSVG("333", 'C39', 2, 150, 'black', false) !!}
                         <div class="barcode-text">{{ $selectedBarcode }}</div>
                     </div>
             </div>@endfor
