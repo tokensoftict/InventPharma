@@ -9,13 +9,13 @@ class ProductBarcodeComponent extends Component
 {
     public Stock $product;
     public $selectedBarcode = '';
-    public $labelSize = '50x30';
+    public $labelSize = '30x50';
     public $numberOfCopies = 1;
 
     public array $availableSizes = [
-        '40x30' => '40mm x 30mm',
-        '50x30' => '50mm x 30mm',
-        '60x40' => '60mm x 40mm'
+        '30x40' => '30mm x 40mm',
+        '30x50' => '30mm x 50mm',
+        '40x60' => '40mm x 60mm'
     ];
 
     public function mount()

@@ -90,21 +90,22 @@
             var printWindow = window.open('', '_blank', 'width=600,height=400');
             
             var labelSize = "{{ $labelSize }}";
-            var width = "50mm"; 
-            var height = "30mm";
-            if (labelSize === '40x30') { width = '40mm'; height = '30mm'; }
-            if (labelSize === '50x30') { width = '50mm'; height = '30mm'; }
-            if (labelSize === '60x40') { width = '60mm'; height = '40mm'; }
+            var width = "30mm"; 
+            var height = "50mm";
+            
+            if (labelSize === '30x40') { width = '30mm'; height = '40mm'; }
+            if (labelSize === '30x50') { width = '30mm'; height = '50mm'; }
+            if (labelSize === '40x60') { width = '40mm'; height = '60mm'; }
 
             printWindow.document.write('<html><head><title>Print Barcode</title>');
             printWindow.document.write('<style>');
             printWindow.document.write('body { margin: 0; padding: 0; background: #fff; }');
-            printWindow.document.write('.label-container { width: 100%; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 2mm; }');
+            printWindow.document.write('.label-container { width: ' + width + '; height: ' + height + '; display: flex; flex-direction: column; justify-content: center; align-items: center; box-sizing: border-box; padding: 1mm; overflow: hidden; }');
             printWindow.document.write('.barcode-wrapper { text-align: center; width: 100%; }');
-            printWindow.document.write('.barcode-wrapper svg { width: 100%; height: auto; max-height: 70%; }');
-            printWindow.document.write('.barcode-text { font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; margin-top: 2px; letter-spacing: 2px; }');
+            printWindow.document.write('.barcode-wrapper svg { width: 100%; height: auto; max-height: 60%; }');
+            printWindow.document.write('.barcode-text { font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; margin-top: 2px; letter-spacing: 1px; }');
             printWindow.document.write('.page-break { page-break-after: always; }');
-            printWindow.document.write('@page { size: ' + width + ' ' + height + '; margin: 0; }');
+            printWindow.document.write('@page { size: ' + width + ' ' + height + ' portrait; margin: 0; }');
             printWindow.document.write('</style>');
             printWindow.document.write('</head><body>');
             printWindow.document.write(printContents);
