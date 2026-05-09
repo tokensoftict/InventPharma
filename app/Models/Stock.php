@@ -151,6 +151,7 @@ class Stock extends Model
         'minimum_quantity',
         'highest_qty_sold',
         'highest_qty_sold_retail',
+        'store_type',
 	];
 
     protected $with = ['promotion_items'];

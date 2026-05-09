@@ -91,7 +91,8 @@ class ProductComponent extends Component
             "product_data.piece"=>"bail|required",
             "product_data.carton"=>"bail|required",
             "product_data.box"=>"bail|required",
-            "product_data.location"=>"required"
+            "product_data.location"=>"required",
+            "product_data.store_type"=>"required"
         ];
 
         if(config('app.sync_with_online') === 1 && $this->product_data['image_path'] === "logo/" . app(Settings::class)->store()->logo)

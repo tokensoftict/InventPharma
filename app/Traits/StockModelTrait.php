@@ -391,6 +391,7 @@ trait StockModelTrait
             'stock_option_values' => $this->buildProductOptions()->toArray(),
             'dependent_products' => $this->dependent_products()->get()->map->only(['stock_id', 'parent', 'child'])->toArray(),
             'stock_barcodes' => $this->stockbarcodes()->get()->map->only(['barcode'])->pluck('barcode')->toArray(),
+            'store_type' => $this->store_type,
         ];
 
         $stockPrices = [];
@@ -453,6 +454,7 @@ trait StockModelTrait
             'sachet'=>1,
             //'status'=>$this->status,
             'retail_status'=>$this->status,
+            'store_type'=>$this->store_type,
         ];
 
         $ex = $this->getOnlineExpiryDate();

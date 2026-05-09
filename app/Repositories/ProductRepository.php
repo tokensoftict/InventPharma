@@ -35,6 +35,7 @@ class ProductRepository
         'image_path' =>  NULL,
         'sachet'=> '0',
         'status'=> '1',
+        'store_type' => NULL,
         'minimum_quantity' => NULL
     ];
 

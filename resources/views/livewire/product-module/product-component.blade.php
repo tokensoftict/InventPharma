@@ -19,6 +19,18 @@
             </div>
 
             <div class="col-lg-3 col-sm-6 col-12">
+                <div class="mb-3" wire:ignore>
+                    <label>Store Type</label>
+                    <select class="form-control" required wire:model="product_data.store_type">
+                        <option value="">Select Store Type</option>
+                        <option value="SUPERMARKET">SUPERMARKET</option>
+                        <option value="PHARMACY">PHARMACY</option>
+                    </select>
+                    @error('product_data.store_type') <span class="text-danger">{{ $message }}</span> @enderror
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-sm-6 col-12">
                 <div class="mb-3">
                     <label>Code</label>
                     <input name="code"  class="form-control" placeholder="Code" wire:model="product_data.code" type="text">
