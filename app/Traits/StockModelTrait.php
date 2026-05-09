@@ -552,7 +552,8 @@ trait StockModelTrait
             'box',
             'carton',
             'sachet',
-            'status'
+            'status',
+            'store_type'
         ])) {
             if (($this->bulk_price > 0 || $this->retail_price > 0)) {
                 dispatch(new PushDataServer(['KAFKA_ACTION' => KafkaAction::UPDATE_STOCK, 'KAFKA_TOPICS' => KafkaTopics::STOCKS, 'action' => 'update', 'table' => 'stock', 'data' => $this->getBulkPushData(), 'endpoint' => 'stocks', 'url' => onlineBase() . "dataupdate/add_or_update_stock"]));
