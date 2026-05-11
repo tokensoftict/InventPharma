@@ -1,4 +1,12 @@
 <div x-data="invoice()" x-init="totalInvoice(); newCustomerEvent(); getInputFromBarcode(); logProductNotExist();  handleProductOptionModal();">
+    <div x-show="isLoading" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 255, 255, 0.8); z-index: 999999; pointer-events: all;" x-cloak>
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h4 class="mt-3 text-primary fw-bold">Processing, please wait...</h4>
+        </div>
+    </div>
     <div class="row">
         <div class="col-sm-8">
             <div class="card">
@@ -431,6 +439,7 @@
         var productOptionModal = "";
         function invoice() {
             return {
+                isLoading: false,
                 invoiceitems : @this.get('invoiceData.invoiceitems') ? JSON.parse( @this.get('invoiceData.invoiceitems')) : [],
             searchString : "",
             searchproduct : [],
@@ -710,25 +719,36 @@
             }
         },
             async requestProductWithBarcode(barcode) {
-            const product = await (await fetch('{{ route('findStockByBarcode') }}?barcode=' + barcode+"&column="+this.department
-            )).json();
-            this.searchString = "";
-            if(product.hasOwnProperty('id') &&  ((this.invoiceitems.filter(e => e.stock_id === product.id)).length === 0)) {
-                this.selectedProduct = product
-                this.addItem();
-            }  else if(product.hasOwnProperty('id') && ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0)) {
-                const index = this.invoiceitems.findIndex(item => item.stock_id === product.id);
-                if(index > -1) {
-                    this.incrementQuantity(index);
+            if (this.isLoading) return;
+            this.isLoading = true;
+            try {
+                const product = await (await fetch('{{ route('findStockByBarcode') }}?barcode=' + barcode+"&column="+this.department
+                )).json();
+                this.searchString = "";
+                if(product.hasOwnProperty('id') &&  ((this.invoiceitems.filter(e => e.stock_id === product.id)).length === 0)) {
+                    this.selectedProduct = product
+                    this.addItem();
+                }  else if(product.hasOwnProperty('id') && ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0)) {
+                    const index = this.invoiceitems.findIndex(item => item.stock_id === product.id);
+                    if(index > -1) {
+                        this.incrementQuantity(index);
+                    }
+                } else {
+                    console.log("product not found");
                 }
-            } else {
-                console.log("product not found");
+            } catch (err) {
+                console.error(err);
+            } finally {
+                this.isLoading = false;
             }
         },
             async parseCustomerQrCode(barcode) {
+            if (this.isLoading) return;
+            this.isLoading = true;
             var obj = this;
 
             @this.parseCustomerFromQrCode(barcode).then(function (response){
+                obj.isLoading = false;
                 if(response.status === true) {
                     obj.customer_id = response.customer;
                     obj.searchCustomerString = "";
@@ -738,6 +758,9 @@
                         error(response.message);
                     }
                 }
+            }).catch(function(err){
+                obj.isLoading = false;
+                console.error(err);
             });
         },
             getInputFromBarcode() {
@@ -750,6 +773,7 @@
                     startChar: [16], // Prefix character for the cabled scanner (OPL6845R)
                     ignoreIfFocusOn : ['customer-search-text', 'searchText'],
                     onComplete: function(barcode){
+                        if (obj.isLoading) return;
                         barcode = barcode.trim();
                         if(/^\d+$/.test(barcode) && barcode.length < 50) {
                             obj.requestProductWithBarcode(barcode);

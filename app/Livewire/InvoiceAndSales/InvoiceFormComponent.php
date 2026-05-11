@@ -26,7 +26,7 @@ class InvoiceFormComponent extends Component
 
     public Invoice $invoice;
 
-    public  $departments;
+    public $departments;
 
     public string|null $department = NULL;
 
@@ -40,13 +40,13 @@ class InvoiceFormComponent extends Component
     public $cities;
     public $memberGroups;
     private InvoiceRepository $invoiceRepository;
-    public String $firstname = "";
-    public String $lastname = "";
-    public String $address = "";
-    public String $phone_number = "";
-    public String $email = "";
-    public String $city_id = "";
-    public String $member_group_id = "";
+    public string $firstname = "";
+    public string $lastname = "";
+    public string $address = "";
+    public string $phone_number = "";
+    public string $email = "";
+    public string $city_id = "";
+    public string $member_group_id = "";
     public array $selectedProductOption = [];
     public string $selectedProductName = "";
     public array $selectedProductInfo = ["selectedOptions"];
@@ -66,55 +66,56 @@ class InvoiceFormComponent extends Component
         $department = (int) $this->department ?? auth()->user()->department_id;
 
         $this->departments = match ($department) {
-            5 =>(function () {
-                // all this code is just to make wholesales department the first department that will show
-                // if the login user department is Administrative
-                $salesDepartment = departments(true)->filter(fn ($item) =>
-                in_array($item->id, [2, 3, 1])
-                );
+            5 => (function () {
+                    // all this code is just to make wholesales department the first department that will show
+                    // if the login user department is Administrative
+                    $salesDepartment = departments(true)->filter(
+                    fn($item) =>
+                    in_array($item->id, [2, 3, 1])
+                    );
 
-                $wholesales = 2;
+                    $wholesales = 2;
 
-                $firstItemKey = $salesDepartment->search(
-                    fn ($item) => $item->id == $wholesales
-                );
+                    $firstItemKey = $salesDepartment->search(
+                    fn($item) => $item->id == $wholesales
+                    );
 
-                if ($firstItemKey !== false) {
-                    $itemToMove = $salesDepartment->pull($firstItemKey);
-                    $salesDepartment->prepend($itemToMove);
-                }
+                    if ($firstItemKey !== false) {
+                        $itemToMove = $salesDepartment->pull($firstItemKey);
+                        $salesDepartment->prepend($itemToMove);
+                    }
 
-                return $salesDepartment;
-            })(),
-            4 => departments(true)->filter(function($item){
-                return $item->id == 4;
-            })->reverse(),
-            3 => departments(true)->filter(function($item){
-                return in_array($item->id, [3, 1]);
-            })->reverse(),
-            2 => departments(true)->filter(function($item){
-                return in_array($item->id, [2, 1]);
-            })->reverse(),
-            1 => departments(true)->filter(function($item){
-                return $item->id == 1;
-            })->reverse(),
+                    return $salesDepartment;
+                })(),
+            4 => departments(true)->filter(function ($item) {
+                    return $item->id == 4;
+                })->reverse(),
+            3 => departments(true)->filter(function ($item) {
+                    return in_array($item->id, [3, 1]);
+                })->reverse(),
+            2 => departments(true)->filter(function ($item) {
+                    return in_array($item->id, [2, 1]);
+                })->reverse(),
+            1 => departments(true)->filter(function ($item) {
+                    return $item->id == 1;
+                })->reverse(),
 
         };
 
-        if(isset($this->invoice->id)){
+        if (isset($this->invoice->id)) {
             $this->department_id = department_by_quantity_column($this->invoice->department)->id;
         }
 
-        if($this->department_id == ""){
+        if ($this->department_id == "") {
             $this->selectedDepartment = (array) $this->departments->first();
-            $this->department_id =  $this->departments->first()->id;
-            $this->d =  $this->selectedDepartment['quantity_column'];
-        }else {
-            $this->selectedDepartment =  (array) departments(true)->filter(function($item){
+            $this->department_id = $this->departments->first()->id;
+            $this->d = $this->selectedDepartment['quantity_column'];
+        } else {
+            $this->selectedDepartment = (array) departments(true)->filter(function ($item) {
                 return $item->id == $this->department_id;
             })->first();
-            $this->dispatch('departmentChange', ['department'=> $this->selectedDepartment['quantity_column']]);
-            $this->d =  $this->selectedDepartment['quantity_column'];
+            $this->dispatch('departmentChange', ['department' => $this->selectedDepartment['quantity_column']]);
+            $this->d = $this->selectedDepartment['quantity_column'];
         }
     }
 
@@ -137,21 +138,21 @@ class InvoiceFormComponent extends Component
     public function saveCustomers()
     {
         $this->validate([
-            'firstname' =>'required',
+            'firstname' => 'required',
             'lastname' => 'required',
             //'phone_number' => 'required|digits_between:11,11|unique:customers,phone_number',
         ]);
 
-        $this->customer = Customer::where('phone_number',  $this->phone_number)->where('status',1)->get()->first();
+        $this->customer = Customer::where('phone_number', $this->phone_number)->where('status', 1)->get()->first();
 
-        if(!$this->customer) {
+        if (!$this->customer) {
             $status = $this->save();
             $message = "Customer has been created successfully";
-        }else{
+        } else {
             $status = $this->update($this->customer);
             $message = "Customer has been updated successfully";
         }
-        if($status  === true) {
+        if ($status === true) {
             $this->alert(
                 "success",
                 "Customer",
@@ -168,7 +169,7 @@ class InvoiceFormComponent extends Component
     public function save()
     {
         $this->validate([
-            'firstname' =>'required',
+            'firstname' => 'required',
             'lastname' => 'required',
             'phone_number' => 'required|digits_between:11,11|unique:customers,phone_number',
         ]);
@@ -185,7 +186,7 @@ class InvoiceFormComponent extends Component
 
         $customer->save();
 
-        $this->dispatch("newCustomer", ['customer'=>$customer->toArray()]);
+        $this->dispatch("newCustomer", ['customer' => $customer->toArray()]);
 
         return true;
     }
@@ -194,15 +195,14 @@ class InvoiceFormComponent extends Component
     {
 
         $this->validate([
-            'firstname' =>'required',
+            'firstname' => 'required',
             'lastname' => 'required',
             'phone_number' => 'required',
         ]);
 
-        $customer_ = Customer::where('phone_number',$this->phone_number)->where('status',1)->get()->first();
+        $customer_ = Customer::where('phone_number', $this->phone_number)->where('status', 1)->get()->first();
 
-        if($customer_ && $customer_->id  != $customer->id)
-        {
+        if ($customer_ && $customer_->id != $customer->id) {
             $this->alert(
                 "error",
                 "Customer",
@@ -210,7 +210,7 @@ class InvoiceFormComponent extends Component
                     'position' => 'center',
                     'timer' => 2000,
                     'toast' => false,
-                    'text' =>"Customer Phone Number already exists with name ".$customer_->firstname." ".$customer_->lastname
+                    'text' => "Customer Phone Number already exists with name " . $customer_->firstname . " " . $customer_->lastname
                 ]
             );
             return false;
@@ -227,7 +227,7 @@ class InvoiceFormComponent extends Component
 
         $customer->save();
 
-        $this->dispatch("newCustomer", ['customer'=>$customer->toArray()]);
+        $this->dispatch("newCustomer", ['customer' => $customer->toArray()]);
 
         return true;
     }
@@ -237,28 +237,26 @@ class InvoiceFormComponent extends Component
         $this->initDepartment();
 
         $this->invoiceData['department'] = $this->d;
-        if($this->department == "4") {
+        if ($this->department == "4") {
             $this->invoiceData['in_department'] = 'retail';
-        }else {
+        } else {
             $this->invoiceData['in_department'] = (department_by_id(auth()->user()->department_id)->quantity_column ?? 'wholesales');
         }
-        if(!isset($this->invoice->id))
-        {
+        if (!isset($this->invoice->id)) {
             //$this->invoiceData['invoice_number'] = time();
 
             $response = null;
-            DB::transaction(function() use (&$response){
-                $response  = (new invoiceRepository())->createInvoice($this->invoiceData);
+            DB::transaction(function () use (&$response) {
+                $response = (new invoiceRepository())->createInvoice($this->invoiceData);
             });
-        }
-        else {
+        } else {
             $response = null;
-            DB::transaction(function() use (&$response){
-                $response  = (new invoiceRepository())->updateInvoice($this->invoice, $this->invoiceData);
+            DB::transaction(function () use (&$response) {
+                $response = (new invoiceRepository())->updateInvoice($this->invoice, $this->invoiceData);
             });
         }
 
-        if(is_array( $response )){
+        if (is_array($response)) {
 
             $this->alert(
                 "error",
@@ -267,11 +265,11 @@ class InvoiceFormComponent extends Component
                     'position' => 'center',
                     'timer' => 2000,
                     'toast' => false,
-                    'text' =>"An error occurred in your invoice, please check and try again"
+                    'text' => "An error occurred in your invoice, please check and try again"
                 ]
             );
 
-            return ['errors' =>$response, 'status'=>false];
+            return ['errors' => $response, 'status' => false];
         }
 
 
@@ -282,20 +280,20 @@ class InvoiceFormComponent extends Component
                 'position' => 'center',
                 'timer' => 2000,
                 'toast' => false,
-                'text' =>"Invoice has been generated Successfully!"
+                'text' => "Invoice has been generated Successfully!"
             ]
         );
 
 
-        if($this->department == "4") {
-            return redirect()->route('payment.createInvoicePayment', ['invoice_number'=>$response->invoice_number]);
-        }else{
-            return redirect()->route('invoiceandsales.view',$response->id);
+        if ($this->department == "4") {
+            return redirect()->route('payment.createInvoicePayment', ['invoice_number' => $response->invoice_number]);
+        } else {
+            return redirect()->route('invoiceandsales.view', $response->id);
         }
 
     }
 
-    public function logOutofStockProduct($stock_id) : void
+    public function logOutofStockProduct($stock_id): void
     {
         $logs = OutOfStockLog::firstOrCreate(
             [
@@ -317,7 +315,7 @@ class InvoiceFormComponent extends Component
     }
 
 
-    public function logProductNotExist($name) : bool
+    public function logProductNotExist($name): bool
     {
         $log = ProductNotAvailable::updateOrCreate(
             ['name' => $name],
@@ -342,9 +340,9 @@ class InvoiceFormComponent extends Component
         }
 
         $customer = json_decode($decryptCode, true);
-        if(is_array($customer)) {
+        if (is_array($customer)) {
             $customer = Customer::where('phone_number', $customer['phone'])->first();
-            if($customer) {
+            if ($customer) {
                 return [
                     'status' => true,
                     'customer' => $customer->toArray()
