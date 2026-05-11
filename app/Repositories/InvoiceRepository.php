@@ -240,7 +240,7 @@ class InvoiceRepository
                         $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
                             quantity:$stocks[$product->id]['item']['quantity'],
                             defaultSellingPrice:$product->{selling_price_column()},
-                            customPrices: $product->stockquantityprices()->where('department', $from)->get()->toArray(),
+                            customPrices: $product->stockquantityprices()->whereIn('department', [$from, "wholesale"])->get()->toArray(),
                             stock: $product,
                             department: $from,
                         );
