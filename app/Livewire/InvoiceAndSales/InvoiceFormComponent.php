@@ -342,7 +342,7 @@ class InvoiceFormComponent extends Component
         }
 
         $customer = json_decode($decryptCode, true);
-        if($customer) {
+        if(is_array($customer)) {
             $customer = Customer::where('phone_number', $customer['phone'])->first();
             if($customer) {
                 return [
@@ -350,17 +350,20 @@ class InvoiceFormComponent extends Component
                     'customer' => $customer->toArray()
                 ];
             }
-            $customer = new Customer();
-            $customer->phone_number = $customer['phone'];
-            $customer->firstname = $customer['first_name'];
-            $customer->lastname = $customer['first_name'];
-            $customer->email = $customer['email'];
-            $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
-            $customer->city_id = NULL;
-            $customer->save();
+            $customer = json_decode($decryptCode, true);
+            $newCustomer = new Customer();
+            $newCustomer->phone_number = $customer['phone'];
+            $newCustomer->firstname = $customer['first_name'];
+            $newCustomer->lastname = $customer['first_name'];
+            $newCustomer->email = $customer['email'];
+            $newCustomer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
+            $newCustomer->city_id = NULL;
+            $newCustomer->save();
+
+
             return [
                 'status' => true,
-                'customer' => $customer->toArray()
+                'customer' => $newCustomer->toArray()
             ];
 
 
