@@ -39,7 +39,7 @@ class CustomerManagerComponent extends Component
 
     public String $modalName = "Customer";
 
-    public string $modelId = "";
+    public string|null $modelId = "";
 
 
     public String $firstname = "";
@@ -82,9 +82,13 @@ class CustomerManagerComponent extends Component
         $this->phone_number = $customer->phone_number;
         $this->address  = $customer->address ?? "";
         $this->city_id = $customer->city_id ?? "";
-        $this->member_group_id = $customer->member_group_id ?? "";
-        $this->retail_member_group_id = $customer->retail_member_group_id ?? "";
-
+        if(userCanView("customer.changeorassigncustumertomembergroup")) {
+            $this->member_group_id = $customer->member_group_id ?? "";
+            $this->retail_member_group_id = $customer->retail_member_group_id ?? "";
+        } else {
+            unset($this->retail_member_group_id);
+            unset($this->member_group_id);
+        }
 
         $this->saveButton = "Update";
 
@@ -103,13 +107,20 @@ class CustomerManagerComponent extends Component
         $this->phone_number = "";
         $this->address  ="";
         $this->city_id ="";
-        $this->member_group_id = "";
-        $this->retail_member_group_id = "";
+        if(userCanView("customer.changeorassigncustumertomembergroup")) {
+            $this->member_group_id = "";
+            $this->retail_member_group_id = "";
+        } else {
+            unset($this->retail_member_group_id);
+            unset($this->member_group_id);
+        }
 
         $this->saveButton = "Save";
 
         $this->dispatch("openModal", []);
-    }    public function update(Customer $customer)
+    }
+
+    public function update(Customer $customer)
     {
         $customer_ = Customer::where('phone_number', $this->phone_number)->where('status', 1)->get()->first();
 
@@ -127,12 +138,14 @@ class CustomerManagerComponent extends Component
             return false;
         }
 
-        $memberGroupService = app(MemberGroupService::class);
+        if(userCanView("customer.changeorassigncustumertomembergroup")) {
+            $memberGroupService = app(MemberGroupService::class);
+        }
 
         // Standard Member Group logic
-        if ($customer->member_group_id != $this->member_group_id) {
+        if ($customer->member_group_id != $this->member_group_id and userCanView("customer.changeorassigncustumertomembergroup")) {
             $newGroupId = $this->member_group_id == "" ? NULL : $this->member_group_id;
-            
+
             $currentThreshold = $customer->memberGroup ? $customer->memberGroup->min_sales_amount : -1;
             $newThreshold = 0;
             if ($newGroupId) {
@@ -151,9 +164,9 @@ class CustomerManagerComponent extends Component
         }
 
         // Retail Member Group logic
-        if ($customer->retail_member_group_id != $this->retail_member_group_id) {
+        if ($customer->retail_member_group_id != $this->retail_member_group_id and userCanView("customer.changeorassigncustumertomembergroup")) {
             $newRetailId = $this->retail_member_group_id == "" ? NULL : $this->retail_member_group_id;
-            
+
             $currentRetailThreshold = $customer->retailMemberGroup ? $customer->retailMemberGroup->retail_min_sales_amount : -1;
             $newRetailThreshold = 0;
             if ($newRetailId) {
@@ -250,8 +263,13 @@ class CustomerManagerComponent extends Component
         $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
         $customer->city_id = $this->city_id == "" ? NULL : $this->city_id;
 
-        $newGroupId = $this->member_group_id == "" ? NULL : $this->member_group_id;
-        $newRetailId = $this->retail_member_group_id == "" ? NULL : $this->retail_member_group_id;
+        if(userCanView("customer.changeorassigncustumertomembergroup") === false) {
+            $newGroupId = 4;
+            $newRetailId = 4;
+        } else {
+            $newGroupId = $this->member_group_id == "" ? NULL : $this->member_group_id;
+            $newRetailId = $this->retail_member_group_id == "" ? NULL : $this->retail_member_group_id;
+        }
 
         $customer->member_group_id = $newGroupId;
         $customer->retail_member_group_id = $newRetailId;
@@ -262,6 +280,7 @@ class CustomerManagerComponent extends Component
         if ($newRetailId) {
             $customer->is_manual_retail_member_group = true;
         }
+
 
         $customer->save();
 
@@ -274,6 +293,7 @@ class CustomerManagerComponent extends Component
                 $memberGroupService->logHistory($customer, NULL, $newRetailId, 'retail', 0, true);
             }
         }
+
 
         $this->dispatch("closeModal", []);
 

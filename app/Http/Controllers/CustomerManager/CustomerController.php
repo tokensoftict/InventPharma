@@ -29,5 +29,6 @@ class CustomerController extends Controller
     public function update(Request $request, $id){
     }
 
-
+    public function changeorassigncustumertomembergroup(Request $request, $id){
+    }
 }

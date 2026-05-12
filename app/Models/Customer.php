@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * 
  * @property int $id
  * @property int $member_group_id
+ * @property int $retail_member_group_id
  * @property float $loyalty_points
  * @property string|null $firstname
  * @property string|null $lastname

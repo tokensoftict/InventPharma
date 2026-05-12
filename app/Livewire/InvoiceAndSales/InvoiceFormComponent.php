@@ -182,7 +182,8 @@ class InvoiceFormComponent extends Component
         $customer->phone_number = $this->phone_number;
         $customer->address = $this->address;
         $customer->city_id = $this->city_id == "" ? null : $this->city_id;
-        $customer->member_group_id = $this->member_group_id == "" ? NULL : $this->member_group_id;
+        $customer->member_group_id = 4;
+        $customer->retail_member_group_id = 4;
 
         $customer->save();
 
@@ -223,7 +224,9 @@ class InvoiceFormComponent extends Component
         $customer->address = $this->address;
         $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
         $customer->city_id = $this->city_id == "" ? NULL : $this->city_id;
-        $customer->member_group_id = $this->member_group_id == "" ? NULL : $this->member_group_id;
+        $customer->member_group_id = 4;
+        $customer->retail_member_group_id = 4;
+
 
         $customer->save();
 
@@ -356,6 +359,8 @@ class InvoiceFormComponent extends Component
             $newCustomer->email = $customer['email'];
             $newCustomer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
             $newCustomer->city_id = NULL;
+            $newCustomer->member_group_id = 4;
+            $newCustomer->retail_member_group_id = 4;
             $newCustomer->save();
 
 

@@ -70,24 +70,25 @@
 
                                     <div class="mb-3">
                                         <label>City</label>
-                                       <select class="form-control" wire:model="city_id">
-                                           <option value="">Select City</option>
-                                           @foreach($this->cities as $city)
-                                               <option value="{{ $city->id }}">{{ $city->name }}</option>
-                                           @endforeach
-                                       </select>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label>Member Group</label>
-                                        <select class="form-control" wire:model="member_group_id">
-                                            <option value="">Select Member Group</option>
-                                            @foreach($this->memberGroups as $member_group)
-                                                <option value="{{ $member_group->id }}">{{ $member_group->label }}</option>
+                                        <select class="form-control" wire:model="city_id">
+                                            <option value="">Select City</option>
+                                            @foreach($this->cities as $city)
+                                                <option value="{{ $city->id }}">{{ $city->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
-
+                                    @if(userCanView("customer.changeorassigncustumertomembergroup"))
+                                        <div class="mb-3">
+                                            <label>Member Group</label>
+                                            <select class="form-control" wire:model="member_group_id">
+                                                <option value="">Select Member Group</option>
+                                                @foreach($this->memberGroups as $member_group)
+                                                    <option value="{{ $member_group->id }}">{{ $member_group->label }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                    @endif
+                                    @if(userCanView("customer.changeorassigncustumertomembergroup"))
                                     <div class="mb-3">
                                         <label>Retail Member Group</label>
                                         <select class="form-control" wire:model="retail_member_group_id">
@@ -97,7 +98,7 @@
                                             @endforeach
                                         </select>
                                     </div>
-
+                                    @endif
                                     <div class="mb-3">
                                         <label>Address</label>
                                         <textarea class="form-control" wire:model="address"  name="address" placeholder="Address"></textarea>
