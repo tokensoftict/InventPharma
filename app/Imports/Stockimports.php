@@ -3,7 +3,9 @@
 
 namespace App\Imports;
 
-use App\Livewire\ProductModule\Batch\StockBatch;
+use App\Enums\KafkaAction;
+use App\Enums\KafkaTopics;
+use App\Jobs\PushDataServer;
 use App\Models\Category;
 use App\Models\Classification;
 use App\Models\Manufacturer;
@@ -19,7 +21,6 @@ use App\Models\Stockbatch as batch;
 
 class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow, ShouldQueue
 {
-
 
     public function __construct(){
 
@@ -38,6 +39,7 @@ class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow, Sho
      */
     public function collection(Collection $rows)
     {
+        $stockPushIds = [];
         foreach ($rows as $row){
 
             if(!isset($row['id'])) continue;
@@ -52,6 +54,8 @@ class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow, Sho
             }
 
             if(!$stock) continue;
+
+            $stockPushIds[] = $stock->id;
 
             if(isset($row['box'])) {
                 $stock->box = $row['box'];
@@ -166,7 +170,7 @@ class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow, Sho
                 $stock->reorder = (int)$row['reorder'];
             }
 
-            $stock->save();
+            $stock->saveQuietly();
 
 //            if(isset($row['quantity'])) {
 //                $batch = new batch();
@@ -187,6 +191,18 @@ class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow, Sho
 //
 //                $stock->updateQuantity();
 //            }
+
+            if(count($stockPushIds) > 0) {
+                 Stock::query()->whereIn('id', $stockPushIds)->chunk(1000, function($stocks) use ($stock) {
+                     $all_data = [];
+                     foreach($stocks as $stock){
+                         $all_data[] = $stock->getBulkPushData();
+                     }
+
+                     dispatch(new PushDataServer(['KAFKA_ACTION' => KafkaAction::UPDATE_STOCK, 'KAFKA_TOPICS'=> KafkaTopics::STOCKS, 'action' => 'new',
+                         'table' => 'stock', 'data' => $all_data, 'endpoint' => 'stocks', 'url'=>onlineBase()."dataupdate/add_or_update_stock"]));
+                });
+            }
         }
     }
 
