@@ -14,7 +14,7 @@ class CustomerRepository
     public function findCustomer($name)
     {
         if(\Str::length($name) < 3) return collect([])->toJson();
-        return  \DB::table('customers')->select("*",\DB::raw("CONCAT(firstname,' ',lastname) as text"))->where(function($query) use ($name){
+        return Customer::with(['member_group', 'retail_member_group'])->where(function($query) use ($name){
             $query->orwhere('firstname', 'LIKE', "%{$name}%")
                 ->orwhere('lastname', 'LIKE', "%{$name}%")
                 ->orWhere('phone_number', "LIKE", "%{$name}%")

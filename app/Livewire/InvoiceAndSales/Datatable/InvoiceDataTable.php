@@ -108,6 +108,13 @@ class InvoiceDataTable extends ExportDataTableComponent
                         return money($rows->sum('discount_amount'));
                     })
                     ->searchable(),
+                Column::make("Membership Discount", "membership_discount")
+                    ->format(fn($value, $row, Column $column)=> money($row->membership_discount))
+                    ->sortable()
+                    ->footer(function($rows){
+                        return money($rows->sum('membership_discount'));
+                    })
+                    ->searchable(),
                 Column::make("Total paid", "total_amount_paid")
                     ->format(fn($value, $row, Column $column)=> money($row->total_amount_paid))
                     ->sortable()

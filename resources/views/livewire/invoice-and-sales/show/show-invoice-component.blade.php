@@ -341,13 +341,23 @@
                                 <th class="text-right">Discount</th>
                                 <th class="text-right">-{{ money($invoice->discount_amount,2) }}</th>
                             </tr>
+                            @if($invoice->membership_discount > 0)
+                            <tr>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <th class="text-right">Membership Discount</th>
+                                <th class="text-right">-{{ money($invoice->membership_discount,2) }}</th>
+                            </tr>
+                            @endif
                             <tr>
                                 <td></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
                                 <th class="text-right">Total</th>
-                                <th class="text-right" style="font-size: 16px;">{{ money(($invoice->sub_total -$invoice->discount_amount),2) }}</th>
+                                <th class="text-right" style="font-size: 16px;">{{ money(($invoice->sub_total - ($invoice->discount_amount + $invoice->membership_discount)),2) }}</th>
                             </tr>
                             </tfoot>
                         </table>

@@ -12,7 +12,7 @@
 
                         <div class="col-12">
                             @foreach($this->data as $key=>$value)
-                                @if($value['type'] === "text" || $value['type'] === "email")
+                                @if($value['type'] === "text" || $value['type'] === "email" || $value['type'] === "date")
                                     <div class="mb-3">
                                         <label class="form-label">{{ $value['label'] }}</label>
                                         <input class="form-control" type="{{ $value['type'] }}" wire:model="formData.{{ $key }}"  name="{{ $key }}"  placeholder="{{ $value['label'] }}">

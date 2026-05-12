@@ -96,7 +96,7 @@ class ApplyProductDiscountComponent extends Component
             'payment_id' => NULL,
             'invoice_id' =>  $this->invoice->id,
             'customer_id' =>  $this->invoice->customer_id,
-            'amount' => -( $this->invoice->sub_total -  $this->invoice->discount_amount),
+            'amount' => -( $this->invoice->sub_total -  ($this->invoice->discount_amount + $this->invoice->membership_discount)),
             'transaction_date' =>  $this->invoice->invoice_date,
             'user_id' =>  $this->invoice->last_updated_by,
         ]));

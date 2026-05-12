@@ -25,6 +25,8 @@ class MemberGroupComponent extends Component
             'retail_color' => ['label' => 'Retail Color', 'type'=>'color'],
             'retail_bg_color' => ['label' => 'Retail Background Color', 'type'=>'color'],
             'retail_min_sales_amount' => ['label' => 'Retail Min. Sales Amount', 'type'=>'text'],
+            'member_discount' => ['label' => 'Member Discount (%)', 'type'=>'text'],
+            'discount_until' => ['label' => 'Discount Until', 'type'=>'date'],
         ];
 
         $this->newValidateRules = [
@@ -36,13 +38,21 @@ class MemberGroupComponent extends Component
             'retail_color' => 'required|min:1',
             'retail_bg_color' => 'required|min:1',
             'retail_min_sales_amount' => 'required|min:1',
+            'member_discount' => 'required|numeric|min:0|max:100',
+            'discount_until' => 'nullable|date',
         ];
 
         $this->updateValidateRules = $this->newValidateRules;
 
+        $this->editcallback = ['formatDates'];
         $this->initControls();
+    }
 
-
+    public function formatDates()
+    {
+        if (!empty($this->formData['discount_until'])) {
+            $this->formData['discount_until'] = \Carbon\Carbon::parse($this->formData['discount_until'])->format('Y-m-d');
+        }
     }
 
     public function render()

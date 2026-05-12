@@ -131,7 +131,8 @@ trait InvoiceTrait
 
         $data['invoice'] = $invoice;
         $invoice_child_data = [];
-        $invoice_discount = 0;
+        $invoice_discount = $invoice->discount_amount;
+        $membership_discount = $invoice->membership_discount;
         $invoice_child = Invoice::whereIn('invoice_number',$child_invoice)->get();
         LogActivity($invoice->id, $invoice->invoice_number,"Invoice a4 print merged, Main Invoice : $main_invoice, Child Invoice ".implode(",",$child_invoice));
         foreach ($invoice_child as $child){
@@ -141,12 +142,14 @@ trait InvoiceTrait
             }
             LogActivity($child->id, $child->invoice_number,"Invoice a4 print merged, Main Invoice : $main_invoice, Child Invoice ".implode(",",$child_invoice));
             $invoice_discount+=$child->discount_amount;
+            $membership_discount+=$child->membership_discount;
             foreach($child->invoiceitems()->get() as $item){
                 $invoice_child_data[] = $item;
             }
         }
         $data['invoice_child'] = $invoice_child_data;
         $data['invoice_discount'] = $invoice_discount;
+        $data['membership_discount'] = $membership_discount;
         $data['store'] = $this->settings->store();
         //return view("print.pos_afour_merge",$data);
         $pdf = PDF::loadView("print.pos_afour_merge",$data);
@@ -162,19 +165,22 @@ trait InvoiceTrait
 
         $data['invoice'] = $invoice;
         $invoice_child_data = [];
-        $invoice_discount = 0;
+        $invoice_discount = $invoice->discount_amount;
+        $membership_discount = $invoice->membership_discount;
         $invoice_child = Invoice::whereIn('invoice_number',$child_invoice)->get();
         LogActivity($invoice->id, $invoice->invoice_number,"Invoice a4 print merged, Main Invoice : $main_invoice, Child Invoice ".implode(",",$child_invoice));
 
         foreach ($invoice_child as $child){
             LogActivity($child->id, $child->invoice_number,"Invoice a4 print merged, Main Invoice : $main_invoice, Child Invoice ".implode(",",$child_invoice));
             $invoice_discount+=$child->discount_amount;
+            $membership_discount+=$child->membership_discount;
             foreach($child->invoiceitems()->get() as $item){
                 $invoice_child_data[] = $item;
             }
         }
         $data['invoice_child'] = $invoice_child_data;
         $data['invoice_discount'] = $invoice_discount;
+        $data['membership_discount'] = $membership_discount;
         $data['store'] = $this->settings->store();
         //return view("print.pos_afour_merge",$data);
         $pdf = PDF::loadView("print.pos_afour_waybill_merge",$data);

@@ -71,7 +71,7 @@ class ShowInvoiceComponent extends Component
 
         if($this->discount_type == "None"){
             $this->invoice->sub_total = $sub_total;
-            $this->invoice->total_profit = $sub_total -   $this->invoice->total_cost;
+            $this->invoice->total_profit = ($sub_total - $this->invoice->total_cost) - $this->invoice->membership_discount;
             $this->invoice->discount_amount = 0;
             $this->invoice->discount_value = 0;
             logActivity(  $this->invoice->id,   $this->invoice->invoice_number,'No Invoice discount was added / Invoice discount was removed : '.  $this->invoice->status->name);
@@ -80,10 +80,11 @@ class ShowInvoiceComponent extends Component
             $sub = $this->invoice->sub_total;
             $dis_value = round(abs((($this->discount_value/100) * $sub)));
             $this->invoice->discount_amount = $dis_value;
-            $this->invoice->total_profit = ($sub_total - $this->invoice->total_cost) - $dis_value;
+            $this->invoice->total_profit = ($sub_total - $this->invoice->total_cost) - ($dis_value + $this->invoice->membership_discount);
             logActivity($this->invoice->id, $this->invoice->invoice_number,"Invoice percentage discount was applied percentage $this->discount_value % , discount value $dis_value : ".$this->invoice->status->name);
         }else{
             $this->invoice->discount_amount = $this->discount_value;
+            $this->invoice->total_profit = ($sub_total - $this->invoice->total_cost) - ($this->discount_value + $this->invoice->membership_discount);
             LogActivity($this->invoice->id, $this->invoice->invoice_number,"Fixed discount was applied to invoice value : $this->discount_value ".$this->invoice->status);
         }
 
@@ -96,7 +97,7 @@ class ShowInvoiceComponent extends Component
             'payment_id' => NULL,
             'invoice_id' =>  $this->invoice->id,
             'customer_id' =>  $this->invoice->customer_id,
-            'amount' => -( $this->invoice->sub_total -  $this->invoice->discount_amount),
+            'amount' => -( $this->invoice->sub_total -  ($this->invoice->discount_amount + $this->invoice->membership_discount)),
             'transaction_date' =>  $this->invoice->invoice_date,
             'user_id' =>  $this->invoice->last_updated_by,
         ]));

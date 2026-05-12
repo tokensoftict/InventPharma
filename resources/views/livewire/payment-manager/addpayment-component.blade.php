@@ -30,9 +30,15 @@
                 <span class="form-control"><strong>{{ money($this->invoice->discount_amount) }}</strong></span>
             </div>
 
+            @if($this->invoice->membership_discount > 0)
+            <div class="mb-3">
+                <span><strong>Membership Discount</strong></span><br/>
+                <span class="form-control"><strong>{{ money($this->invoice->membership_discount) }}</strong></span>
+            </div>
+            @endif
             <div class="mb-3">
                 <span><strong>Invoice Total</strong></span><br/>
-                <span class="form-control"><strong>{{ money($this->invoice->sub_total - $this->invoice->discount_amount) }}</strong></span>
+                <span class="form-control"><strong>{{ money($this->invoice->sub_total - ($this->invoice->discount_amount + $this->invoice->membership_discount)) }}</strong></span>
             </div>
 
         </div>

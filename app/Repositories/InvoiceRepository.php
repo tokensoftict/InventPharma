@@ -37,7 +37,8 @@ class InvoiceRepository
                 'in_department' => $invoice->in_department,
                 'discount_amount' => $invoice->discount_amount,
                 'discount_type' => $invoice->discount_type,
-                'discount_value' => $invoice->discount_value,
+                'membership_discount' => $invoice->membership_discount,
+                'membership_discount_value' => $invoice->membership_discount_value,
                 'status_id' => $invoice->status_id,
                 'sub_total' => $invoice->sub_total,
                 'total_amount_paid' => $invoice->total_amount_paid,
@@ -77,6 +78,8 @@ class InvoiceRepository
                 'discount_amount' => 0,
                 'discount_type' => 'Fixed',
                 'discount_value' => 0,
+                'membership_discount' => 0,
+                'membership_discount_value' => 0,
                 'status_id' => status('Draft'),
                 'sub_total' => 0,
                 'total_amount_paid' => 0,
@@ -270,11 +273,26 @@ class InvoiceRepository
         $invoiceData['sub_total'] = $items->sum(function($item){
             return $item['quantity'] * $item['selling_price'];
         });
+
+        $invoiceData['discount_amount'] = 0;
+        if(isset($invoiceData['discount_type']) && $invoiceData['discount_type'] != "None") {
+            if($invoiceData['discount_type'] == "Percentage") {
+                $invoiceData['discount_amount'] = round(abs((($invoiceData['discount_value'] / 100) * $invoiceData['sub_total'])));
+            } else {
+                $invoiceData['discount_amount'] = $invoiceData['discount_value'];
+            }
+        }
+
+        $invoiceData['membership_discount'] = 0;
+        if(isset($invoiceData['membership_discount_value']) && $invoiceData['membership_discount_value'] > 0) {
+            $invoiceData['membership_discount'] = abs((($invoiceData['membership_discount_value'] / 100) * $invoiceData['sub_total']));
+        }
+
         $invoiceData['total_cost'] =  $items->sum(function($item){
             return $item['quantity'] * $item['cost_price'] ?? 0;
         });
 
-        $invoiceData['total_profit'] =  $invoiceData['sub_total'] -  $invoiceData['total_cost'];
+        $invoiceData['total_profit'] =  ($invoiceData['sub_total'] -  $invoiceData['total_cost']) - ($invoiceData['discount_amount'] + $invoiceData['membership_discount']);
 
     }
 
@@ -351,7 +369,7 @@ class InvoiceRepository
                 'payment_id' => NULL,
                 'invoice_id' => $invoice->id,
                 'customer_id' => $invoice->customer_id,
-                'amount' => -($invoice->sub_total - $invoice->discount_amount),
+                'amount' => -($invoice->sub_total - ($invoice->discount_amount + $invoice->membership_discount)),
                 'transaction_date' => $invoice->invoice_date,
                 'user_id' => auth()->id(),
             ]));
@@ -523,7 +541,7 @@ class InvoiceRepository
                 'payment_id' => NULL,
                 'invoice_id' => $invoice->id,
                 'customer_id' => $invoice->customer_id,
-                'amount' => -($invoice->sub_total - $invoice->discount_amount),
+                'amount' => -($invoice->sub_total - ($invoice->discount_amount + $invoice->membership_discount)),
                 'transaction_date' => $invoice->invoice_date,
                 'user_id' => auth()->id(),
             ]));
@@ -605,7 +623,7 @@ class InvoiceRepository
                     'payment_id' => NULL,
                     'invoice_id' => $invoice->id,
                     'customer_id' => $invoice->customer_id,
-                    'amount' => -($invoice->sub_total - $invoice->discount_amount),
+                    'amount' => -($invoice->sub_total - ($invoice->discount_amount + $invoice->membership_discount)),
                     'transaction_date' => $invoice->invoice_date,
                     'user_id' => auth()->id(),
                 ]));

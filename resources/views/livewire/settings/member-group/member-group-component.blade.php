@@ -51,6 +51,8 @@
                         <th>Retail Color</th>
                         <th>Retail BG Color</th>
                         <th>Retail Min. Sales Amount</th>
+                        <th>Discount (%)</th>
+                        <th>Discount Until</th>
                         <th>Action</th>
                     </tr>
                     </thead>
@@ -76,6 +78,8 @@
                             <td>{{ $member_groups->retail_color }}</td>
                             <td>{{ $member_groups->retail_bg_color }}</td>
                             <td>{{ money($member_groups->retail_min_sales_amount) }}</td>
+                            <td>{{ $member_groups->member_discount }}%</td>
+                            <td>{{ $member_groups->discount_until ? $member_groups->discount_until->format('Y-m-d') : 'N/A' }}</td>
                             <td>
                                 @if(userCanView('member-group.update'))
                                     <a class="btn btn-outline-primary btn-sm edit" wire:click="edit({{ $member_groups->id }})" href="javascript:void(0);" >

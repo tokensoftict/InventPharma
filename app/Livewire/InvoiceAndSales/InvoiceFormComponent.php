@@ -345,33 +345,41 @@ class InvoiceFormComponent extends Component
         $customer = json_decode($decryptCode, true);
         if (is_array($customer)) {
             $customer = Customer::where('phone_number', $customer['phone'])->first();
-            if ($customer) {
-                return [
-                    'status' => true,
-                    'customer' => $customer->toArray()
-                ];
+            if (!$customer) {
+                $customer = json_decode($decryptCode, true);
+                $newCustomer = new Customer();
+                $newCustomer->phone_number = $customer['phone'];
+                $newCustomer->firstname = $customer['first_name'];
+                $newCustomer->lastname = $customer['first_name'];
+                $newCustomer->email = $customer['email'];
+                $newCustomer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
+                $newCustomer->city_id = NULL;
+                $newCustomer->member_group_id = 4;
+                $newCustomer->retail_member_group_id = 4;
+                $newCustomer->save();
+                $newCustomer->fresh();
+                $customer = $newCustomer->fresh();
             }
-            $customer = json_decode($decryptCode, true);
-            $newCustomer = new Customer();
-            $newCustomer->phone_number = $customer['phone'];
-            $newCustomer->firstname = $customer['first_name'];
-            $newCustomer->lastname = $customer['first_name'];
-            $newCustomer->email = $customer['email'];
-            $newCustomer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
-            $newCustomer->city_id = NULL;
-            $newCustomer->member_group_id = 4;
-            $newCustomer->retail_member_group_id = 4;
-            $newCustomer->save();
 
+            $discount = 0;
+            $department = (int)$this->department ?? auth()->user()->department_id;
+            $group = $department === 4 ? $customer->retail_member_group : $customer->member_group;
+
+            if ($group && $group->member_discount > 0) {
+                if (is_null($group->discount_until) || \Carbon\Carbon::parse($group->discount_until)->isFuture()) {
+                    $discount = $group->member_discount;
+                }
+            }
 
             return [
                 'status' => true,
-                'customer' => $newCustomer->toArray()
+                'customer' => $customer->toArray(),
+                'membership_discount' => $discount,
+                'membership_label' => ($group && $discount > 0) ? $group->name : ''
             ];
 
-
         } else {
-            return ["status" => false, "message" => "Customer decrypt customer information"];
+            return ["status" => false, "message" => "Could not decrypt customer information"];
         }
     }
 

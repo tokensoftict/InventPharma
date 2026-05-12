@@ -286,12 +286,22 @@
             <td  align="right" class="text-right">-{{ number_format($invoice_discount,2) }}</td>
             <td></td>
         </tr>
+        @if($membership_discount > 0)
+        <tr>
+            <td></td>
+            <td></td>
+            <td></td>  <td></td> <td></td>
+            <td  align="right" class="text-right">Membership Discount</td>
+            <td  align="right" class="text-right">-{{ number_format($membership_discount,2) }}</td>
+            <td></td>
+        </tr>
+        @endif
         <tr>
             <td></td>
             <td></td>
             <td></td>   <td></td> <td></td>
             <td   align="right" class="text-right">Total</td>
-            <td  align="right" class="text-right"><b>{{ number_format(($invoice_sub-$invoice_discount),2) }}</b></td>
+            <td  align="right" class="text-right"><b>{{ number_format(($invoice_sub - ($invoice_discount + $membership_discount)),2) }}</b></td>
             <td></td>
         </tr>
         </tfoot>

@@ -1,4 +1,4 @@
-<div x-data="invoice()" x-init="totalInvoice(); newCustomerEvent(); getInputFromBarcode(); logProductNotExist();  handleProductOptionModal();">
+<div x-data="invoice()" x-init="resolveMembershipLabel(); totalInvoice(); newCustomerEvent(); getInputFromBarcode(); logProductNotExist();  handleProductOptionModal();">
     <div x-show="isLoading" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255, 255, 255, 0.8); z-index: 999999; pointer-events: all;" x-cloak>
         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; justify-content: center;">
             <div class="spinner-border text-primary" role="status" style="width: 4rem; height: 4rem;">
@@ -116,9 +116,19 @@
                                     <th class="text-center"></th>
                                     <th class="text-center"></th>
                                     <th class="text-end" colspan="2">Sub Total</th>
-                                    <th class="text-end" colspan="2" id="sub_total" x-text="netTotal">0.00</th>
+                                    <th class="text-end" colspan="2" id="sub_total" x-text="subTotal">0.00</th>
                                     <th class="text-end"></th>
                                 </tr>
+                                <template x-if="membership_discount_value > 0">
+                                    <tr>
+                                        <th class="text-start"></th>
+                                        <th class="text-center"></th>
+                                        <th class="text-center"></th>
+                                        <th class="text-end" colspan="2">Membership Discount (<span x-text="membership_label"></span>) - <span x-text="membership_discount_value"></span>%</th>
+                                        <th class="text-end" colspan="2">-<span x-text="money(membership_discount)">0.00</span></th>
+                                        <th class="text-end"></th>
+                                    </tr>
+                                </template>
                                 <tr>
                                     <th class="text-start"></th>
                                     <th class="text-center"></th>
@@ -437,7 +447,14 @@
             errors : {},
             {{--prescriber_id : @this.get('invoiceData.prescriber_id') ? @this.get('invoiceData.prescriber_id') : null,--}}
             customer_id : @this.get('invoiceData.customer_id') ? @this.get('invoiceData.customer_id') : {firstname : ""},
-            netTotal :  @this.get('InvoiceData.sub_total') ?  @this.get('InvoiceData.invoiceitems') : 0.00,
+            discount_type : @this.get('invoiceData.discount_type') ? @this.get('invoiceData.discount_type') : 'None',
+            discount_value : @this.get('invoiceData.discount_value') ? @this.get('invoiceData.discount_value') : 0,
+            discount_amount : @this.get('invoiceData.discount_amount') ? @this.get('invoiceData.discount_amount') : 0,
+            membership_discount_value : @this.get('invoiceData.membership_discount_value') ? @this.get('invoiceData.membership_discount_value') : 0,
+            membership_discount : @this.get('invoiceData.membership_discount') ? @this.get('invoiceData.membership_discount') : 0,
+            membership_label : '',
+            subTotal : '0.00',
+            netTotal :  '0.00',
             quantity : [],
             department : @this.get('d') ? @this.get('d') : "",
             searchCustomerString : "",
@@ -581,11 +598,36 @@
             {
                 $('#select2').select2();
             },
+            resolveMembershipLabel() {
+                if (this.customer_id && this.customer_id.firstname !== "" && this.membership_discount_value > 0) {
+                    let group = this.department === 'retail' ? this.customer_id.retail_member_group : this.customer_id.member_group;
+                    if (group) {
+                        this.membership_label = group.name;
+                    }
+                }
+            },
             totalInvoice()
             {
-                this.netTotal = this.money(this.invoiceitems.length > 0 ? this.invoiceitems.reduce((result, item) => {
+                let sub_total = this.invoiceitems.length > 0 ? this.invoiceitems.reduce((result, item) => {
                     return result + (item.selling_price * item.quantity);
-                }, 0) : 0);
+                }, 0) : 0;
+
+                if (this.discount_type === 'Percentage') {
+                    this.discount_amount = Math.round(Math.abs(((this.discount_value / 100) * sub_total)));
+                } else if (this.discount_type === 'Fixed') {
+                    this.discount_amount = this.discount_value;
+                } else {
+                    this.discount_amount = 0;
+                }
+
+                if (this.membership_discount_value > 0) {
+                    this.membership_discount = Math.abs(((this.membership_discount_value / 100) * sub_total));
+                } else {
+                    this.membership_discount = 0;
+                }
+
+                this.subTotal = this.money(sub_total);
+                this.netTotal = this.money(sub_total - (this.discount_amount + this.membership_discount));
                 return true;
             },
             async searchProduct() {
@@ -636,6 +678,9 @@
             },
             selectCus(customer) {
             this.customer_id = customer;
+            this.membership_discount_value = 0;
+            this.membership_label = '';
+            this.totalInvoice();
             this.searchCustomerString = "";
             this.searchCustomers = [];
         },
@@ -682,6 +727,11 @@
 
             @this.set('invoiceData.status_id', status_id, true);
             @this.set('invoiceData.invoiceitems', JSON.stringify(this.invoiceitems), true);
+            @this.set('invoiceData.discount_type', this.discount_type, true);
+            @this.set('invoiceData.discount_value', this.discount_value, true);
+            @this.set('invoiceData.discount_amount', this.discount_amount, true);
+            @this.set('invoiceData.membership_discount_value', this.membership_discount_value, true);
+            @this.set('invoiceData.membership_discount', this.membership_discount, true);
 
             this.errors = {};
             let obj = this;
@@ -741,6 +791,15 @@
                 obj.isLoading = false;
                 if(response.status === true) {
                     obj.customer_id = response.customer;
+                    if (response.membership_discount > 0) {
+                        obj.membership_discount_value = response.membership_discount;
+                        obj.membership_label = response.membership_label;
+                        success("Membership discount of " + response.membership_discount + "% has been applied!");
+                    } else {
+                        obj.membership_discount_value = 0;
+                        obj.membership_label = '';
+                    }
+                    obj.totalInvoice();
                     obj.searchCustomerString = "";
                     obj.searchCustomers = [];
                 }else {

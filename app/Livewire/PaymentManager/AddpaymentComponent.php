@@ -39,7 +39,7 @@ class AddpaymentComponent extends Component
 
         if(isset($this->invoice->customer_id))
         {
-            $this->sub_total = $this->invoice->sub_total - $this->invoice->discount_amount;
+            $this->sub_total = $this->invoice->sub_total - ($this->invoice->discount_amount + $this->invoice->membership_discount);
 
             $this->totalCredit = Creditpaymentlog::where('customer_id',$this->invoice->customer_id)->sum('amount');
 

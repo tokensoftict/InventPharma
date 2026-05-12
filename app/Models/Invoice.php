@@ -111,6 +111,8 @@ class Invoice extends Model
 		'onliner_order_id' => 'int',
 		'before_customer_id' => 'int',
         'retail_printed' => 'bool',
+        'membership_discount' => 'float',
+        'membership_discount_value' => 'float',
 	];
 
 	protected $fillable = [
@@ -150,7 +152,9 @@ class Invoice extends Model
         'scan_date',
         'scan_time',
         'prescriber_id',
-        'prescriber_payment_status'
+        'prescriber_payment_status',
+        'membership_discount',
+        'membership_discount_value'
 	];
 
     public function payment()

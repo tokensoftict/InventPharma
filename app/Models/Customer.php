@@ -163,6 +163,16 @@ class Customer extends Model
         return $this->belongsTo(MemberGroup::class, 'retail_member_group_id');
     }
 
+    public function member_group()
+    {
+        return $this->belongsTo(MemberGroup::class, 'member_group_id');
+    }
+
+    public function retail_member_group()
+    {
+        return $this->belongsTo(MemberGroup::class, 'retail_member_group_id');
+    }
+
     public function getBulkPushData() : array{
         return [
             'local_id'=>$this->id,
