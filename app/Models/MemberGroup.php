@@ -77,7 +77,7 @@ class MemberGroup extends Model
             'retail_bg_color'=> $this->retail_bg_color,
             'retail_min_sales_amount'=> $this->retail_min_sales_amount,
             'member_discount'=> $this->member_discount,
-            'discount_until'=> $this->discount_until,
+            'discount_until'=> is_null($this->discount_until) ? NULL : (new Carbon($this->discount_until))->format('Y-m-d'),
             
             'status'=>$this->status,
         ];
