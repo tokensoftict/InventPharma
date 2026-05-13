@@ -284,7 +284,7 @@ class InvoiceRepository
         }
 
         $invoiceData['membership_discount'] = 0;
-        if(isset($invoiceData['membership_discount_value']) && $invoiceData['membership_discount_value'] > 0) {
+        if(isset($invoiceData['in_department']) && $invoiceData['in_department'] == 'retail' && isset($invoiceData['membership_discount_value']) && $invoiceData['membership_discount_value'] > 0) {
             $invoiceData['membership_discount'] = abs((($invoiceData['membership_discount_value'] / 100) * $invoiceData['sub_total']));
         }
 

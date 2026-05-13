@@ -599,8 +599,8 @@
                 $('#select2').select2();
             },
             resolveMembershipLabel() {
-                if (this.customer_id && this.customer_id.firstname !== "" && this.membership_discount_value > 0) {
-                    let group = this.department === 'retail' ? this.customer_id.retail_member_group : this.customer_id.member_group;
+                if (this.department === 'retail' && this.customer_id && this.customer_id.firstname !== "" && this.membership_discount_value > 0) {
+                    let group = this.customer_id.retail_member_group;
                     if (group) {
                         this.membership_label = group.name;
                     }
@@ -620,7 +620,7 @@
                     this.discount_amount = 0;
                 }
 
-                if (this.membership_discount_value > 0) {
+                if (this.department === 'retail' && this.membership_discount_value > 0) {
                     this.membership_discount = Math.abs(((this.membership_discount_value / 100) * sub_total));
                 } else {
                     this.membership_discount = 0;
@@ -677,13 +677,26 @@
                 }
             },
             selectCus(customer) {
-            this.customer_id = customer;
-            this.membership_discount_value = 0;
-            this.membership_label = '';
-            this.totalInvoice();
-            this.searchCustomerString = "";
-            this.searchCustomers = [];
-        },
+                this.customer_id = customer;
+                this.membership_discount_value = 0;
+                this.membership_label = '';
+
+                if (this.department === 'retail') {
+                    let group = customer.retail_member_group;
+                    if (group && group.member_discount > 0) {
+                        // Validate discount expiry if applicable
+                        if (!group.discount_until || new Date(group.discount_until) >= new Date().setHours(0,0,0,0)) {
+                            this.membership_discount_value = group.member_discount;
+                            this.membership_label = group.name;
+                            success("Membership discount of " + group.member_discount + "% has been applied!");
+                        }
+                    }
+                }
+
+                this.totalInvoice();
+                this.searchCustomerString = "";
+                this.searchCustomers = [];
+            },
             generateInvoice(status_id) {
             const hasZero = this.invoiceitems.some(item => item.quantity <= 0);
             if(hasZero) {

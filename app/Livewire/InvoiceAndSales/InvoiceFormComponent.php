@@ -363,11 +363,14 @@ class InvoiceFormComponent extends Component
 
             $discount = 0;
             $department = (int)$this->department ?? auth()->user()->department_id;
-            $group = $department === 4 ? $customer->retail_member_group : $customer->member_group;
+            $group = null;
+            if ($department === 4) {
+                $group = $customer->retail_member_group;
 
-            if ($group && $group->member_discount > 0) {
-                if (is_null($group->discount_until) || \Carbon\Carbon::parse($group->discount_until)->isFuture()) {
-                    $discount = $group->member_discount;
+                if ($group && $group->member_discount > 0) {
+                    if (is_null($group->discount_until) || \Carbon\Carbon::parse($group->discount_until)->isFuture()) {
+                        $discount = $group->member_discount;
+                    }
                 }
             }
 
