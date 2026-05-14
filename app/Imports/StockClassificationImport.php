@@ -26,23 +26,23 @@ class StockClassificationImport implements ToCollection, WithHeadingRow
 
             // Find or create the classification
             $classification = Classification::where('name', $classificationName)->first();
-            
+
             if (!$classification) {
                 $classification = new Classification();
                 $classification->name = $classificationName;
                 $classification->status = 1;
                 $classification->major_classification = $majorClassification;
-                $classification->save();
-                
+                $classification->saveQuietly();
+
                 if (method_exists($classification, 'newonlinePush')) {
-                    $classification->newonlinePush();
+                    //$classification->newonlinePush();
                 }
             } else {
                 $classification->major_classification = $majorClassification;
-                $classification->save();
-                
+                $classification->saveQuietly();
+
                 if (method_exists($classification, 'updateonlinePush')) {
-                    $classification->updateonlinePush();
+                    //$classification->updateonlinePush();
                 }
             }
 
@@ -51,7 +51,7 @@ class StockClassificationImport implements ToCollection, WithHeadingRow
                 $stock = Stock::find($stockId);
                 if ($stock) {
                     $stock->classification_id = $classification->id;
-                    $stock->save();
+                    $stock->saveQuietly();
                 }
             }
         }
