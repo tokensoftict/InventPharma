@@ -17,8 +17,8 @@
                     $priceText = " {$sign}₦{$amount}";
                 }
 
-                $optionName = htmlspecialchars($option['option_name'], ENT_QUOTES, 'UTF-8');
-                $selectedValue = htmlspecialchars($option['selectedValue'], ENT_QUOTES, 'UTF-8');
+                $optionName = htmlspecialchars(($option['option_name'] ?? $option['name']), ENT_QUOTES, 'UTF-8');
+                $selectedValue = htmlspecialchars(($option['selectedValue'] ?? $option['value']), ENT_QUOTES, 'UTF-8');
 
                 $html .= '
                 <span class="me-2">
