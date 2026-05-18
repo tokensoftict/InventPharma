@@ -46,12 +46,12 @@ trait SimpleDatatableComponentTrait
 
     public function columns(): array
     {
-        $index = $this->getPerPageDisplayedItemCount() *  $this->pageNumber;
+        $index = $this->getPerPageDisplayedItemCount() * $this->pageNumber;
         return [
             Column::make('No.', 'id') // 'id' here is a placeholder, it won't be displayed
-            ->format(function() use (&$index) {
-                return ++$index;
-            }),
+                ->format(function () use (&$index) {
+                    return ++$index;
+                }),
             ...self::mountColumn($this)
         ];
     }
@@ -59,18 +59,18 @@ trait SimpleDatatableComponentTrait
 
     public function edit($id)
     {
-        $this->dispatch('editData',$id);
+        $this->dispatch('editData', $id);
     }
 
 
     public function toggle($id)
     {
-        $this->dispatch('toggleData',$id);
+        $this->dispatch('toggleData', $id);
     }
 
     public function destroy($id)
     {
-        $this->dispatch('destoryData',$id);
+        $this->dispatch('destoryData', $id);
     }
 
 
@@ -83,16 +83,18 @@ trait SimpleDatatableComponentTrait
     }
 
 
-    public function getExportColumns() : array{
+    public function getExportColumns(): array
+    {
         $columns = $this->columns();
 
         $titleColumn = [];
 
-        foreach ($columns as $column)
-        {
-            if($column->getColumnTitle() == "No.") continue;
+        foreach ($columns as $column) {
+            if ($column->getColumnTitle() == "No.")
+                continue;
 
-            if(in_array($column->getColumnTitle(), $titleColumn))  continue;
+            if (in_array($column->getColumnTitle(), $titleColumn))
+                continue;
 
             $titleColumn[] = $column->getColumnTitle();
         }
@@ -100,13 +102,13 @@ trait SimpleDatatableComponentTrait
         return $titleColumn;
     }
 
-    public function getExportFields() : array{
+    public function getExportFields(): array
+    {
         $columns = $this->columns();
 
         $titleField = [];
 
-        foreach ($columns as $column)
-        {
+        foreach ($columns as $column) {
             $titleField[] = $column->getColumnField();
         }
 
@@ -117,8 +119,7 @@ trait SimpleDatatableComponentTrait
     {
         $selected = $this->getSelected();
 
-        if(count($selected) == 0)
-        {
+        if (count($selected) == 0) {
             $this->alert(
                 "error",
                 "Data Export",
@@ -126,11 +127,11 @@ trait SimpleDatatableComponentTrait
                     'position' => 'center',
                     'timer' => 1500,
                     'toast' => false,
-                    'text' =>  "Please select at least One Record to Export",
+                    'text' => "Please select at least One Record to Export",
                 ]
             );
 
-        }else {
+        } else {
 
             $export = $this->prepareExport();
 
@@ -141,7 +142,7 @@ trait SimpleDatatableComponentTrait
     }
 
 
-    function renderValue($column, $row) : string | null
+    function renderValue($column, $row): string|null
     {
         if ($column->isLabel()) {
             $value = call_user_func($column->getLabelCallback(), $row, $column);
@@ -155,8 +156,8 @@ trait SimpleDatatableComponentTrait
 
         $value = $column->getValue($row);
 
-        if($value === null and Str::contains($column->getFrom(), '.')) {
-            $value = $row->{Str::beforeLast($column->getFrom(), '.')}->{Str::afterLast($column->getFrom(), '.')};
+        if ($value === null and Str::contains($column->getFrom(), '.')) {
+            $value = $row->{Str::beforeLast($column->getFrom(), '.')}->{Str::afterLast($column->getFrom(), '.')} ?? "";
         }
 
         if ($column->hasFormatter()) {
@@ -180,22 +181,23 @@ trait SimpleDatatableComponentTrait
 
         $export = $this->prepareExport();
 
-        return Excel::download(new GeneralDataExport( $export['data'],  $export['headings']), $this->getTableName().'.xlsx');
+        return Excel::download(new GeneralDataExport($export['data'], $export['headings']), $this->getTableName() . '.xlsx');
     }
 
 
-    public function prepareExport() : array
+    public function prepareExport(): array
     {
         $data = [];
         $headings = [];
         $rows = $this->getExportBuilder();
 
-        $rows->chunk(1000, function($rowws) use(&$data, &$headings) {
-            foreach ($rowws as $row){
+        $rows->chunk(1000, function ($rowws) use (&$data, &$headings) {
+            foreach ($rowws as $row) {
                 $columns_to_value = [];
-                foreach ($this->getColumns() as $column){
-                    if($column->getTitle() == "Action") continue;
-                    if(!in_array($column->getTitle(), $headings)) {
+                foreach ($this->getColumns() as $column) {
+                    if ($column->getTitle() == "Action")
+                        continue;
+                    if (!in_array($column->getTitle(), $headings)) {
                         $headings[] = $column->getTitle();
                     }
                     $columns_to_value[$column->getTitle()] = $this->renderValue($column, $row);
