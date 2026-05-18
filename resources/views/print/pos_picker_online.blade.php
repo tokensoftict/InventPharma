@@ -110,7 +110,21 @@
 		->get() as $item)
             <tr>
                 <td>{{ $loop->iteration }}</td>
-                <td align="left" class="text-left">{{ $item->stock->name }}</td>
+                <td align="left" class="text-left">
+                    {{ $item->stock->name }}
+                    @php
+                        $invoiceItem = $invoice->invoiceitems()->where('stock_id', $item->stock_id)->first();
+                        $selectedOptions = $invoiceItem ? ($invoiceItem->selectedOptions ?? []) : [];
+                    @endphp
+                    @if(!empty($selectedOptions) && count($selectedOptions) > 0)
+                        <br>
+                        <span style="font-size: 6.5pt; color: #555; font-style: italic;">
+                            @foreach($selectedOptions as $option)
+                                {{ $option['option_name'] ?? $option['name'] ?? '' }}: {{ $option['selectedValue'] ?? $option['value'] ?? '' }}@if(!empty($option['amount']) && (int)$option['amount'] !== 0) ({{ $option['sign'] ?? '+' }}₦{{ number_format((float)$option['amount']) }})@endif{{ !$loop->last ? ' | ' : '' }}
+                            @endforeach
+                        </span>
+                    @endif
+                </td>
                 <td align="center" class="text-center">{{ $item->stock->location }}</td>
 				<td align="left" class="text-left">{{ \App\Classes\Settings::$department[$department] }}</td>
                 <td align="right" class="text-center">{{ $item->total_qty }}</td>

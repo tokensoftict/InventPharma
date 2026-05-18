@@ -168,7 +168,17 @@
             @endphp
             <tr>
                 <td align="left">{{ $num }}</td>
-                <td align="left" class="text-left">{{ $item->stock->name }}</td>
+                <td align="left" class="text-left">
+                    {{ $item->stock->name }}
+                    @if(!empty($item->selectedOptions) && count($item->selectedOptions) > 0)
+                        <br>
+                        <span style="font-size: 6.5pt; color: #555; font-style: italic;">
+                            @foreach($item->selectedOptions as $option)
+                                {{ $option['option_name'] ?? $option['name'] ?? '' }}: {{ $option['selectedValue'] ?? $option['value'] ?? '' }}@if(!empty($option['amount']) && (int)$option['amount'] !== 0) ({{ $option['sign'] ?? '+' }}₦{{ number_format((float)$option['amount']) }})@endif{{ !$loop->last ? ' | ' : '' }}
+                            @endforeach
+                        </span>
+                    @endif
+                </td>
                 <td align="center" class="text-center">{{ $item->quantity }}</td>
                 <td align="center" class="text-center">{{ number_format($item->selling_price,2) }}</td>
                 <td align="right" class="text-right">{{ number_format(($item->selling_price-$item->discount_amount),2) }}</td>
@@ -222,7 +232,17 @@
             @endphp
             <tr>
                 <td align="left">{{ $num }}</td>
-                <td align="left" class="text-left">{{ $item->stock->name }}</td>
+                <td align="left" class="text-left">
+                    {{ $item->stock->name }}
+                    @if(!empty($item->selectedOptions) && count($item->selectedOptions) > 0)
+                        <br>
+                        <span style="font-size: 6.5pt; color: #555; font-style: italic;">
+                            @foreach($item->selectedOptions as $option)
+                                {{ $option['option_name'] ?? $option['name'] ?? '' }}: {{ $option['selectedValue'] ?? $option['value'] ?? '' }}@if(!empty($option['amount']) && (int)$option['amount'] !== 0) ({{ $option['sign'] ?? '+' }}₦{{ number_format((float)$option['amount']) }})@endif{{ !$loop->last ? ' | ' : '' }}
+                            @endforeach
+                        </span>
+                    @endif
+                </td>
                 <td align="center" class="text-center">{{ $item->quantity }}</td>
                 <td align="center" class="text-center">{{ number_format($item->selling_price,2) }}</td>
                 <td align="right" class="text-right">{{ number_format(($item->selling_price-$item->discount_amount),2) }}</td>
