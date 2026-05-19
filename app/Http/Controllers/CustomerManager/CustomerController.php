@@ -9,7 +9,7 @@ class CustomerController extends Controller
 {
     public function index(){
         $data = [
-            'filters' => []
+            'filters' => ['retail_customer' => 0]
         ];
         return view('customermanager.index', $data);
     }
