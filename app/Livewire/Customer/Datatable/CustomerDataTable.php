@@ -21,26 +21,18 @@ class CustomerDataTable extends ExportDataTableComponent
 
     public function builder(): Builder
     {
-        if(isset($this->filters['retail_customer']) and $this->filters['retail_customer'] = 1) {
-            unset($this->filters['retail_customer']);
-            return Customer::query()->select('*')
-                ->with(['creditpaymentlog', 'invoice', 'payment', 'memberGroup', 'retailMemberGroup'])
-                ->where('retail_customer', 1)
-                ->whereHas('invoice', function (Builder $query) {
-                    $query->where('in_department', 'retail');
-                })
-                ->filterdata($this->filters)->filterdata($this->filters);
-        }else if (isset($this->filters['retail_customer']) and $this->filters['retail_customer'] = 0) {
-            unset($this->filters['retail_customer']);
+        if(isset($this->filters['retail_customer'])) {
             return Customer::query()->select('*')->with(['creditpaymentlog', 'invoice', 'payment', 'memberGroup', 'retailMemberGroup'])
-                ->where('retail_customer', 0)
-                ->whereHas('invoice', function (Builder $query) {
-                    $query->where('in_department', 'wholesales');
-                })->filterdata($this->filters);
-        } else{
-           return Customer::query()->select('*')->with(['creditpaymentlog', 'invoice', 'payment', 'memberGroup', 'retailMemberGroup'])->filterdata($this->filters);
+                ->whereHas("invoices", function (Builder $query) {
+                    if($this->filters['retail_customer'] == 1) {
+                        $query->where("in_department", "retail");
+                    } else{
+                        $query->where("in_department", "wholesales");
+                    }
+                });
+        } else {
+            return Customer::query()->select('*')->with(['creditpaymentlog', 'invoice', 'payment', 'memberGroup', 'retailMemberGroup'])->filterdata($this->filters);
         }
-
     }
 
     public function refresh($what)
