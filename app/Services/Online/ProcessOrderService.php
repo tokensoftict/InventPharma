@@ -269,7 +269,7 @@ class ProcessOrderService
             }
 
             if(!is_null($online_local_order_id)) {
-                _GET('processorder/'.$online_local_order_id."/2");
+               // _GET('processorder/'.$online_local_order_id."/2");
             }
         }
     }
@@ -303,7 +303,7 @@ class ProcessOrderService
                 report($exception);
             }
 
-            _GET('processorder/'.$online_local_order_id."/5");
+            //_GET('processorder/'.$online_local_order_id."/5");
         }
     }
 
@@ -334,7 +334,7 @@ class ProcessOrderService
                 report($exception);
             }
 
-            _GET('processorder/'.$online_local_order_id."/6");
+            //_GET('processorder/'.$online_local_order_id."/6");
         }
     }
 
@@ -399,7 +399,7 @@ class ProcessOrderService
                 report($exception);
             }
 
-            _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
+           // _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
         }
     }
 
