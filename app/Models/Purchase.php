@@ -9,7 +9,6 @@ namespace App\Models;
 use App\Enums\KafkaAction;
 use App\Enums\KafkaTopics;
 use App\Jobs\PushDataServer;
-use App\Jobs\PushLocalDataServer;
 use App\Traits\ModelFilterTraits;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
@@ -122,11 +121,11 @@ class Purchase extends Model
                             'po_id' => $purchaseitem->purchase->id,
                             'qty' => $purchaseitem->qty,
                         ];
-                        dispatch(new PushLocalDataServer(['action' => 'update', 'table' => 'new_arrivals', 'data' => [
-                            'stock_id' => $purchaseitem->stock_id,
-                            'po_id' => $purchaseitem->purchase->id,
-                            'qty' => $purchaseitem->qty,
-                        ]]));
+//                        dispatch(new PushLocalDataServer(['action' => 'update', 'table' => 'new_arrivals', 'data' => [
+//                            'stock_id' => $purchaseitem->stock_id,
+//                            'po_id' => $purchaseitem->purchase->id,
+//                            'qty' => $purchaseitem->qty,
+//                        ]]));
                     }
                 }
             }
@@ -142,11 +141,11 @@ class Purchase extends Model
         foreach ($purchases as $purchase) {
             foreach ($purchase->purchaseitems as  $purchaseitem) {
                 if ($purchaseitem->stock->bulk_price > 0 || $purchaseitem->stock->retail_price > 0) {
-                    dispatch(new PushLocalDataServer(['action' => 'update', 'table' => 'new_arrivals', 'data' => [
-                        'stock_id' => $purchaseitem->stock_id,
-                        'po_id' => $purchaseitem->purchase->id,
-                        'qty' => $purchaseitem->qty,
-                    ]]));
+//                    dispatch(new PushLocalDataServer(['action' => 'update', 'table' => 'new_arrivals', 'data' => [
+//                        'stock_id' => $purchaseitem->stock_id,
+//                        'po_id' => $purchaseitem->purchase->id,
+//                        'qty' => $purchaseitem->qty,
+//                    ]]));
                 }
             }
         }
