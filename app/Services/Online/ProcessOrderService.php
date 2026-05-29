@@ -250,7 +250,7 @@ class ProcessOrderService
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-            _GET('processorder/'.$online_local_order_id."/2");
+           // _GET('processorder/'.$online_local_order_id."/2");
 
         } else {
 
@@ -285,7 +285,7 @@ class ProcessOrderService
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-            _GET('processorder/'.$online_local_order_id."/5");
+           // _GET('processorder/'.$online_local_order_id."/5");
 
         } else {
 
@@ -317,7 +317,7 @@ class ProcessOrderService
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-            _GET('processorder/'.$online_local_order_id."/6");
+            //_GET('processorder/'.$online_local_order_id."/6");
 
         } else {
 
@@ -348,7 +348,7 @@ class ProcessOrderService
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-            _GET('processorder/'.$online_local_order_id."/3");
+            //_GET('processorder/'.$online_local_order_id."/3");
 
         } else {
 
@@ -366,7 +366,7 @@ class ProcessOrderService
                 report($exception);
             }
 
-            _GET('processorder/'.$online_local_order_id."/3");
+            //_GET('processorder/'.$online_local_order_id."/3");
         }
     }
 
@@ -381,7 +381,7 @@ class ProcessOrderService
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-            _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
+           // _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
 
         } else {
 
