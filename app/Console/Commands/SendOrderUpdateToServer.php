@@ -40,7 +40,7 @@ class SendOrderUpdateToServer extends Command
         $in->chunk(100, function ($invoices) {
             foreach ($invoices as $invoice) {
                 $this->info("processing invoice #" . $invoice->id);
-                if($invoice->status_id == status('Draft')){
+                if($invoice->status_id == status('Draft') || $invoice->status_id == status('Packing')) {
                     ProcessOrderService::sendBackSuccessMessage($invoice->onliner_order_id, NULL);
                     $this->info("processing Draft invoice #" . $invoice->id);
                 } else if($invoice->status_id == status('Deleted')){
