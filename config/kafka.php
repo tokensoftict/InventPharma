@@ -78,7 +78,7 @@ return [
     /**
      * The flush timeout in milliseconds
      */
-    'flush_timeout_in_ms' => 1000,
+    'flush_timeout_in_ms' => 40000,
 
     /*
      | The cache driver that will be used
