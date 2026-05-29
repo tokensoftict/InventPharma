@@ -43,7 +43,6 @@ class SyncCustomer extends Command
             $this->info('Gathering Customer Data Complete');
             $this->info('Parsing Customer Data');
             $this->info('Parsing Customer Data Complete');
-            $this->info('Posting Customer Data to '.onlineBase('customers'));
             dispatch(new PushDataServerNoQueue(['KAFKA_ACTION'=> KafkaAction::UPDATE_CUSTOMER, 'KAFKA_TOPICS'=>KafkaTopics::GENERAL,
                 'action'=>'new','table'=>'existing_customer', 'endpoint' => 'manufacturers' ,'data'=>$all_data]));
             $this->info('Chunk '. $customerCount. ' send successfully');
