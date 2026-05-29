@@ -69,8 +69,8 @@ class PushStockUpdateToServer implements ShouldQueue
                 report($exception);
             }
 
-            $data = ['action' => 'update', 'table' => 'stock', 'data' => $oldStock, 'url'=>onlineBase()."dataupdate/add_or_update_stock"];
-            _POST('add_or_update_stock',$data);
+            //$data = ['action' => 'update', 'table' => 'stock', 'data' => $oldStock, 'url'=>onlineBase()."dataupdate/add_or_update_stock"];
+            //_POST('add_or_update_stock',$data);
         }
 
     }
