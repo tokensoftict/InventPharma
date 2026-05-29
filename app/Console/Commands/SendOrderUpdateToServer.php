@@ -27,7 +27,7 @@ class SendOrderUpdateToServer extends Command
      */
     public function handle()
     {
-        $startDay = "2026-05-28";
+        $startDay = "2026-05-26";
         $endDay = "2026-05-29";
 
         $in =Invoice::query()->whereBetween("invoice_date", [$startDay, $endDay])
