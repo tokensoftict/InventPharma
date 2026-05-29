@@ -27,7 +27,7 @@ class SendOrderUpdateToServerByInvoiceId extends Command
      */
     public function handle()
     {
-        $invoice_number = [3636539437,7442576834,4799083926,5600389193,285233795,8021769272,9691236683,9440606349,2233405357];
+        $invoice_number = [781029599];
 
         $in =Invoice::query()->whereIn('invoice_number', $invoice_number)
             ->where('created_by', 1)
