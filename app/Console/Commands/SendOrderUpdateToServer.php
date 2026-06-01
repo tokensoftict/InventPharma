@@ -33,7 +33,7 @@ class SendOrderUpdateToServer extends Command
         $in =Invoice::query()->whereBetween("invoice_date", [$startDay, $endDay])
             ->where('created_by', 1)
             ->whereIn('in_department', ['bulksales', 'retail'])
-            ->whereNotNull("onliner_order_id");
+            ->whereNotNull("onliner_order_id")->orderBy("id", "desc");
 
         $this->info("found total invoice ". $in->count());
 
