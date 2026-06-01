@@ -35,7 +35,7 @@ class SyncCustomer extends Command
         $this->info('Gathering Customer Data');
         $customer =   Customer::query();
         $customerCount = round(($customer->count() / 2000));
-        Customer::query()->chunk(2000, function($customers) use (&$customerCount){
+        Customer::query()->orderBy('id', 'desc')->chunk(2000, function($customers) use (&$customerCount){
             $all_data = [];
             foreach($customers as $customer){
                 $all_data[] = $customer->getBulkPushData();
