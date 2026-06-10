@@ -49,7 +49,7 @@ class OpenSupplierDBStock extends Command
                     DB::raw("SUM(stockopenings.average_cost_price * (stockopenings.wholesales+stockopenings.bulksales+stockopenings.quantity)) as total_opening_cost_price"),
                     DB::raw("SUM(stockopenings.wholesales+stockopenings.bulksales+stockopenings.quantity) as total_opening_quantity"),
 
-                    DB::raw("SUM(stockopenings.average_retail_cost_price * stockopenings.retail) as total_opening_retail_cost_price"),
+                    DB::raw("SUM(stockopenings.average_retail_cost_price * (stockopenings.retail + stockopenings.retail_store)) as total_opening_retail_cost_price"),
                     DB::raw("SUM(stockopenings.retail) as total_opening_quantity_retail"),
                 )
                 ->where("stockopenings.date_added", now()->format("Y-m-d"))
