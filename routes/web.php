@@ -249,6 +249,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('near_expired', ['as' => 'near_expired', 'uses' => 'ProductController@near_expired','visible' => true, 'custom_label'=>'Near Expiration Stock']);
                 Route::get('disable', ['as' => 'disable', 'uses' => 'ProductController@disabled','visible' => true,'custom_label'=>'List Disabled Stock']);
                 Route::get('non_reorder', ['as' => 'non_reorder', 'uses' => 'ProductController@non_reorder','visible' => true,'custom_label'=>'Non Re-order List']);
+                Route::get('stock_worth', ['as' => 'stock_worth', 'uses' => 'ProductController@stock_worth','visible' => false,'custom_label'=>'Show Stock Worth in Available List']);
                 Route::match(['post', 'get'],'stock_balance_by_supplier', ['as' => 'stock_balance_by_supplier', 'uses' => 'ProductController@stock_balance_by_supplier','visible' => true,'custom_label'=>'Stock Balance By Supplier']);
                 Route::match(['post', 'get'],'batched_stock_list', ['as' => 'batched_stock_list', 'uses' => 'ProductController@batched_stock_list','visible' => true,'custom_label'=>'Batched Stock List']);
                 Route::get('export', ['as' => 'export', 'uses' => 'ProductController@export']);

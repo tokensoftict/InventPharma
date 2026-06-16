@@ -9,6 +9,8 @@ use App\Models\Stock;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 
+use App\Models\Stockbatch;
+
 class ProductController extends Controller
 {
 
@@ -23,6 +25,11 @@ class ProductController extends Controller
         return setPageContent('product.index', $data);
     }
 
+    public function stock_worth()
+    {
+
+    }
+
 
     public function available()
     {
@@ -31,6 +38,16 @@ class ProductController extends Controller
         $filter = ['status' => 1];
 
         $data['filters'] = $filter;
+
+        if(userCanView("product.stock_worth")) {
+            $data['stock_worth'] = Stockbatch::join('stocks', 'stocks.id', '=', 'stockbatches.stock_id')
+                ->where('stocks.status', 1)
+                ->selectRaw('SUM(
+                (COALESCE(stockbatches.wholesales, 0) + COALESCE(stockbatches.bulksales, 0) + COALESCE(stockbatches.quantity, 0)) * COALESCE(stockbatches.cost_price, 0) +
+                (COALESCE(stockbatches.retail, 0) + COALESCE(stockbatches.retail_store, 0)) * COALESCE(stockbatches.retail_cost_price, 0)
+            ) as total_worth')
+                ->value('total_worth') ?? 0;
+        }
 
         return setPageContent('product.available', $data);
     }
