@@ -19,7 +19,7 @@ class AddPreDraftStatusToStatusTable extends Seeder
             'label'=>'primary'
         ];
         Cache::forget("statuses");
-       // DB::table('statuses')->updateOrInsert(['name'=> $status['name']], $status);
+        DB::table('statuses')->updateOrInsert(['name'=> $status['name']], $status);
 
     }
 }
