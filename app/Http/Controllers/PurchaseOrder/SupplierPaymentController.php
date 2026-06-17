@@ -16,6 +16,11 @@ class SupplierPaymentController extends Controller
     }
 
 
+    public function approve_supplier_cheque_payment()
+    {
+
+    }
+
     public function create(){
         $data = [
             'supplierCreditPaymentHistory'=> new SupplierCreditPaymentHistory(),
@@ -38,6 +43,17 @@ class SupplierPaymentController extends Controller
     }
 
     public function update(SupplierCreditPaymentHistory $request, $id){}
+
+    public function show(SupplierCreditPaymentHistory $supplierCreditPaymentHistory)
+    {
+        $data = [
+            'payment' => $supplierCreditPaymentHistory,
+            'title' => 'Supplier Payment Details',
+            'subtitle' => 'View payment details and manage cheque approvals'
+        ];
+
+        return view('purchase.supplier.payment.show', $data);
+    }
 
     public function destroy(SupplierCreditPaymentHistory $supplierCreditPaymentHistory){
 

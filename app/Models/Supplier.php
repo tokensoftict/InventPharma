@@ -56,8 +56,12 @@ class Supplier extends Model
 
 
     public function getCreditBalanceAttribute(){
-
-        return $this->supplier_credit_payment_histories->sum('amount');
+        return $this->supplier_credit_payment_histories->filter(function($item){
+            if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Pending') {
+                return false;
+            }
+            return true;
+        })->sum('amount');
     }
 
     public function payment()
@@ -100,6 +104,12 @@ class Supplier extends Model
 	{
 		return $this->hasMany(Stockopening::class);
 	}
+
+
+    public function supplierStockOpening()
+    {
+        return $this->hasOne(SupplierStockOpening::class);
+    }
 
 	public function supplier_credit_payment_histories()
 	{

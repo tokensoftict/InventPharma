@@ -38,7 +38,7 @@ class SupplierPaymentComponent extends Component
             'type' => NULL,
             'purchase_id' => NULL,
             'paymentmethod_id' => NULL,
-            'payment_info' => ['cheque_date' => NULL],
+            'payment_info' => ['cheque_date' => NULL, 'date_of_issued' => NULL, 'status' => NULL],
             'amount' => NULL,
             'remark' => NULL,
             'payment_date' => NULL,
@@ -48,6 +48,10 @@ class SupplierPaymentComponent extends Component
         if(isset($this->supplierCreditPaymentHistory->id))
         {
             $this->payment_data = Arr::only( $this->supplierCreditPaymentHistory->toArray(), array_keys($fields));
+            $this->payment_data['payment_info'] = array_merge(
+                ['cheque_date' => NULL, 'date_of_issued' => NULL, 'status' => NULL],
+                $this->payment_data['payment_info'] ?? []
+            );
         }
         else {
             $this->payment_data = $fields;
@@ -69,10 +73,20 @@ class SupplierPaymentComponent extends Component
             "payment_data.paymentmethod_id"=>"bail|required",
         ];
 
-
-
+        if (isset($this->payment_data['paymentmethod_id']) && $this->payment_data['paymentmethod_id'] == "8") {
+            $data["payment_data.payment_info.cheque_date"] = "bail|required";
+            $data["payment_data.payment_info.date_of_issued"] = "bail|required";
+        }
 
         $this->validate($data);
+
+        if (isset($this->payment_data['paymentmethod_id']) && $this->payment_data['paymentmethod_id'] == "8") {
+            if (!isset($this->supplierCreditPaymentHistory->id)) {
+                $this->payment_data['payment_info']['status'] = 'Pending';
+            }
+        } else {
+            $this->payment_data['payment_info']['status'] = 'Approved';
+        }
 
         if(!isset($this->supplierCreditPaymentHistory->id)) {
             $message = "created";

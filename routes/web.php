@@ -306,14 +306,14 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{purchase}/complete', ['as' => 'complete', 'uses' => 'PurchaseOrderController@complete','custom_label'=>'Complete Purchase Order']);
 
             });
-
-
             Route::prefix('supplier')->as('supplier.')->group(function () {
                 Route::prefix('payment')->as('payment.')->group(function () {
                     Route::get('', ['as' => 'index', 'uses' => 'SupplierPaymentController@index', 'visible' => true, 'custom_label'=>"Supplier Payment"]);
-                    Route::get('create', ['as' => 'create', 'uses' => 'SupplierPaymentController@create']);
+                    Route::get('create', ['as' => 'create', 'uses' => 'SupplierPaymentController@create', 'custom_label'=>'Create Supplier Payment']);
+                    Route::get('{supplierCreditPaymentHistory}', ['as' => 'show', 'uses' => 'SupplierPaymentController@show', 'custom_label'=>'View Supplier Payment']);
                     Route::get('{supplierCreditPaymentHistory}/edit', ['as' => 'edit', 'uses' => 'SupplierPaymentController@edit']);
                     Route::delete('{supplierCreditPaymentHistory}', ['as' => 'destroy', 'uses' => 'SupplierPaymentController@destroy']);
+                    Route::get('approve_supplier_cheque_payment', ['as' => 'approve_supplier_cheque_payment', 'uses' => 'SupplierPaymentController@approve_supplier_cheque_payment', 'visible' => false, 'custom_label'=>'Approve Supplier Cheque Payment']);
                 });
                 Route::prefix('credit')->as('credit.')->group(function () {
                     Route::get('', ['as' => 'index', 'uses' => 'SupplierCreditController@index', 'visible' => true, 'custom_label'=>"Supplier Credit"]);

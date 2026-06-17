@@ -27,7 +27,9 @@ class SupplierPaymentDatatable extends ExportDataTableComponent
     {
         return [
             Column::make("Supplier", "supplier_id")
-                ->format(fn($value, $row, Column $column) =>$row->supplier->name ?? "")
+                ->format(fn($value, $row, Column $column) => '<a target="new" href="' . route('supplier.show', $row->supplier->id) . '"><strong>' . $row->supplier->name . '</strong></a>')
+                ->html()
+                ->sortable()
                 ->searchable(),
             Column::make("Type", "type")
                 ->sortable(),
@@ -35,13 +37,17 @@ class SupplierPaymentDatatable extends ExportDataTableComponent
                 ->format(function($value, $row, Column $column){
                     if($row->paymentmethod_id === 8)
                     {
-                        $date = $row->payment_info['cheque_date'];
+                        $chequeDate = $row->payment_info['cheque_date'] ?? '';
+                        $dateOfIssued = $row->payment_info['date_of_issued'] ?? '';
+                        $status = $row->payment_info['status'] ?? 'Pending';
+                        $statusBadge = '<span class="badge badge-soft-' . ($status === 'Approved' ? 'success' : ($status === 'Declined' ? 'danger' : 'warning')) . ' ms-1">' . $status . '</span>';
 
-                        return $row->paymentmethod->name."(".$date.")";
+                        return $row->paymentmethod->name . " (Issued: " . $dateOfIssued . ", Cheque: " . $chequeDate . ") " . $statusBadge;
                     }
 
                     return $row->paymentmethod->name ?? "";
                 })
+                ->html()
                 ->sortable(),
             Column::make("Amount", "amount")
                 ->format(fn($value, $row, Column $column) =>money($row->amount))
@@ -67,15 +73,18 @@ class SupplierPaymentDatatable extends ExportDataTableComponent
                         $html = '<div class="dropdown"><button class="btn btn-link font-size-16 shadow-none py-0 text-muted dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="bx bx-dots-horizontal-rounded"></i></button>';
                         $html .= '<ul class="dropdown-menu dropdown-menu-end">';
 
+                        $html .= '<li><a href="' . route('supplier.payment.show', $row->id) . '" class="dropdown-item">View Payment</a></li>';
+
                         if (auth()->user()->can("update", $row)) {
-                            $html .= '<a href="' . route('supplier.payment.edit', $row->id) . '" class="dropdown-item">Edit Payment</a></li>';
+                            $html .= '<li><a href="' . route('supplier.payment.edit', $row->id) . '" class="dropdown-item">Edit Payment</a></li>';
                         }
 
                         if (auth()->user()->can("delete", $row)) {
-                            $html .= '<a href="#" wire:click.prevent="delete('.$value.')"  onclick="confirm(\'Are you sure you want to delete this expense ?, this can not be reversed\') || event.stopImmediatePropagation()"  class="dropdown-item">Delete Payment</a></li>';
+                            $html .= '<li><a href="#" wire:click.prevent="delete('.$value.')"  onclick="confirm(\'Are you sure you want to delete this expense ?, this can not be reversed\') || event.stopImmediatePropagation()"  class="dropdown-item">Delete Payment</a></li>';
                         }
 
-                        $html .= '</ul>';
+
+                        $html .= '</ul></div>';
                     }
 
                     return $html;
@@ -99,6 +108,46 @@ class SupplierPaymentDatatable extends ExportDataTableComponent
         );
 
         return redirect()->route('supplier.payment.index');
+    }
+
+    public function approveCheque($id)
+    {
+        $payment = SupplierCreditPaymentHistory::findOrFail($id);
+        $payment_info = $payment->payment_info;
+        $payment_info['status'] = 'Approved';
+        $payment->payment_info = $payment_info;
+        $payment->save();
+
+        $this->alert(
+            "success",
+            "Cheque Approval",
+            [
+                'position' => 'center',
+                'timer' => 6000,
+                'toast' => false,
+                'text' => 'Cheque payment approved successfully!',
+            ]
+        );
+    }
+
+    public function declineCheque($id)
+    {
+        $payment = SupplierCreditPaymentHistory::findOrFail($id);
+        $payment_info = $payment->payment_info;
+        $payment_info['status'] = 'Declined';
+        $payment->payment_info = $payment_info;
+        $payment->save();
+
+        $this->alert(
+            "warning",
+            "Cheque Approval",
+            [
+                'position' => 'center',
+                'timer' => 6000,
+                'toast' => false,
+                'text' => 'Cheque payment declined successfully!',
+            ]
+        );
     }
 
 

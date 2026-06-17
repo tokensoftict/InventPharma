@@ -19,6 +19,15 @@ class SupplierController extends Controller
     }
 
 
+    public function show($id){
+        $supplier = \App\Models\Supplier::findOrFail($id);
+        $data = [
+            'supplier' => $supplier,
+            'title' => 'Supplier Details: ' . $supplier->name,
+            'subtitle' => 'View payments, credit history, and manage cheque approvals'
+        ];
+        return setPageContent('settings.supplier.show', $data);
+    }
 
 
     public function toggle($id){

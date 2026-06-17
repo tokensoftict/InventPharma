@@ -27,13 +27,18 @@ class SupplierBalanceReport extends ExportDataTableComponent
     {
         return [
             Column::make("Name", "name")
-                ->sortable(),
+                ->format(fn($value, $row, Column $column) => '<a href="' . route('supplier.show', $row->id) . '"><strong>' . $value . '</strong></a>')
+                ->html()
+                ->sortable()
+                ->searchable(),
             Column::make("Address", "address")
                 ->sortable(),
             Column::make("Email", "email")
-                ->sortable(),
+                ->sortable()
+                ->searchable(),
             Column::make("Phonenumber", "phonenumber")
-                ->sortable(),
+                ->sortable()
+                ->searchable(),
             Column::make("Status", "status")
                 ->sortable(),
             Column::make("Credit Balance", "id")

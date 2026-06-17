@@ -36,13 +36,21 @@
             </div>
 
             @if(isset($this->payment_data['paymentmethod_id']) and  $this->payment_data['paymentmethod_id'] == "8")
-                <div class="mb-3" id="cheque_date"  wire:ignore style="">
+                <div id="cheque_details"  wire:ignore style="">
                     @else
-                        <div class="mb-3" id="cheque_date"  wire:ignore style="display: none;">
+                        <div id="cheque_details"  wire:ignore style="display: none;">
                             @endif
-                            <label>Cheque Date</label>
-                            <input type="text" wire:model="payment_data.payment_info.cheque_date" placeholder="Cheque Date" id="chequeDate"  class="form-control datepicker-basic" >
-                            @error('payment_data.payment_info.cheque_date') <span class="text-danger d-block">{{ $message }}</span> @enderror
+                            <div class="mb-3">
+                                <label>Date of Issued</label>
+                                <input type="text" wire:model="payment_data.payment_info.date_of_issued" placeholder="Date of Issued" id="dateOfIssued"  class="form-control datepicker-basic" >
+                                @error('payment_data.payment_info.date_of_issued') <span class="text-danger d-block">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label>Cheque Date</label>
+                                <input type="text" wire:model="payment_data.payment_info.cheque_date" placeholder="Cheque Date" id="chequeDate"  class="form-control datepicker-basic" >
+                                @error('payment_data.payment_info.cheque_date') <span class="text-danger d-block">{{ $message }}</span> @enderror
+                            </div>
                         </div>
 
                         <div class="mb-3">
@@ -71,11 +79,13 @@
             $(document).ready(function(){
                 $('#paymentMthod').on('change', function(){
                     if($(this).val() === "8") {
-                        $('#cheque_date').removeAttr('style');
+                        $('#cheque_details').removeAttr('style');
                     }else{
                         @this.set('payment_data.payment_info.cheque_date', null, true);
-                        $('#chequeDate').val("")
-                        $('#cheque_date').attr('style', 'display:none');
+                        @this.set('payment_data.payment_info.date_of_issued', null, true);
+                        $('#chequeDate').val("");
+                        $('#dateOfIssued').val("");
+                        $('#cheque_details').attr('style', 'display:none');
                     }
                 });
 
