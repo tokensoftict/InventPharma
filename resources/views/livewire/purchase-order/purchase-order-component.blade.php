@@ -150,20 +150,31 @@
         </div>
     </div>
     <div class="col-lg-12 mt-3">
-
-        <button  wire:target="draftPurchase,completePurchase" wire:loading.attr="disabled" type="button" x-on:click="draftPurchaseOrder()"  class="btn btn-primary btn-lg me-2">
-            <i wire:loading.remove wire:target="draftPurchase,completePurchase" class="fa fa-check"></i>
-            <span wire:loading wire:target="draftPurchase,completePurchase" class="spinner-border spinner-border-sm me-2" role="status"></span>
-            Draft Purchase
-        </button>
-        @if (userCanView('purchase.complete'))
-            &nbsp; &nbsp; &nbsp;
-            <button  wire:target="draftPurchase,completePurchase" wire:loading.attr="disabled" type="button" x-on:click="completePurchaseOrder()"  class="btn btn-success btn-lg me-2">
+        @if (userCanView('purchase.create') and $pageStatus == status('Draft'))
+            <button  wire:target="draftPurchase,completePurchase,preDraftPurchase" wire:loading.attr="disabled" type="button" x-on:click="draftPurchaseOrder()"  class="btn btn-primary btn-lg me-2">
                 <i wire:loading.remove wire:target="draftPurchase,completePurchase" class="fa fa-check"></i>
-                <span wire:loading wire:target="draftPurchase,completePurchase" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <span wire:loading wire:target="draftPurchase,completePurchase,preDraftPurchase" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Draft Purchase
+            </button>
+        @endif
+
+        @if (userCanView('purchase.complete') and $pageStatus == status('Draft'))
+            &nbsp; &nbsp; &nbsp;
+            <button  wire:target="draftPurchase,completePurchase,preDraftPurchase" wire:loading.attr="disabled" type="button" x-on:click="completePurchaseOrder()"  class="btn btn-success btn-lg me-2">
+                <i wire:loading.remove wire:target="draftPurchase,completePurchase,preDraftPurchase" class="fa fa-check"></i>
+                <span wire:loading wire:target="draftPurchase,completePurchase,preDraftPurchase" class="spinner-border spinner-border-sm me-2" role="status"></span>
                 Complete Purchase
             </button>
         @endif
+
+        @if (userCanView('purchase.pre_draft') and $pageStatus == status('Pre-Draft'))
+            <button  wire:target="draftPurchase,completePurchase,preDraftPurchase" wire:loading.attr="disabled" type="button" x-on:click="preDraftPurchaseOrder()"  class="btn btn-primary btn-lg me-2">
+                <i wire:loading.remove wire:target="draftPurchase,completePurchase,preDraftPurchase" class="fa fa-check"></i>
+                <span wire:loading wire:target="draftPurchase,completePurchase" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                Pre-Draft Purchase
+            </button>
+        @endif
+
         <a href="{{ route('purchase.index') }}" class="btn btn-danger btn-lg">Cancel</a>
     </div>
 
@@ -360,6 +371,24 @@
             });
 
         },
+            preDraftPurchaseOrder(){
+
+            if(this.validatePurchase() == false) return;
+
+            @this.set('data.status_id', '{{ status("Pre-Draft") }}', true);
+            @this.set('data.user_id', '{{ auth()->id() }}', true);
+            @this.set('data.department', this.department, true);
+            @this.set('data.supplier_id', this.supplier_id, true);
+            @this.set('data.date_created', '{{ todaysDate() }}', true);
+            @this.set('data.purchaseitems', this.purchaseitems, true);
+
+            @this.draftPurchase().then(function(){
+                setTimeout(()=>{
+                    window.location.href = '{{ route('purchase.pre_draft_list') }}';
+                },1100);
+            });
+
+        },
             completePurchaseOrder(){
 
             if(this.validatePurchase() == false) return;
@@ -375,7 +404,7 @@
 
             @this.completePurchase().then(function(){
                 setTimeout(()=>{
-                    window.location.href = '{{ route('purchase.index') }}';
+                    window.location.href = '{{ route('purchase.approved') }}';
                 },1100);
             });
         },

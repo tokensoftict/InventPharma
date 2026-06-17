@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
         $this->call(PaymentMethodSeeder::class);
         $this->call(DepartmentSeeder::class);
         $this->call(UserSeeder::class);
+        $this->call(AddPreDraftStatusToStatusTable::class);
 
         $Systemconfig = [
             "name" => "TOKENSOFT INVENTORY",
@@ -59,6 +60,7 @@ class DatabaseSeeder extends Seeder
             "m_run_nears" => "okay",
             "m_retail_run_nears" => "okay"
         ];
+
         $settings->put($Systemconfig);
 
     }

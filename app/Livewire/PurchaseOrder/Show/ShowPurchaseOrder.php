@@ -44,6 +44,26 @@ class ShowPurchaseOrder extends Component
     }
 
 
+
+    public function move_to_draft()
+    {
+        $this->purchase =  (new PurchaseOrderRepository())->movePurchaseToDraft($this->purchase);
+
+        $this->alert(
+            "success",
+            "Purchase Order",
+            [
+                'position' => 'center',
+                'timer' => 6000,
+                'toast' => false,
+                'text' =>  "Purchase Order has been move to Draft successfully!.",
+            ]
+        );
+
+        return redirect()->route('purchase.show', $this->purchase->id);
+    }
+
+
     public function delete()
     {
         (new PurchaseOrderRepository())->delete($this->purchase);

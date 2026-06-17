@@ -85,7 +85,7 @@
 
 
     @if(isset($supplier_id) and isset($department) and isset($purchase_date))
-        <livewire:purchase-order.purchase-order-component :purchase="$purchase" :supplier_id="$supplier_id" :department="$department" :purchase_date="$purchase_date"/>
+        <livewire:purchase-order.purchase-order-component :purchase="$purchase" :supplier_id="$supplier_id" :department="$department" :page-status="$status_id" :purchase_date="$purchase_date"/>
     @endif
 
 @endsection

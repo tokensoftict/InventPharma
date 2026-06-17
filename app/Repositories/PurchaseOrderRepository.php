@@ -135,6 +135,14 @@ class PurchaseOrderRepository
     }
 
 
+    public function movePurchaseToDraft(Purchase $purchase) : Purchase
+    {
+        $purchase->status_id = status("Draft");
+        $purchase->save();
+
+        return $purchase->fresh();
+    }
+
     public function complete(Purchase $purchase)
     {
         $items = $purchase->purchaseitems->fresh();

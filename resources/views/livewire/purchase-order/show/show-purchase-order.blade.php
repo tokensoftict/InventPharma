@@ -9,20 +9,27 @@
             @if(auth()->user()->can('update', $this->purchase))
                 <a class="btn btn-success btn-sm" href="{{ route('purchase.edit', $this->purchase->id) }}"><i class="fa fa-pencil"></i> Edit Purchase</a>
             @endif
+
             @if(auth()->user()->can('complete',$this->purchase))
-                <button type="button"  class="btn btn-primary btn-sm" onclick="confirm('Are you sure you want to complete this purchase ?, this can not be reversed') || event.stopImmediatePropagation()"  wire:loading.attr="disabled"  wire:click="complete" wire:target="complete,delete" >
+                <button type="button"  class="btn btn-primary btn-sm" onclick="confirm('Are you sure you want to complete this purchase ?, this can not be reversed') || event.stopImmediatePropagation()"  wire:loading.attr="disabled"  wire:click="complete" wire:target="complete,delete,move_to_draft" >
                     <span wire:loading wire:target="complete,delete" class="spinner-border spinner-border-sm me-2" role="status"></span>
                     <i wire:loading.remove wire:target="complete,delete" class="fa fa-check"></i>
                     Complete Purchase
                 </button>
             @endif
+
+            @if(userCanView('purchase.move_to_draft') and $this->purchase->status_id == status("Pre-Draft"))
+                    <button type="button"  class="btn btn-primary btn-sm" onclick="confirm('Are you sure you want to move this purchase to draft ?, this can not be reversed') || event.stopImmediatePropagation()"  wire:loading.attr="disabled"  wire:click="move_to_draft" wire:target="complete,delete,move_to_draft" >
+                        <span wire:loading wire:target="complete,delete,move_to_draft" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <i wire:loading.remove wire:target="complete,delete,move_to_draft" class="fa fa-check"></i>
+                       Move To Draft
+                    </button>
+            @endif
+
             @if(auth()->user()->can('delete', $this->purchase))
-                <button class="btn btn-danger btn-sm" onclick="confirm('Are you sure you want to delete this purchase ?, this can not be reversed') || event.stopImmediatePropagation()" wire:loading.attr="disabled"  wire:click="delete" wire:target="delete" >
-
+                <button class="btn btn-danger btn-sm" onclick="confirm('Are you sure you want to delete this purchase ?, this can not be reversed') || event.stopImmediatePropagation()" wire:loading.attr="disabled"  wire:click="delete" wire:target="delete,move_to_draft,complete" >
                     <i  wire:loading.remove wire:target="complete,delete" class="fa fa-trash"></i>
-
-                    <span wire:loading wire:target="complete,delete" class="spinner-border spinner-border-sm me-2" role="status"></span>
-
+                    <span wire:loading wire:target="complete,delete,move_to_draft" class="spinner-border spinner-border-sm me-2" role="status"></span>
                     Delete Purchase
                 </button>
             @endif
@@ -32,6 +39,7 @@
         </div>
     </div>
     @if(View::hasSection('pageHeaderTitle'))
+        <br/> <br/>
         @include('shared.pageheader')
     @endif
 
@@ -143,7 +151,7 @@
     </div>
 
     <div>
-</div>
+    </div>
 
 
 

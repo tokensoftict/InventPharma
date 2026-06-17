@@ -55,7 +55,7 @@ class PurchaseOrderPolicy
     {
         if(!userCanView("purchase.edit")) return false;
 
-        if($purchase->status_id !== status("Draft")) return false;
+        if($purchase->status_id !== status("Draft") and $purchase->status_id !== status("Pre-Draft")) return false;
 
         return true;
     }
@@ -84,10 +84,11 @@ class PurchaseOrderPolicy
     {
         if(!userCanView("purchase.destroy")) return false;
 
-        if($purchase->status_id !== status("Draft")) return false;
+        if($purchase->status_id !== status("Draft") and $purchase->status_id !== status("Pre-Draft")) return false;
 
         return true;
     }
+
 
     /**
      * Determine whether the user can delete the model.
@@ -101,6 +102,8 @@ class PurchaseOrderPolicy
         if(!userCanView("purchase.complete")) return false;
 
         if($purchase->status_id === status("Complete")) return false;
+
+        if($purchase->status_id === status("Pre-Draft")) return false;
 
         return true;
     }

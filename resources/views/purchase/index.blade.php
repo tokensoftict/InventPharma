@@ -3,7 +3,7 @@
 @section('pageHeaderDescription', $subtitle)
 
 @section('pageHeaderAction')
-    @if(userCanView('purchase.create'))
+    @if(userCanView('purchase.create') and $filters['status_id'] === status('Draft'))
     <div class="row">
         <div class="col-sm">
             <div class="mb-4">
@@ -17,6 +17,22 @@
 
         </div>
     </div>
+    @endif
+
+    @if(userCanView('purchase.create') and $filters['status_id'] === status('Pre-Draft'))
+        <div class="row">
+            <div class="col-sm">
+                <div class="mb-4">
+                    <a href="{{ route('purchase.create') }}"  type="button" class="btn btn-primary waves-effect waves-light">
+                        <i  class="bx bx-plus me-1"></i>
+                        New Pre-Draft Purchase
+                    </a>
+                </div>
+            </div>
+            <div class="col-sm-auto">
+
+            </div>
+        </div>
     @endif
 @endsection
 

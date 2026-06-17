@@ -21,6 +21,25 @@ class PurchaseOrderController extends Controller
 
     }
 
+
+    public function move_to_draft()
+    {
+
+    }
+
+    public function pre_draft_list()
+    {
+
+        $data = [
+            'title' => "List Pre-Draft Stock Purchase List",
+            'subtitle' => "Pre-Drafted Stock Purchase List",
+            'filters' => ['status_id' => status('Pre-Draft'), 'date_created'=>todaysDate()]
+        ];
+
+        return view('purchase.index',$data);
+
+    }
+
     public function  completed()
     {
         $data = [
@@ -48,12 +67,45 @@ class PurchaseOrderController extends Controller
             'purchase_date' => NULL,
             'department' => NULL,
             'supplier_id' => NULL,
+            'status_id' => status('Draft'),
         ];
 
         if(config('app.PURCHASE_DEPARTMENT') !== false) {
             $data['depertments'] = department_by_ids(explode(",", config('app.PURCHASE_DEPARTMENT')));
         }
 
+
+        if(isset($request->supplier_id) and isset($request->department) and isset($request->purchase_date)){
+            $data['supplier_id'] = $request->supplier_id;
+            $data['department'] = $request->department;
+            $data['purchase_date'] = $request->purchase_date;
+        }
+
+        return view('purchase.form',$data);
+    }
+
+    public function pre_draft(Request $request)
+    {
+        $data = [
+            'title' => "New Pre-Draft Purchase",
+            'subtitle' => "Create Pre-Draft Purchase",
+            'purchase' => new Purchase(),
+            'suppliers' => suppliers(true),
+            'depertments' => departments(true)->filter(function($item){
+                if(in_array(auth()->user()->department_id, [1,2,3,5])){
+                    return $item->id === 1 || $item->id == 4 || $item->id == 6;
+                }
+                return auth()->user()->department_id === 4;
+            }),
+            'purchase_date' => NULL,
+            'department' => NULL,
+            'supplier_id' => NULL,
+            'status_id' => status('Pre-Draft'),
+        ];
+
+        if(config('app.PURCHASE_DEPARTMENT') !== false) {
+            $data['depertments'] = department_by_ids(explode(",", config('app.PURCHASE_DEPARTMENT')));
+        }
 
         if(isset($request->supplier_id) and isset($request->department) and isset($request->purchase_date)){
             $data['supplier_id'] = $request->supplier_id;
@@ -72,7 +124,7 @@ class PurchaseOrderController extends Controller
             'purchase' => $purchase
         ];
 
-        return setPageContent('purchase.show',$data);
+        return view('purchase.show',$data);
     }
 
     public function edit(Purchase $purchase, Request $request)

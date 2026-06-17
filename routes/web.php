@@ -290,7 +290,12 @@ Route::middleware(['auth'])->group(function () {
 
                 Route::get('/completed', ['as' => 'approved', 'uses' => 'PurchaseOrderController@completed', 'visible' => true,'custom_label'=>'Completed List']);
 
+                Route::get('/pre_draft_list', ['as' => 'pre_draft_list', 'uses' => 'PurchaseOrderController@pre_draft_list', 'visible' => true,'custom_label'=>'Pre-Draft List']);
+                Route::get('/move_to_draft', ['as' => 'move_to_draft', 'uses' => 'PurchaseOrderController@move_to_draft', 'visible' => false,'custom_label'=>'Move Pre-Draft Purchase to Draft']);
+
                 Route::match( ['get', 'post'], 'create', ['as' => 'create', 'uses' => 'PurchaseOrderController@create','visible' => true, 'custom_label'=>'Create New Purchase']);
+
+                Route::match( ['get', 'post'], 'pre_draft', ['as' => 'pre_draft', 'uses' => 'PurchaseOrderController@pre_draft','visible' => true, 'custom_label'=>'Create Pre-Draft Purchase']);
 
                 Route::match(['get', 'post'],'{purchase}/edit', ['as' => 'edit', 'uses' => 'PurchaseOrderController@edit','custom_label'=>'Edit Purchase']);
 

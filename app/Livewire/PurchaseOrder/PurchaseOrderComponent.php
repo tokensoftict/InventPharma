@@ -22,6 +22,8 @@ class PurchaseOrderComponent extends Component
 
     public string $supplier_id, $department, $purchase_date;
 
+    public string $pageStatus;
+
     protected PurchaseOrderRepository $purchaseOrderRepository;
 
     public function boot(PurchaseOrderRepository $purchaseOrderRepository)
@@ -56,10 +58,38 @@ class PurchaseOrderComponent extends Component
     }
 
 
+    public function preDraftPurchase()
+    {
+        $this->data['completed_by'] = NULL;
+        $this->data['date_completed'] = NULL;
+        $this->data['status'] = status("Pre-Draft");
+
+        DB::transaction(function (){
+            $this->purchase = $this->purchaseOrderRepository->savePurchaseOrder($this->purchase, $this->data);
+        });
+
+        $this->alert(
+            "success",
+            "Purchase Order",
+            [
+                'position' => 'center',
+                'timer' => 6000,
+                'toast' => false,
+                'text' =>  "Purchase Order has been drafted successfully!.",
+            ]
+        );
+
+        return ['status'=>true];
+
+    }
+
+
     public function draftPurchase()
     {
         $this->data['completed_by'] = NULL;
         $this->data['date_completed'] = NULL;
+
+
         DB::transaction(function (){
             $this->purchase = $this->purchaseOrderRepository->savePurchaseOrder($this->purchase, $this->data);
         });
