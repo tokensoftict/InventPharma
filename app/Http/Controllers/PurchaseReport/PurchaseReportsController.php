@@ -8,6 +8,8 @@ use App\Models\Purchase;
 use App\Models\Stock;
 use App\Models\Supplier;
 use App\Models\SupplierCreditPaymentHistory;
+use App\Exports\ChequeScheduleExport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -368,6 +370,85 @@ class PurchaseReportsController extends Controller
             $data['filters']['filters']['label_name'] = 'Departments';
         }
         return view('reports.purchases.supplier.sales_analysis', $data);
+    }
+
+    public function cheque_schedule(Request $request)
+    {
+        $period = $request->input('filter.period', 'this_month');
+        $from = todaysDate();
+        $to = todaysDate();
+
+        if ($period == 'today') {
+            $from = todaysDate();
+            $to = todaysDate();
+        } elseif ($period == 'this_week') {
+            $range = weeklyDateRange();
+            $from = $range[0];
+            $to = $range[1];
+        } elseif ($period == 'this_month') {
+            $range = monthlyDateRange();
+            $from = $range[0];
+            $to = $range[1];
+        } elseif ($period == 'custom') {
+            $from = $request->input('filter.from', monthlyDateRange()[0]);
+            $to = $request->input('filter.to', monthlyDateRange()[1]);
+        }
+
+        $data = [
+            'title' => 'Supplier Payment Cheque Schedule',
+            'subtitle' => 'View Cheque Payment Schedule By Cheque Date Range',
+            'filters' => [
+                'from' => $from,
+                'to' => $to,
+                'period' => $period,
+            ]
+        ];
+
+        $cheques = SupplierCreditPaymentHistory::where('paymentmethod_id', 8)
+            ->whereBetween('payment_info->cheque_date', [$from, $to])
+            ->with(['supplier', 'user'])
+            ->get();
+
+        $processedCheques = [];
+        $departmentTotals = [];
+
+        foreach (\App\Classes\Settings::$department as $key => $name) {
+            if ($name !== '') {
+                $departmentTotals[$name] = 0;
+            }
+        }
+        $departmentTotals['Unknown'] = 0;
+
+        foreach ($cheques as $cheque) {
+            $lastPurchase = Purchase::where('supplier_id', $cheque->supplier_id)
+                ->where('status_id', status('Complete'))
+                ->orderBy('date_completed', 'desc')
+                ->first();
+
+            $lastPurchaseDate = $lastPurchase ? mysql_str_date($lastPurchase->date_completed) : 'N/A';
+            $lastDeptKey = $lastPurchase ? $lastPurchase->department : null;
+            $lastDeptName = ($lastPurchase && isset(\App\Classes\Settings::$department[$lastDeptKey])) 
+                ? \App\Classes\Settings::$department[$lastDeptKey] 
+                : 'Unknown';
+
+            $departmentTotals[$lastDeptName] += $cheque->amount;
+
+            $processedCheques[] = [
+                'cheque' => $cheque,
+                'last_purchase_date' => $lastPurchaseDate,
+                'last_dept_name' => $lastDeptName
+            ];
+        }
+
+        $data['cheques'] = $processedCheques;
+        $data['department_totals'] = array_filter($departmentTotals, fn($amount) => $amount > 0);
+
+        if ($request->input('action') === 'export') {
+            $file_name = 'Cheque_Schedule_' . $from . '_to_' . $to . '.xlsx';
+            return Excel::download(new ChequeScheduleExport($processedCheques, $data['department_totals']), $file_name);
+        }
+
+        return view('reports.purchases.supplier.cheque_schedule', $data);
     }
 
 }
