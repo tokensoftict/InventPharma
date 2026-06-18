@@ -140,7 +140,7 @@ class PurchaseOrderController extends Controller
                 }
                 return auth()->user()->department_id === 4;
             }),
-
+            'status_id' => $purchase->status_id,
         ];
 
         $data['supplier_id'] = $purchase->supplier_id;
