@@ -690,7 +690,7 @@ trait StockModelTrait
 
     public function getWholePriceAttribute()
     {
-        if(!isset($this->promotion_item->status_id)) return $this->attributes['whole_price'];
+        if(!isset($this->promotion_item->status_id)) return $this->attributes['whole_price'] ?? null;;
 
         $promo = $this->promotion_items->filter(function ($item)  {
             return $item->whole_price > 0 && $item->status_id === status('Approved');
@@ -703,7 +703,7 @@ trait StockModelTrait
 
     public function getBulkPriceAttribute()
     {
-        if(!isset($this->promotion_item->status_id)) return $this->attributes['bulk_price'];
+        if(!isset($this->promotion_item->status_id)) return $this->attributes['bulk_price'] ?? null;;
 
         $promo = $this->promotion_items->filter(function ($item)  {
             return $item->bulk_price > 0 && $item->status_id === status('Approved');
@@ -715,7 +715,7 @@ trait StockModelTrait
     }
     public function getRetailPriceAttribute()
     {
-        if(!isset($this->promotion_item->status_id)) return $this->attributes['retail_price'];
+        if(!isset($this->promotion_item->status_id)) return $this->attributes['retail_price'] ?? null;;
 
         $promo = $this->promotion_items->filter(function ($item)  {
             return $item->retail_price > 0 && $item->status_id === status('Approved');
