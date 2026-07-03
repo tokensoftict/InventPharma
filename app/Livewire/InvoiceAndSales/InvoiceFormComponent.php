@@ -176,14 +176,20 @@ class InvoiceFormComponent extends Component
 
         $customer = new Customer();
 
+        $memberGroup = MemberGroup::find(4);
+        $memberGroupId = null;
+        if($memberGroup) {
+            $memberGroupId = $memberGroup->id;
+        }
+
         $customer->firstname = $this->firstname;
         $customer->lastname = $this->lastname;
         $customer->email = $this->email;
         $customer->phone_number = $this->phone_number;
         $customer->address = $this->address;
         $customer->city_id = $this->city_id == "" ? null : $this->city_id;
-        $customer->member_group_id = MemberGroup::find(4)?->id ?? null;
-        $customer->retail_member_group_id = MemberGroup::find(4)?->id ?? null;
+        $customer->member_group_id = $memberGroupId;
+        $customer->retail_member_group_id = $memberGroupId;
 
         $customer->save();
 
