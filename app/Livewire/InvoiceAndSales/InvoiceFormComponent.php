@@ -187,6 +187,8 @@ class InvoiceFormComponent extends Component
 
         $customer->save();
 
+
+
         $this->dispatch("newCustomer", ['customer' => $customer->toArray()]);
 
         return true;
