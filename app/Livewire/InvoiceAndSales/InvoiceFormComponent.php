@@ -211,6 +211,12 @@ class InvoiceFormComponent extends Component
 
         $customer_ = Customer::where('phone_number', $this->phone_number)->where('status', 1)->get()->first();
 
+        $memberGroup = MemberGroup::find(4);
+        $memberGroupId = null;
+        if($memberGroup) {
+            $memberGroupId = $memberGroup->id;
+        }
+
         if ($customer_ && $customer_->id != $customer->id) {
             $this->alert(
                 "error",
@@ -232,8 +238,8 @@ class InvoiceFormComponent extends Component
         $customer->address = $this->address;
         $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
         $customer->city_id = $this->city_id == "" ? NULL : $this->city_id;
-        $customer->member_group_id = 4;
-        $customer->retail_member_group_id = 4;
+        $customer->member_group_id = $memberGroupId;
+        $customer->retail_member_group_id = $memberGroupId;
 
 
         $customer->save();
