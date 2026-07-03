@@ -19,7 +19,7 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use App\Models\Stockbatch as batch;
 
 
-class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow, ShouldQueue
+class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow
 {
 
     public function __construct(){
