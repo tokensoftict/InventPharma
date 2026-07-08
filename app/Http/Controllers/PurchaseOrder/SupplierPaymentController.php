@@ -18,7 +18,7 @@ class SupplierPaymentController extends Controller
 
     public function approve_supplier_cheque_payment()
     {
-
+        return view('purchase.supplier.payment.approve_cheque');
     }
 
     public function create(){
