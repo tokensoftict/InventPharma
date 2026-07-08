@@ -34,7 +34,7 @@ class SupplierPaymentComponent extends Component
     public function booted()
     {
         if (!$this->is_report) {
-            $this->paymentMethods = paymentmethodsOnly([1,2,3,8]);
+            $this->paymentMethods = paymentmethodsOnly([1, 2, 3, 8]);
             $this->suppliers = suppliers(true);
         }
     }
@@ -55,15 +55,13 @@ class SupplierPaymentComponent extends Component
                 'cheque_date' => NULL
             ];
 
-            if(isset($this->supplierCreditPaymentHistory->id))
-            {
-                $this->payment_data = Arr::only( $this->supplierCreditPaymentHistory->toArray(), array_keys($fields));
+            if (isset($this->supplierCreditPaymentHistory->id)) {
+                $this->payment_data = Arr::only($this->supplierCreditPaymentHistory->toArray(), array_keys($fields));
                 $this->payment_data['payment_info'] = array_merge(
                     ['cheque_date' => NULL, 'date_of_issued' => NULL, 'status' => NULL],
                     $this->payment_data['payment_info'] ?? []
                 );
-            }
-            else {
+            } else {
                 $this->payment_data = $fields;
             }
         }
@@ -74,26 +72,21 @@ class SupplierPaymentComponent extends Component
         if ($this->is_report) {
             $query = SupplierCreditPaymentHistory::query()
                 ->with(['user', 'paymentmethod', 'purchase', 'supplier'])
-                ->where('paymentmethod_id', 8)
-                ->where(function($q) {
-                    $q->where('payment_info->status', 'Pending')
-                      ->orWhereNull('payment_info->status')
-                      ->orWhereNull('payment_info');
-                });
+                ->where('paymentmethod_id', 8);
 
             switch ($this->date_filter) {
                 case 'Today':
-                    $query->whereDate('payment_date', Carbon::today());
+                    $query->whereDate('cheque_date', Carbon::today());
                     break;
                 case 'This Week':
-                    $query->whereBetween('payment_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                    $query->whereBetween('cheque_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
                     break;
                 case 'This Month':
-                    $query->whereBetween('payment_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+                    $query->whereBetween('cheque_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
                     break;
                 case 'Custom':
                     if ($this->start_date && $this->end_date) {
-                        $query->whereBetween('payment_date', [
+                        $query->whereBetween('cheque_date', [
                             Carbon::parse($this->start_date)->startOfDay(),
                             Carbon::parse($this->end_date)->endOfDay()
                         ]);
@@ -101,13 +94,26 @@ class SupplierPaymentComponent extends Component
                     break;
             }
 
-            $payments = $query->orderBy('payment_date', 'DESC')->get();
+            $payments = $query->orderBy('cheque_date', 'ASC')->get();
             $grand_total = $payments->sum('amount');
+            
+            $total_pending = $payments->filter(function($payment) {
+                $status = $payment->payment_info['status'] ?? 'Pending';
+                return $status === 'Pending';
+            })->sum('amount');
+
+            $total_approved = $payments->filter(function($payment) {
+                $status = $payment->payment_info['status'] ?? 'Pending';
+                return $status === 'Approved';
+            })->sum('amount');
+
             $grouped_payments = $payments->groupBy(fn($payment) => $payment->payment_date->format('Y-m-d'));
 
             return view('livewire.purchase-order.supplier.payment.supplier-payment-report', [
                 'grouped_payments' => $grouped_payments,
-                'grand_total' => $grand_total
+                'grand_total' => $grand_total,
+                'total_pending' => $total_pending,
+                'total_approved' => $total_approved
             ]);
         }
 
@@ -117,10 +123,10 @@ class SupplierPaymentComponent extends Component
     public function savePayment()
     {
         $data = [
-            "payment_data.payment_date"=>"bail|required",
-            "payment_data.amount"=>"bail|required",
-            "payment_data.supplier_id"=>"bail|required",
-            "payment_data.paymentmethod_id"=>"bail|required",
+            "payment_data.payment_date" => "bail|required",
+            "payment_data.amount" => "bail|required",
+            "payment_data.supplier_id" => "bail|required",
+            "payment_data.paymentmethod_id" => "bail|required",
         ];
 
         if (isset($this->payment_data['paymentmethod_id']) && $this->payment_data['paymentmethod_id'] == "8") {
@@ -138,11 +144,11 @@ class SupplierPaymentComponent extends Component
             $this->payment_data['payment_info']['status'] = 'Approved';
         }
 
-        if(!isset($this->supplierCreditPaymentHistory->id)) {
+        if (!isset($this->supplierCreditPaymentHistory->id)) {
             $message = "created";
             $this->payment_data['user_id'] = auth()->id();
             PurchaseOrderRepository::createSupplierPaymentHistory($this->payment_data);
-        }else{
+        } else {
             $message = "updated";
             PurchaseOrderRepository::updateSupplierPaymentHistory($this->supplierCreditPaymentHistory->id, $this->payment_data);
         }
@@ -154,7 +160,7 @@ class SupplierPaymentComponent extends Component
                 'position' => 'center',
                 'timer' => 12000,
                 'toast' => false,
-                'text' =>  "Payment has been ".$message." successfully!.",
+                'text' => "Payment has been " . $message . " successfully!.",
             ]
         );
 

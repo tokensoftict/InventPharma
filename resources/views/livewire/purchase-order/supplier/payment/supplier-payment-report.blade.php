@@ -1,8 +1,8 @@
 <div>
     <div class="card">
         <div class="card-header bg-transparent border-bottom">
-            <h4 class="card-title text-primary"><i class="bx bx-file me-1"></i> Un-approved Supplier Cheque Payment Report</h4>
-            <p class="card-title-desc">Filter and manage pending cheque payments before approval.</p>
+            <h4 class="card-title text-primary"><i class="bx bx-file me-1"></i> Supplier Cheque Payment Report</h4>
+            <p class="card-title-desc">Filter, analyze, and manage supplier cheque payments.</p>
         </div>
         <div class="card-body">
             <div class="row mb-4 align-items-end">
@@ -16,19 +16,35 @@
                     </select>
                 </div>
                 @if($date_filter === 'Custom')
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label">Start Date</label>
                         <input type="text" class="form-control datepicker-basic" wire:model.live="start_date" placeholder="YYYY-MM-DD">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label">End Date</label>
                         <input type="text" class="form-control datepicker-basic" wire:model.live="end_date" placeholder="YYYY-MM-DD">
                     </div>
                 @endif
-                <div class="col-md-3 ms-auto text-end">
-                    <div class="p-2 border rounded bg-light">
-                        <h6 class="text-muted mb-1">Grand Total Pending</h6>
-                        <h3 class="text-danger mb-0">{{ money($grand_total) }}</h3>
+                <div class="col-md-5 ms-auto">
+                    <div class="row text-center g-2">
+                        <div class="col">
+                            <div class="p-2 border rounded bg-light">
+                                <h6 class="text-muted mb-1 font-size-12">Approved Total</h6>
+                                <h4 class="text-success mb-0 fw-bold">{{ money($total_approved) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="p-2 border rounded bg-light">
+                                <h6 class="text-muted mb-1 font-size-12">Pending Total</h6>
+                                <h4 class="text-warning mb-0 fw-bold">{{ money($total_pending) }}</h4>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="p-2 border rounded bg-light">
+                                <h6 class="text-muted mb-1 font-size-12">Grand Total</h6>
+                                <h4 class="text-primary mb-0 fw-bold">{{ money($grand_total) }}</h4>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -37,6 +53,8 @@
                 @forelse($grouped_payments as $date => $dayPayments)
                     @php
                         $dayTotal = $dayPayments->sum('amount');
+                        $dayApproved = $dayPayments->filter(fn($p) => ($p->payment_info['status'] ?? 'Pending') === 'Approved')->sum('amount');
+                        $dayPending = $dayPayments->filter(fn($p) => ($p->payment_info['status'] ?? 'Pending') === 'Pending')->sum('amount');
                         $formattedDate = \Carbon\Carbon::parse($date)->format('l, F j, Y');
                         $collapseId = 'collapse-' . str_replace('-', '', $date);
                     @endphp
@@ -52,8 +70,10 @@
                                     <span class="font-size-15 text-dark fw-bold">
                                         <i class="bx bx-calendar-event me-2 text-primary font-size-18"></i>{{ $formattedDate }}
                                     </span>
-                                    <span class="badge bg-soft-success text-success font-size-13 p-2">
-                                        Daily Total: {{ money($dayTotal) }}
+                                    <span class="font-size-13 text-muted">
+                                        <span class="badge bg-soft-success text-success p-2 me-1">Approved: {{ money($dayApproved) }}</span>
+                                        <span class="badge bg-soft-warning text-warning p-2 me-1">Pending: {{ money($dayPending) }}</span>
+                                        <span class="badge bg-soft-primary text-primary p-2">Total: {{ money($dayTotal) }}</span>
                                     </span>
                                 </button>
                             </h5>
@@ -78,6 +98,12 @@
                                         </thead>
                                         <tbody>
                                             @foreach($dayPayments as $row)
+                                                @php
+                                                    $chequeDate = $row->payment_info['cheque_date'] ?? '';
+                                                    $dateOfIssued = $row->payment_info['date_of_issued'] ?? '';
+                                                    $status = $row->payment_info['status'] ?? 'Pending';
+                                                    $statusBadgeClass = $status === 'Approved' ? 'success' : ($status === 'Declined' ? 'danger' : 'warning');
+                                                @endphp
                                                 <tr>
                                                     <td>
                                                         <a target="_blank" href="{{ route('supplier.show', $row->supplier->id) }}" class="fw-medium text-primary">
@@ -86,12 +112,6 @@
                                                     </td>
                                                     <td>{{ $row->type }}</td>
                                                     <td>
-                                                        @php
-                                                            $chequeDate = $row->payment_info['cheque_date'] ?? '';
-                                                            $dateOfIssued = $row->payment_info['date_of_issued'] ?? '';
-                                                            $status = $row->payment_info['status'] ?? 'Pending';
-                                                            $statusBadgeClass = $status === 'Approved' ? 'success' : ($status === 'Declined' ? 'danger' : 'warning');
-                                                        @endphp
                                                         <span class="fw-semibold">{{ $row->paymentmethod->name ?? '' }}</span>
                                                         <small class="text-muted d-block">Issued: {{ $dateOfIssued }}, Cheque: {{ $chequeDate }}</small>
                                                         <span class="badge badge-soft-{{ $statusBadgeClass }} mt-1">{{ $status }}</span>
@@ -104,16 +124,20 @@
                                                     <td>{{ $row->user->name ?? 'N/A' }}</td>
                                                     <td>{{ $row->updated_at }}</td>
                                                     <td class="text-center" style="width: 180px;">
-                                                        <button wire:click="approve({{ $row->id }})" 
-                                                                onclick="return confirm('Are you sure you want to approve this cheque payment?');" 
-                                                                class="btn btn-success btn-sm me-1">
-                                                            <i class="fa fa-check me-1"></i> Approve
-                                                        </button>
-                                                        <button wire:click="decline({{ $row->id }})" 
-                                                                onclick="return confirm('Are you sure you want to decline this cheque payment?');" 
-                                                                class="btn btn-danger btn-sm">
-                                                            <i class="fa fa-times me-1"></i> Decline
-                                                        </button>
+                                                        @if($status === 'Pending')
+                                                            <button wire:click="approve({{ $row->id }})" 
+                                                                    onclick="return confirm('Are you sure you want to approve this cheque payment?');" 
+                                                                    class="btn btn-success btn-sm me-1">
+                                                                <i class="fa fa-check me-1"></i> Approve
+                                                            </button>
+                                                            <button wire:click="decline({{ $row->id }})" 
+                                                                    onclick="return confirm('Are you sure you want to decline this cheque payment?');" 
+                                                                    class="btn btn-danger btn-sm">
+                                                                <i class="fa fa-times me-1"></i> Decline
+                                                            </button>
+                                                        @else
+                                                            <span class="text-muted font-size-12">No Action</span>
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -126,7 +150,7 @@
                 @empty
                     <div class="alert alert-info text-center py-4">
                         <i class="bx bx-info-circle font-size-24 align-middle me-2"></i>
-                        No un-approved cheque payments found for the selected period.
+                        No cheque payments found for the selected period.
                     </div>
                 @endforelse
             </div>
