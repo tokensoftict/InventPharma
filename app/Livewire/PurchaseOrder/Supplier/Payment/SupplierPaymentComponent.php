@@ -76,38 +76,38 @@ class SupplierPaymentComponent extends Component
 
             switch ($this->date_filter) {
                 case 'Today':
-                    $query->whereDate('cheque_date', Carbon::today());
+                    $query->whereDate('payment_info->cheque_date', Carbon::today());
                     break;
                 case 'This Week':
-                    $query->whereBetween('cheque_date', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                    $query->whereBetween('payment_info->cheque_date', [Carbon::now()->startOfWeek()->format('Y-m-d'), Carbon::now()->endOfWeek()->format('Y-m-d')]);
                     break;
                 case 'This Month':
-                    $query->whereBetween('cheque_date', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+                    $query->whereBetween('payment_info->cheque_date', [Carbon::now()->startOfMonth()->format('Y-m-d'), Carbon::now()->endOfMonth()->format('Y-m-d')]);
                     break;
                 case 'Custom':
                     if ($this->start_date && $this->end_date) {
-                        $query->whereBetween('cheque_date', [
-                            Carbon::parse($this->start_date)->startOfDay(),
-                            Carbon::parse($this->end_date)->endOfDay()
+                        $query->whereBetween('payment_info->cheque_date', [
+                            Carbon::parse($this->start_date)->format('Y-m-d'),
+                            Carbon::parse($this->end_date)->format('Y-m-d')
                         ]);
                     }
                     break;
             }
 
-            $payments = $query->orderBy('cheque_date', 'ASC')->get();
+            $payments = $query->orderBy('payment_info->cheque_date', 'ASC')->get();
             $grand_total = $payments->sum('amount');
-            
-            $total_pending = $payments->filter(function($payment) {
+
+            $total_pending = $payments->filter(function ($payment) {
                 $status = $payment->payment_info['status'] ?? 'Pending';
                 return $status === 'Pending';
             })->sum('amount');
 
-            $total_approved = $payments->filter(function($payment) {
+            $total_approved = $payments->filter(function ($payment) {
                 $status = $payment->payment_info['status'] ?? 'Pending';
                 return $status === 'Approved';
             })->sum('amount');
 
-            $grouped_payments = $payments->groupBy(fn($payment) => $payment->payment_date->format('Y-m-d'));
+            $grouped_payments = $payments->groupBy(fn($payment) => $payment->payment_info['cheque_date'] ?? $payment->payment_date->format('Y-m-d'));
 
             return view('livewire.purchase-order.supplier.payment.supplier-payment-report', [
                 'grouped_payments' => $grouped_payments,
