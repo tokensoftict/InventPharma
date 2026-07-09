@@ -19,7 +19,8 @@ class ValuedDateChequeReport extends Component
     {
         $query = SupplierCreditPaymentHistory::query()
             ->with(['user', 'paymentmethod', 'purchase', 'supplier', 'supplier.supplierStockOpening'])
-            ->where('paymentmethod_id', 8);
+            ->where('paymentmethod_id', 8)
+            ->where('payment_info->status', 'Approved');
 
         switch ($this->date_filter) {
             case 'Today':

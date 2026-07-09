@@ -42,7 +42,7 @@ class SupplierPaymentReport extends Component
         }
 
         $payments = $query->orderBy('payment_info->cheque_date', 'ASC')->get();
-        $grand_total = $payments->sum('amount');
+        $grand_total = $payments->filter(fn($payment) => (($payment->payment_info['status'] ?? 'Pending') === 'Approved' || ($payment->payment_info['status'] ?? 'Pending') === 'Pending'))->sum('amount');
 
         $total_pending = $payments->filter(function ($payment) {
             $status = $payment->payment_info['status'] ?? 'Pending';
