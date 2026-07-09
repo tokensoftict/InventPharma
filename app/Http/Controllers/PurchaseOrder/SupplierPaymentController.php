@@ -15,10 +15,24 @@ class SupplierPaymentController extends Controller
         return view('purchase.supplier.payment.index', $data);
     }
 
-
     public function approve_supplier_cheque_payment()
     {
+
+    }
+
+    public function decline_supplier_cheque_payment()
+    {
+
+    }
+
+    public function list_supplier_payment_by_date()
+    {
         return view('purchase.supplier.payment.approve_cheque');
+    }
+
+    public function valued_date_cheque_report()
+    {
+        return view('purchase.supplier.payment.valued_date_cheque_report');
     }
 
     public function create(){

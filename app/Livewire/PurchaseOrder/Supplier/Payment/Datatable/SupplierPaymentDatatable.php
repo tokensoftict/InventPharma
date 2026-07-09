@@ -39,10 +39,13 @@ class SupplierPaymentDatatable extends ExportDataTableComponent
                     {
                         $chequeDate = $row->payment_info['cheque_date'] ?? '';
                         $dateOfIssued = $row->payment_info['date_of_issued'] ?? '';
+                        $approvedDate = $row->payment_info['approved_date'] ?? '';
+                        $declineDate = $row->payment_info['decline_date'] ?? '';
+                        $valueDate =  $row->payment_info['going_out_date'] ?? '';
                         $status = $row->payment_info['status'] ?? 'Pending';
                         $statusBadge = '<span class="badge badge-soft-' . ($status === 'Approved' ? 'success' : ($status === 'Declined' ? 'danger' : 'warning')) . ' ms-1">' . $status . '</span>';
 
-                        return $row->paymentmethod->name . " (Issued: " . $dateOfIssued . ", Cheque: " . $chequeDate . ") " . $statusBadge;
+                        return $row->paymentmethod->name . " (Cheque: " . $chequeDate . ", Value Date: " . $valueDate . ", ".($status === 'Approved' ? "Approved Date : $approvedDate" : ($status === 'Declined' ? "Declined Date : $declineDate" : "")).") " . $statusBadge;
                     }
 
                     return $row->paymentmethod->name ?? "";

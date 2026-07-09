@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('pageHeaderTitle1', 'Supplier Cheque Payment By Date')
-@section('pageHeaderDescription', 'Approve or Decline Pending Supplier Cheque Payments')
+@section('pageHeaderTitle1', 'Valued Date Cheque Report')
+@section('pageHeaderDescription', 'Supplier Cheque Payments Sorted by Valued Date')
 
 @section('css')
     <link rel="stylesheet" href="{{ asset('libs/flatpickr/flatpickr.min.css') }}"/>
@@ -24,5 +24,5 @@
 @endsection
 
 @section('content')
-    <livewire:purchase-order.supplier.payment.supplier-payment-report />
+    <livewire:purchase-order.supplier.payment.valued-date-cheque-report />
 @endsection

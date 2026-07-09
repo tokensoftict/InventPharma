@@ -40,11 +40,12 @@
                     @else
                         <div id="cheque_details"  wire:ignore style="display: none;">
                             @endif
-                            <div class="mb-3">
-                                <label>Date of Issued</label>
-                                <input type="text" wire:model="payment_data.payment_info.date_of_issued" placeholder="Date of Issued" id="dateOfIssued"  class="form-control datepicker-basic" >
-                                @error('payment_data.payment_info.date_of_issued') <span class="text-danger d-block">{{ $message }}</span> @enderror
-                            </div>
+
+{{--                            <div class="mb-3">--}}
+{{--                                <label>Date of Issued</label>--}}
+{{--                                <input type="text" wire:model="payment_data.payment_info.date_of_issued" placeholder="Date of Issued" id="dateOfIssued"  class="form-control datepicker-basic" >--}}
+{{--                                @error('payment_data.payment_info.date_of_issued') <span class="text-danger d-block">{{ $message }}</span> @enderror--}}
+{{--                            </div>--}}
 
                             <div class="mb-3">
                                 <label>Cheque Date</label>

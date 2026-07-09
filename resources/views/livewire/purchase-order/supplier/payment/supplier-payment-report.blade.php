@@ -52,7 +52,7 @@
             <div class="accordion" id="paymentsAccordion">
                 @forelse($grouped_payments as $date => $dayPayments)
                     @php
-                        $dayTotal = $dayPayments->sum('amount');
+                        $dayTotal = $dayPayments->filter(fn($p) => (($p->payment_info['status'] ?? 'Pending') === 'Approved' || ($p->payment_info['status'] ?? 'Pending') === 'Pending'))->sum('amount');
                         $dayApproved = $dayPayments->filter(fn($p) => ($p->payment_info['status'] ?? 'Pending') === 'Approved')->sum('amount');
                         $dayPending = $dayPayments->filter(fn($p) => ($p->payment_info['status'] ?? 'Pending') === 'Pending')->sum('amount');
                         $formattedDate = \Carbon\Carbon::parse($date)->format('l, F j, Y');
@@ -61,11 +61,11 @@
                     <div class="card mb-2 border">
                         <div class="card-header bg-light p-2" id="heading-{{ $date }}">
                             <h5 class="m-0">
-                                <button class="btn btn-link w-100 text-start d-flex justify-content-between align-items-center text-decoration-none shadow-none" 
-                                        type="button" 
-                                        data-bs-toggle="collapse" 
-                                        data-bs-target="#{{ $collapseId }}" 
-                                        aria-expanded="true" 
+                                <button class="btn btn-link w-100 text-start d-flex justify-content-between align-items-center text-decoration-none shadow-none"
+                                        type="button"
+                                        data-bs-toggle="collapse"
+                                        data-bs-target="#{{ $collapseId }}"
+                                        aria-expanded="true"
                                         aria-controls="{{ $collapseId }}">
                                     <span class="font-size-15 text-dark fw-bold">
                                         <i class="bx bx-calendar-event me-2 text-primary font-size-18"></i>{{ $formattedDate }}
@@ -84,63 +84,92 @@
                                 <div class="table-responsive">
                                     <table class="table table-centered table-bordered table-hover mb-0">
                                         <thead class="table-light">
-                                            <tr>
-                                                <th>Supplier</th>
-                                                <th>Type</th>
-                                                <th>Payment Method</th>
-                                                <th>Amount</th>
-                                                <th>Payment Date</th>
-                                                <th>Remark</th>
-                                                <th>Created By</th>
-                                                <th>Last Modified</th>
-                                                <th class="text-center">Action</th>
-                                            </tr>
+                                        <tr>
+                                            <th>Supplier</th>
+                                            <th>Payment Method</th>
+                                            <th>Amount</th>
+
+                                            <th>Total Opening Stock</th>
+                                            <th>Last Supplied Date</th>
+                                            <th>Amount To Pay</th>
+
+                                            <th>Remark</th>
+                                            <th>Created By</th>
+                                            <th>Created Date</th>
+                                            <th class="text-center">Action</th>
+                                        </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach($dayPayments as $row)
-                                                @php
-                                                    $chequeDate = $row->payment_info['cheque_date'] ?? '';
-                                                    $dateOfIssued = $row->payment_info['date_of_issued'] ?? '';
-                                                    $status = $row->payment_info['status'] ?? 'Pending';
-                                                    $statusBadgeClass = $status === 'Approved' ? 'success' : ($status === 'Declined' ? 'danger' : 'warning');
-                                                @endphp
-                                                <tr>
-                                                    <td>
-                                                        <a target="_blank" href="{{ route('supplier.show', $row->supplier->id) }}" class="fw-medium text-primary">
-                                                            {{ $row->supplier->name }}
-                                                        </a>
-                                                    </td>
-                                                    <td>{{ $row->type }}</td>
-                                                    <td>
-                                                        <span class="fw-semibold">{{ $row->paymentmethod->name ?? '' }}</span>
-                                                        <small class="text-muted d-block">Issued: {{ $dateOfIssued }}, Cheque: {{ $chequeDate }}</small>
-                                                        <span class="badge badge-soft-{{ $statusBadgeClass }} mt-1">{{ $status }}</span>
-                                                    </td>
-                                                    <td class="fw-bold text-success">{{ money($row->amount) }}</td>
-                                                    <td>{{ eng_str_date($row->payment_date) }}</td>
-                                                    <td>
-                                                        <span class="text-wrap" style="max-width: 150px; display: inline-block;">{{ $row->remark ?? 'N/A' }}</span>
-                                                    </td>
-                                                    <td>{{ $row->user->name ?? 'N/A' }}</td>
-                                                    <td>{{ $row->updated_at }}</td>
-                                                    <td class="text-center" style="width: 180px;">
-                                                        @if($status === 'Pending')
-                                                            <button wire:click="approve({{ $row->id }})" 
-                                                                    onclick="return confirm('Are you sure you want to approve this cheque payment?');" 
+                                        @foreach($dayPayments as $row)
+                                            @php
+                                                $chequeDate = $row->payment_info['cheque_date'] ?? '';
+                                                $dateOfIssued = $row->payment_info['date_of_issued'] ?? '';
+                                                $valueDate = $row->payment_info['going_out_date'] ?? '';
+                                                $approvedDate = $row->payment_info['approved_date'] ?? '';
+                                                 $declineDate = $row->payment_info['decline_date'] ?? '';
+                                                $status = $row->payment_info['status'] ?? 'Pending';
+                                                $statusBadgeClass = $status === 'Approved' ? 'success' : ($status === 'Declined' ? 'danger' : 'warning');
+                                            @endphp
+
+                                            @php
+                                                $amountToPay = NULL;
+                                                $totalOpeningStock = NULL;
+                                                $lastSupplyDate = NULL;
+                                                if(isset($row->supplier->supplierStockOpening)) {
+                                                    $amountToPay = $row->supplier->supplierStockOpening->total_supplier_outstanding + ($row->supplier->supplierStockOpening->total_opening_cost_price+$row->supplier->supplierStockOpening->total_opening_retail_cost_price);
+                                                    $totalOpeningStock = $row->supplier->supplierStockOpening->total_opening_cost_price + $row->supplier->supplierStockOpening->total_opening_retail_cost_price;
+                                                    $lastSupplyDate =  $row->supplier->supplierStockOpening->last_supplier_date;
+
+                                                }
+                                            @endphp
+
+                                            <tr>
+                                                <td>
+                                                    <a target="_blank" href="{{ route('supplier.show', $row->supplier->id) }}" class="fw-medium text-primary">
+                                                        {{ $row->supplier->name }}
+                                                    </a>
+                                                </td>
+                                                <td>
+                                                    <span class="fw-semibold">{{ $row->paymentmethod->name ?? '' }}</span>
+                                                    <small class="text-muted d-block">Cheque Date: {{ $chequeDate }},Value Date: {{ $valueDate }}  {{ $status === 'Approved' ? "Approved Date : $approvedDate" : ($status === 'Declined' ? "Declined Date : $declineDate" : "") }}</small>
+                                                    <span class="badge badge-soft-{{ $statusBadgeClass }} mt-1">{{ $status }}</span>
+                                                </td>
+                                                <td class="fw-bold text-success">{{ money($row->amount) }}</td>
+
+                                                <td class="fw-bold">{{ money($totalOpeningStock) }}</td>
+                                                <td class="fw-bold">{{ mysql_str_date($lastSupplyDate) }}</td>
+                                                <td class="fw-bold">{{ money($amountToPay) }}</td>
+
+                                                <td>
+                                                    <span class="text-wrap" style="max-width: 150px; display: inline-block;">{{ $row->remark ?? 'N/A' }}</span>
+                                                </td>
+                                                <td>{{ $row->user->name ?? 'N/A' }}</td>
+                                                <td>{{ eng_str_date($row->payment_date) }}</td>
+                                                <td class="text-center" style="width: 180px;">
+                                                    @if($status === 'Pending' and (userCanView('supplier.payment.approve_supplier_cheque_payment') || userCanView('supplier.payment.decline_supplier_cheque_payment') || auth()->user()->can("update", $row)))
+                                                        @if(userCanView('supplier.payment.approve_supplier_cheque_payment'))
+                                                            <button wire:click="approve({{ $row->id }})"
+                                                                    onclick="return confirm('Are you sure you want to approve this cheque payment?');"
                                                                     class="btn btn-success btn-sm me-1">
                                                                 <i class="fa fa-check me-1"></i> Approve
                                                             </button>
-                                                            <button wire:click="decline({{ $row->id }})" 
-                                                                    onclick="return confirm('Are you sure you want to decline this cheque payment?');" 
+                                                        @endif
+                                                        @if(auth()->user()->can("update", $row))
+                                                            <a href="{{ route('supplier.payment.edit', $row->id) }}" class="btn btn-primary btn-sm">Edit Payment</a>
+                                                        @endif
+                                                        @if(userCanView('supplier.payment.decline_supplier_cheque_payment'))
+                                                            <button wire:click="decline({{ $row->id }})"
+                                                                    onclick="return confirm('Are you sure you want to decline this cheque payment?');"
                                                                     class="btn btn-danger btn-sm">
                                                                 <i class="fa fa-times me-1"></i> Decline
                                                             </button>
-                                                        @else
-                                                            <span class="text-muted font-size-12">No Action</span>
                                                         @endif
-                                                    </td>
-                                                </tr>
-                                            @endforeach
+                                                    @else
+                                                        <span class="text-muted font-size-12">No Action</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
                                         </tbody>
                                     </table>
                                 </div>

@@ -20,12 +20,6 @@ class SupplierPaymentComponent extends Component
 
     public $payment_data = [];
 
-    // Report Properties
-    public $is_report = false;
-    public $date_filter = 'Today';
-    public $start_date;
-    public $end_date;
-
     public function boot()
     {
 
@@ -33,90 +27,38 @@ class SupplierPaymentComponent extends Component
 
     public function booted()
     {
-        if (!$this->is_report) {
-            $this->paymentMethods = paymentmethodsOnly([1, 2, 3, 8]);
-            $this->suppliers = suppliers(true);
-        }
+        $this->paymentMethods = paymentmethodsOnly([1, 2, 3, 8]);
+        $this->suppliers = suppliers(true);
     }
 
     public function mount()
     {
-        if (!$this->is_report) {
-            $fields = [
-                'user_id' => auth()->id(),
-                'supplier_id' => NULL,
-                'type' => NULL,
-                'purchase_id' => NULL,
-                'paymentmethod_id' => NULL,
-                'payment_info' => ['cheque_date' => NULL, 'date_of_issued' => NULL, 'status' => NULL],
-                'amount' => NULL,
-                'remark' => NULL,
-                'payment_date' => NULL,
-                'cheque_date' => NULL
-            ];
+        $fields = [
+            'user_id' => auth()->id(),
+            'supplier_id' => NULL,
+            'type' => NULL,
+            'purchase_id' => NULL,
+            'paymentmethod_id' => NULL,
+            'payment_info' => ['cheque_date' => NULL, 'date_of_issued' => NULL, 'status' => NULL],
+            'amount' => NULL,
+            'remark' => NULL,
+            'payment_date' => NULL,
+            'cheque_date' => NULL
+        ];
 
-            if (isset($this->supplierCreditPaymentHistory->id)) {
-                $this->payment_data = Arr::only($this->supplierCreditPaymentHistory->toArray(), array_keys($fields));
-                $this->payment_data['payment_info'] = array_merge(
-                    ['cheque_date' => NULL, 'date_of_issued' => NULL, 'status' => NULL],
-                    $this->payment_data['payment_info'] ?? []
-                );
-            } else {
-                $this->payment_data = $fields;
-            }
+        if (isset($this->supplierCreditPaymentHistory->id)) {
+            $this->payment_data = Arr::only($this->supplierCreditPaymentHistory->toArray(), array_keys($fields));
+            $this->payment_data['payment_info'] = array_merge(
+                ['cheque_date' => NULL, 'date_of_issued' => NULL, 'status' => NULL],
+                $this->payment_data['payment_info'] ?? []
+            );
+        } else {
+            $this->payment_data = $fields;
         }
     }
 
     public function render()
     {
-        if ($this->is_report) {
-            $query = SupplierCreditPaymentHistory::query()
-                ->with(['user', 'paymentmethod', 'purchase', 'supplier'])
-                ->where('paymentmethod_id', 8);
-
-            switch ($this->date_filter) {
-                case 'Today':
-                    $query->whereDate('payment_info->cheque_date', Carbon::today());
-                    break;
-                case 'This Week':
-                    $query->whereBetween('payment_info->cheque_date', [Carbon::now()->startOfWeek()->format('Y-m-d'), Carbon::now()->endOfWeek()->format('Y-m-d')]);
-                    break;
-                case 'This Month':
-                    $query->whereBetween('payment_info->cheque_date', [Carbon::now()->startOfMonth()->format('Y-m-d'), Carbon::now()->endOfMonth()->format('Y-m-d')]);
-                    break;
-                case 'Custom':
-                    if ($this->start_date && $this->end_date) {
-                        $query->whereBetween('payment_info->cheque_date', [
-                            Carbon::parse($this->start_date)->format('Y-m-d'),
-                            Carbon::parse($this->end_date)->format('Y-m-d')
-                        ]);
-                    }
-                    break;
-            }
-
-            $payments = $query->orderBy('payment_info->cheque_date', 'ASC')->get();
-            $grand_total = $payments->sum('amount');
-
-            $total_pending = $payments->filter(function ($payment) {
-                $status = $payment->payment_info['status'] ?? 'Pending';
-                return $status === 'Pending';
-            })->sum('amount');
-
-            $total_approved = $payments->filter(function ($payment) {
-                $status = $payment->payment_info['status'] ?? 'Pending';
-                return $status === 'Approved';
-            })->sum('amount');
-
-            $grouped_payments = $payments->groupBy(fn($payment) => $payment->payment_info['cheque_date'] ?? $payment->payment_date->format('Y-m-d'));
-
-            return view('livewire.purchase-order.supplier.payment.supplier-payment-report', [
-                'grouped_payments' => $grouped_payments,
-                'grand_total' => $grand_total,
-                'total_pending' => $total_pending,
-                'total_approved' => $total_approved
-            ]);
-        }
-
         return view('livewire.purchase-order.supplier.payment.supplier-payment-component');
     }
 
@@ -131,14 +73,14 @@ class SupplierPaymentComponent extends Component
 
         if (isset($this->payment_data['paymentmethod_id']) && $this->payment_data['paymentmethod_id'] == "8") {
             $data["payment_data.payment_info.cheque_date"] = "bail|required";
-            $data["payment_data.payment_info.date_of_issued"] = "bail|required";
+            //$data["payment_data.payment_info.date_of_issued"] = "bail|required";
         }
 
         $this->validate($data);
-
         if (isset($this->payment_data['paymentmethod_id']) && $this->payment_data['paymentmethod_id'] == "8") {
             if (!isset($this->supplierCreditPaymentHistory->id)) {
                 $this->payment_data['payment_info']['status'] = 'Pending';
+                $this->payment_data['payment_info']['going_out_date'] = (new Carbon($this->payment_data["payment_info"]['cheque_date']))->addDay()->format('Y-m-d');
             }
         } else {
             $this->payment_data['payment_info']['status'] = 'Approved';
@@ -165,45 +107,5 @@ class SupplierPaymentComponent extends Component
         );
 
         return redirect()->route('supplier.payment.index');
-    }
-
-    public function approve($id)
-    {
-        $payment = SupplierCreditPaymentHistory::findOrFail($id);
-        $payment_info = $payment->payment_info;
-        $payment_info['status'] = 'Approved';
-        $payment->payment_info = $payment_info;
-        $payment->save();
-
-        $this->alert(
-            "success",
-            "Cheque Approval",
-            [
-                'position' => 'center',
-                'timer' => 6000,
-                'toast' => false,
-                'text' => 'Cheque payment approved successfully!',
-            ]
-        );
-    }
-
-    public function decline($id)
-    {
-        $payment = SupplierCreditPaymentHistory::findOrFail($id);
-        $payment_info = $payment->payment_info;
-        $payment_info['status'] = 'Declined';
-        $payment->payment_info = $payment_info;
-        $payment->save();
-
-        $this->alert(
-            "warning",
-            "Cheque Approval",
-            [
-                'position' => 'center',
-                'timer' => 6000,
-                'toast' => false,
-                'text' => 'Cheque payment declined successfully!',
-            ]
-        );
     }
 }

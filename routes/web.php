@@ -310,10 +310,15 @@ Route::middleware(['auth'])->group(function () {
                 Route::prefix('payment')->as('payment.')->group(function () {
                     Route::get('', ['as' => 'index', 'uses' => 'SupplierPaymentController@index', 'visible' => true, 'custom_label' => "Supplier Payment"]);
                     Route::get('create', ['as' => 'create', 'uses' => 'SupplierPaymentController@create', 'custom_label' => 'Create Supplier Payment']);
-                    Route::get('approve_supplier_cheque_payment', ['as' => 'approve_supplier_cheque_payment', 'uses' => 'SupplierPaymentController@approve_supplier_cheque_payment', 'visible' => true, 'custom_label' => 'Approve Supplier Cheque Payment']);
+
+                    Route::get('list_supplier_payment_by_date', ['as' => 'list_supplier_payment_by_date', 'uses' => 'SupplierPaymentController@list_supplier_payment_by_date', 'visible' => true, 'custom_label' => 'List Supplier Cheque Payment By Date']);
+                    Route::get('valued_date_cheque_report', ['as' => 'valued_date_cheque_report', 'uses' => 'SupplierPaymentController@valued_date_cheque_report', 'visible' => true, 'custom_label' => 'Valued Date Cheque Report']);
                     Route::get('{supplierCreditPaymentHistory}', ['as' => 'show', 'uses' => 'SupplierPaymentController@show', 'custom_label' => 'View Supplier Payment']);
                     Route::get('{supplierCreditPaymentHistory}/edit', ['as' => 'edit', 'uses' => 'SupplierPaymentController@edit']);
                     Route::delete('{supplierCreditPaymentHistory}', ['as' => 'destroy', 'uses' => 'SupplierPaymentController@destroy']);
+
+                    Route::get('approve_supplier_cheque_payment', ['as' => 'approve_supplier_cheque_payment', 'uses' => 'SupplierPaymentController@approve_supplier_cheque_payment', 'custom_label' => 'Approve Supplier Cheque Payment']);
+                    Route::get('decline_supplier_cheque_payment', ['as' => 'decline_supplier_cheque_payment', 'uses' => 'SupplierPaymentController@decline_supplier_cheque_payment', 'custom_label' => 'Decline Supplier Cheque Payment']);
                 });
                 Route::prefix('credit')->as('credit.')->group(function () {
                     Route::get('', ['as' => 'index', 'uses' => 'SupplierCreditController@index', 'visible' => true, 'custom_label' => "Supplier Credit"]);

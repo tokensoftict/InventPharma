@@ -21,17 +21,36 @@
                             </td>
                         </tr>
                         @php
-                                $amountToPay = NULL;
-                                if(isset($payment->supplier->supplierStockOpening)) {
-                                    $amountToPay = $payment->supplier->supplierStockOpening->total_supplier_outstanding + ($payment->supplier->supplierStockOpening->total_opening_cost_price+$payment->supplier->supplierStockOpening->total_opening_retail_cost_price);
-                                }
+                            $amountToPay = NULL;
+                            $totalOpeningStock = NULL;
+                            $lastSupplyDate = NULL;
+                            if(isset($payment->supplier->supplierStockOpening)) {
+                                $amountToPay = $payment->supplier->supplierStockOpening->total_supplier_outstanding + ($payment->supplier->supplierStockOpening->total_opening_cost_price+$payment->supplier->supplierStockOpening->total_opening_retail_cost_price);
+                                $totalOpeningStock = $payment->supplier->supplierStockOpening->total_opening_cost_price + $payment->supplier->supplierStockOpening->total_opening_retail_cost_price;
+                                $lastSupplyDate =  $payment->supplier->supplierStockOpening->last_supplier_date;
+
+                            }
                         @endphp
+
+                        <tr>
+                            <th>Total Opening Stock</th>
+                            <td>
+                               {{ $totalOpeningStock ?  money($totalOpeningStock) : "N/A" }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Last Supplied Date</th>
+                            <td>
+                                {{ $lastSupplyDate ?  mysql_str_date($lastSupplyDate) : "N/A" }}
+                            </td>
+                        </tr>
                         <tr>
                             <th>Amount To Pay</th>
                             <td>
                                 <h4 class="text-primary mb-0">{{ $amountToPay ?  money($amountToPay) : "N/A" }}</h4>
                             </td>
                         </tr>
+
                         <tr>
                             <th>Payment Method</th>
                             <td>
@@ -73,18 +92,25 @@
                     </table>
 
                     @if($payment->paymentmethod_id === 8 && ($payment->payment_info['status'] ?? 'Pending') === 'Pending' and userCanView('supplier.payment.approve_supplier_cheque_payment'))
-                        <div class="mt-4 p-3 bg-light rounded text-center">
-                            <h5 class="mb-3 text-warning"><i class="bx bx-info-circle me-1"></i> Cheque Approval Action
-                                Required</h5>
-                            <button wire:click="approve" class="btn btn-success btn-lg me-3"
-                                    onclick="return confirm('Are you sure you want to approve this cheque payment?');">
-                                <i class="fa fa-check me-1"></i> Approve Payment
-                            </button>
-                            <button wire:click="decline" class="btn btn-danger btn-lg"
-                                    onclick="return confirm('Are you sure you want to decline this cheque payment?');">
-                                <i class="fa fa-times me-1"></i> Decline Payment
-                            </button>
-                        </div>
+                        @if(userCanView('supplier.payment.approve_supplier_cheque_payment') || userCanView('supplier.payment.decline_supplier_cheque_payment'))
+                            <div class="mt-4 p-3 bg-light rounded text-center">
+                                <h5 class="mb-3 text-warning"><i class="bx bx-info-circle me-1"></i> Cheque Approval Action
+                                    Required</h5>
+                                @if(userCanView('supplier.payment.approve_supplier_cheque_payment'))
+                                    <button wire:click="approve" class="btn btn-success btn-lg me-3"
+                                            onclick="return confirm('Are you sure you want to approve this cheque payment?');">
+                                        <i class="fa fa-check me-1"></i> Approve Payment
+                                    </button>
+                                @endif
+                                @if(userCanView('supplier.payment.decline_supplier_cheque_payment'))
+                                    <button wire:click="decline" class="btn btn-danger btn-lg"
+                                            onclick="return confirm('Are you sure you want to decline this cheque payment?');">
+                                        <i class="fa fa-times me-1"></i> Decline Payment
+                                    </button>
+                                @endif
+                            </div>
+                        @endif
+
                     @endif
                 </div>
             </div>
