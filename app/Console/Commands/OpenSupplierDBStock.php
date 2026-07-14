@@ -64,6 +64,12 @@ class OpenSupplierDBStock extends Command
 
             $total_supplier_outstanding = SupplierCreditPaymentHistory::query()
                 ->where("supplier_id", $supplier->id)
+                ->filter(function($item){
+                    if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Pending') {
+                        return false;
+                    }
+                    return true;
+                })->get()
                 ->sum("amount");
 
             if(is_null($purchase?->last_supplier_date)) {
