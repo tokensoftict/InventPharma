@@ -106,6 +106,7 @@
                                                 <th>Last Supplied Date</th>
                                                 <th>Last Dept Supplied</th>
                                                 <th>Amount To Pay</th>
+                                                <th>Total Outstanding</th>
 
                                                 <th>Remark</th>
                                                 <th>Created By</th>
