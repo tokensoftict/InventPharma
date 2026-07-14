@@ -14,6 +14,7 @@ class ValuedDateChequeReport extends Component
     public $date_filter = 'Today';
     public $start_date;
     public $end_date;
+    public $last_dept_supplied = '';
 
     public function render()
     {
@@ -21,6 +22,15 @@ class ValuedDateChequeReport extends Component
             ->with(['user', 'paymentmethod', 'purchase', 'supplier', 'supplier.supplierStockOpening'])
             ->where('paymentmethod_id', 8)
             ->where('payment_info->status', 'Approved');
+
+        if ($this->last_dept_supplied) {
+            $query->whereHas('supplier', function ($q) {
+                $q->whereRaw(
+                    "(select department from purchases where purchases.supplier_id = suppliers.id and purchases.status_id = ? order by purchases.date_completed desc limit 1) = ?",
+                    [status('Complete'), $this->last_dept_supplied]
+                );
+            });
+        }
 
         switch ($this->date_filter) {
             case 'Today':
@@ -61,7 +71,8 @@ class ValuedDateChequeReport extends Component
             'grouped_payments' => $grouped_payments,
             'grand_total' => $grand_total,
             'total_pending' => $total_pending,
-            'total_approved' => $total_approved
+            'total_approved' => $total_approved,
+            'departments' => \App\Models\Department::where('status', 1)->whereNotNull('quantity_column')->get()
         ]);
     }
 

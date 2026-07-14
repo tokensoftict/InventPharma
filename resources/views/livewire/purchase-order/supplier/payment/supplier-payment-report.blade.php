@@ -6,13 +6,22 @@
         </div>
         <div class="card-body">
             <div class="row mb-4 align-items-end">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label font-weight-bold">Filter By Date</label>
                     <select class="form-select" wire:model.live="date_filter">
                         <option value="Today">Today</option>
                         <option value="This Week">This Week</option>
                         <option value="This Month">This Month</option>
                         <option value="Custom">Custom Date Range</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label font-weight-bold">Filter By Last Dept Supplied</label>
+                    <select class="form-select" wire:model.live="last_dept_supplied">
+                        <option value="">All Departments</option>
+                        @foreach($departments as $dept)
+                            <option value="{{ $dept->quantity_column }}">{{ $dept->label ?? $dept->name }}</option>
+                        @endforeach
                     </select>
                 </div>
                 @if($date_filter === 'Custom')
@@ -27,7 +36,7 @@
                             placeholder="YYYY-MM-DD">
                     </div>
                 @endif
-                <div class="col-md-5 ms-auto">
+                <div class="col-md-4 ms-auto">
                     <div class="row text-center g-2">
                         <div class="col">
                             <div class="p-2 border rounded bg-light">
@@ -95,6 +104,7 @@
 
                                                 <th>Total Opening Stock</th>
                                                 <th>Last Supplied Date</th>
+                                                <th>Last Dept Supplied</th>
                                                 <th>Amount To Pay</th>
 
                                                 <th>Remark</th>
@@ -147,6 +157,7 @@
 
                                                     <td class="fw-bold">{{ money($totalOpeningStock) }}</td>
                                                     <td class="fw-bold">{{ mysql_str_date($lastSupplyDate) }}</td>
+                                                    <td class="fw-bold">{{ $row->supplier->lastDeptSupplied() }}</td>
                                                     <td class="fw-bold">{{ money($amountToPay) }}</td>
 
                                                     <td><span class="text-wrap"

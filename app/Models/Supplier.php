@@ -111,6 +111,19 @@ class Supplier extends Model
         return $this->hasOne(SupplierStockOpening::class);
     }
 
+    public function lastDeptSupplied()
+    {
+        $lastPurchase = $this->purchases()
+            ->where('status_id', status('Complete'))
+            ->orderBy('date_completed', 'desc')
+            ->first();
+
+        $lastDeptKey = $lastPurchase ? $lastPurchase->department : null;
+        return ($lastPurchase && isset(\App\Classes\Settings::$department[$lastDeptKey])) 
+            ? \App\Classes\Settings::$department[$lastDeptKey] 
+            : 'Unknown';
+    }
+
 	public function supplier_credit_payment_histories()
 	{
 		return $this->hasMany(SupplierCreditPaymentHistory::class);
