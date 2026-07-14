@@ -108,7 +108,9 @@ class Supplier extends Model
 
     public function supplierStockOpening()
     {
-        return $this->hasOne(SupplierStockOpening::class);
+        return $this->hasOne(SupplierStockOpening::class)->ofMany(['id' => 'MAX'], function($query){
+            $query->where('date_added', todaysDate());
+        });
     }
 
     public function lastDeptSupplied()
