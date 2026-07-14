@@ -254,22 +254,27 @@ class PurchaseReportsController extends Controller
             $data['filters']['filters']['supplier_id'] = $data['filters']['supplier_id'];
         }
 
-        $data['opening'] = SupplierCreditPaymentHistory::where('supplier_id',  $data['filters']['filters']['supplier_id'])
-            ->where('payment_date','<',  $data['filters']['filters']['between.return_date'][0])
-//            ->where(function($query) {
-//                $query->where('paymentmethod_id', '!=', 8)
-//                      ->orWhere('payment_info->status', 'Approved');
-//            })
+        $data['opening'] = SupplierCreditPaymentHistory::query()
+            ->where('supplier_id', $data['filters']['filters']['supplier_id'])
+            ->where('payment_date', '<', $data['filters']['filters']['between.return_date'][0])
+            ->get()
+            ->filter(function($item){
+                if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Pending') {
+                    return false;
+                }
+                return true;
+            })
             ->sum('amount');
 
-        $data['histories'] = SupplierCreditPaymentHistory::where('supplier_id', $data['filters']['filters']['supplier_id'])
-            ->whereBetween('payment_date',  $data['filters']['filters']['between.return_date'])
-//            ->where(function($query) {
-//                $query->where('paymentmethod_id', '!=', 8)
-//                      ->orWhere('payment_info->status', 'Approved');
-//            })
-            ->get();
-
+        $data['histories'] = SupplierCreditPaymentHistory::query()
+            ->where('supplier_id', $data['filters']['filters']['supplier_id'])
+            ->whereBetween('payment_date', $data['filters']['filters']['between.return_date'])
+            ->get()->filter(function($item){
+                if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Pending') {
+                    return false;
+                }
+                return true;
+            });
 
         return view('reports.purchases.supplier.balance_sheet', $data);
 

@@ -19,7 +19,11 @@ class SupplierPaymentDatatable extends ExportDataTableComponent
 
     public function builder(): Builder
     {
-        return SupplierCreditPaymentHistory::query()->select('*')->with(['user', 'paymentmethod', 'purchase', 'supplier'])->filterdata($this->filters)->orderBy('id', 'DESC');
+        return SupplierCreditPaymentHistory::query()->select('*')
+            ->with(['user', 'paymentmethod', 'purchase', 'supplier'])
+            ->filterdata($this->filters)
+
+            ->orderBy('id', 'DESC');
     }
 
 
@@ -54,9 +58,6 @@ class SupplierPaymentDatatable extends ExportDataTableComponent
                 ->sortable(),
             Column::make("Amount", "amount")
                 ->format(fn($value, $row, Column $column) =>money($row->amount))
-                ->footer(function($rows){
-                    return money($rows->sum('amount'));
-                })
                 ->sortable(),
             Column::make("Payment date", "payment_date")
                 ->format(fn($value, $row, Column $column) => eng_str_date($value))
