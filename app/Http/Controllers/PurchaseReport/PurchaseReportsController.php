@@ -254,9 +254,21 @@ class PurchaseReportsController extends Controller
             $data['filters']['filters']['supplier_id'] = $data['filters']['supplier_id'];
         }
 
-        $data['opening'] = SupplierCreditPaymentHistory::where('supplier_id',  $data['filters']['filters']['supplier_id'])->where('payment_date','<',  $data['filters']['filters']['between.return_date'][0])->sum('amount');
+        $data['opening'] = SupplierCreditPaymentHistory::where('supplier_id',  $data['filters']['filters']['supplier_id'])
+            ->where('payment_date','<',  $data['filters']['filters']['between.return_date'][0])
+            ->where(function($query) {
+                $query->where('paymentmethod_id', '!=', 8)
+                      ->orWhere('payment_info->status', 'Approved');
+            })
+            ->sum('amount');
 
-        $data['histories'] = SupplierCreditPaymentHistory::where('supplier_id', $data['filters']['filters']['supplier_id'])->whereBetween('payment_date',  $data['filters']['filters']['between.return_date'])->get();
+        $data['histories'] = SupplierCreditPaymentHistory::where('supplier_id', $data['filters']['filters']['supplier_id'])
+            ->whereBetween('payment_date',  $data['filters']['filters']['between.return_date'])
+            ->where(function($query) {
+                $query->where('paymentmethod_id', '!=', 8)
+                      ->orWhere('payment_info->status', 'Approved');
+            })
+            ->get();
 
 
         return view('reports.purchases.supplier.balance_sheet', $data);

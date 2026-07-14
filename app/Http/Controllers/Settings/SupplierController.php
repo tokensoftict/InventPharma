@@ -26,7 +26,7 @@ class SupplierController extends Controller
             'title' => 'Supplier Details: ' . $supplier->name,
             'subtitle' => 'View payments, credit history, and manage cheque approvals'
         ];
-        return setPageContent('settings.supplier.show', $data);
+        return view('settings.supplier.show', $data);
     }
 
 
