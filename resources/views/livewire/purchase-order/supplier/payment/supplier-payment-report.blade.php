@@ -160,6 +160,7 @@
                                                     <td class="fw-bold">{{ mysql_str_date($lastSupplyDate) }}</td>
                                                     <td class="fw-bold">{{ $row->supplier->lastDeptSupplied() }}</td>
                                                     <td class="fw-bold">{{ money($amountToPay) }}</td>
+                                                    <td class="fw-bold">{{ money($row->supplier->credit_balance) }}</td>
 
                                                     <td><span class="text-wrap"
                                                             style="max-width: 150px; display: inline-block;">{{ $row->remark ?? 'N/A' }}</span>
