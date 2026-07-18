@@ -1,17 +1,15 @@
 <div x-data="invoice()" x-init="getInputFromBarcode()">
     <section id="fullscreen">
-        <div class="container flex">
+        <div class="container">
             <div class="left">
                 <div class="main_image">
-                    <center>
-                        <img src="{{ asset($this->product->image_path) }}" onclick="enterFullScreen(document.documentElement)" style="width: 60%; margin: 0px auto" class="slide">
-                    </center>
+                    <img src="{{ asset($this->product->image_path) }}" onclick="enterFullScreen(document.documentElement)" class="slide" alt="{{ $this->product->name }}">
                 </div>
                 @if(isset($this->product->classification))
-                    <div class="option flex">
+                    <div class="option">
                         @foreach($this->product?->classification->stocks()->where('retail_price', '>', 0)->whereNotNull('image_path')->limit(6)->get() as $stock)
-                            <a href="#" wire:click="getProductByID({{ $stock->id }})">
-                                <img src="{{ asset($stock->image_path) }}" onclick="{{ asset($stock->image_path) }}">
+                            <a href="#" wire:click.prevent="getProductByID({{ $stock->id }})">
+                                <img src="{{ asset($stock->image_path) }}" onclick="img('{{ asset($stock->image_path) }}')" alt="thumbnail">
                             </a>
                         @endforeach
                     </div>
@@ -19,16 +17,22 @@
             </div>
             <div class="right">
                 <h3>{{ $this->product->name }}</h3>
-                <h4 id="price"> <small>&#8358;</small> {{ money($this->product->retail_price) }} </h4>
-                <h4 id="quantity" style="margin-top: 10px"> Available Quantity : {{ $this->product->getRetailQuantity() }} </h4>
-                <p>
-                    @if(!empty($this->product->description))
-                    {{ $this->product->description }}
-                    @else
-
-                    @endif
-                </p>
-
+                
+                <div class="price-container">
+                    <h4 id="price"><small>&#8358;</small>{{ money($this->product->retail_price) }}</h4>
+                </div>
+                
+                <div class="quantity-badge">
+                    <span>Available Quantity : {{ $this->product->getRetailQuantity() }}</span>
+                </div>
+                
+                @if(!empty($this->product->description))
+                <div class="description-box">
+                    <p class="description">
+                        {{ $this->product->description }}
+                    </p>
+                </div>
+                @endif
             </div>
         </div>
     </section>
