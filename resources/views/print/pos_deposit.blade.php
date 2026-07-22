@@ -73,6 +73,9 @@
         </tr>
         <td valign="top" width="35%">
             <img style="max-height:100px;float: right;" src="{{ public_path("img/". $store->logo) }}" alt='Logo'>
+            @if(!empty($store->rc_number))
+                <div style="font-size: 8px; font-weight: normal; clear: right; float: right; margin-top: 5px;">RC: {{ $store->rc_number }}</div>
+            @endif
         </td>
     </table>
 

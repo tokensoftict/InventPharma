@@ -26,6 +26,12 @@
                 </div>
 
                 <div class="mb-3">
+                    <label>RC Number</label>
+                    <input type="text" wire:model="store.rc_number"  class="form-control" name="rc_number" placeholder="RC Number"/>
+                    @error('store.rc_number') <span class="text-danger">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="mb-3">
                     <label>VAT</label>
                     <input  type="text"   wire:model="store.tax"  class="form-control" name="tax" placeholder="VAT"/>
                     @error('store.tax') <span class="text-danger">{{ $message }}</span> @enderror

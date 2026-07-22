@@ -74,6 +74,13 @@
             <td valign="top" width="35%">
                 @if($store->logo != "1659902910.png")
                     <img style="max-height:100px;float: right;margin-top: -10px" src="{{ public_path("logo/". $store->logo) }}" alt='Logo'>
+                    @if(!empty($store->rc_number))
+                        <div style="font-size: 8px; font-weight: normal; clear: right; float: right; margin-top: 5px;">RC: {{ $store->rc_number }}</div>
+                    @endif
+                @else
+                    @if(!empty($store->rc_number))
+                        <div style="font-size: 8px; font-weight: normal; float: right; margin-top: 5px;">RC: {{ $store->rc_number }}</div>
+                    @endif
                 @endif
                 @if($invoice->status_id === status('Complete'))
                     <table class="inv_info"  style="margin-top: 0px;">

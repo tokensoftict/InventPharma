@@ -28,6 +28,12 @@ class StoresettingsComponent extends Component
     {
         //$this->settings->all()
         $this->store = $this->settings->all();
+        if(!isset($this->store['rc_number'])) {
+            $this->store['rc_number'] = '';
+        }
+        if(!isset($this->store['point_rate_retail'])) {
+            $this->store['point_rate_retail'] = 0;
+        }
 
 
        /*

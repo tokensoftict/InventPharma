@@ -51,6 +51,13 @@
 <body>
 @if($store->logo != "1659902910.png")
 <h3 id="logo" class="text-center"><br><img style="max-height:30px;" src="{{ public_path("logo/". $store->logo) }}" alt='Logo'></h3>
+@if(!empty($store->rc_number))
+<div class="text-center" style="font-size: 8px; font-weight: normal; margin-top: -10px; margin-bottom: 5px;">RC: {{ $store->rc_number }}</div>
+@endif
+@else
+@if(!empty($store->rc_number))
+<div class="text-center" style="font-size: 8px; font-weight: normal; margin-top: 5px; margin-bottom: 5px;">RC: {{ $store->rc_number }}</div>
+@endif
 @endif
 <div id="printbox">
     <h2 style="margin:-2px;padding: 0px" class="text-center">{{ $store->name}}</h2>

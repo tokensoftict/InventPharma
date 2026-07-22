@@ -31,6 +31,7 @@ class Settings extends Valuestore
         'store.contact_number'=>'required',
         'store.point_rate' => 'required|numeric|min:0',
         'store.point_rate_retail' => 'required|numeric|min:0',
+        'store.rc_number' => 'nullable|string|max:100',
     ];
 
     public static $pagination = 10;
