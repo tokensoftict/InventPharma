@@ -262,6 +262,11 @@ class PurchaseReportsController extends Controller
                 if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Pending') {
                     return false;
                 }
+
+                if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Declined') {
+                    return false;
+                }
+
                 return true;
             })
             ->sum('amount');
@@ -273,6 +278,11 @@ class PurchaseReportsController extends Controller
                 if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Pending') {
                     return false;
                 }
+
+                if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Declined') {
+                    return false;
+                }
+
                 return true;
             });
 
