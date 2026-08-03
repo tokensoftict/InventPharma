@@ -60,6 +60,15 @@ class Supplier extends Model
             if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Pending') {
                 return false;
             }
+
+            if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Declined') {
+                return false;
+            }
+
+            if($item->paymentmethod_id === 8 && isset($item->payment_info['going_out_date']) && (new Carbon($item->payment_info['going_out_date']) > now()->format("Y-m-d"))) {
+                return false;
+            }
+
             return true;
         })->sum('amount');
     }
