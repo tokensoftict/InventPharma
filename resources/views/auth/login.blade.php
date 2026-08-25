@@ -92,7 +92,7 @@
                                         <div style="margin-top:10px;">
                                         <center><a href="{{ route('waiting-list') }}">Customer Waiting List</a></center>
                                         <center><a href="{{ route('scan') }}">Scan to View Price Retail</a></center>
-                                        <center class="mt-2"><a href="{{ asset('downloads/InventoryPrintAgent.zip') }}" class="btn btn-sm btn-outline-info"><i class="mdi mdi-download me-1"></i>Download Print Agent (Windows)</a></center>
+                                        <center class="mt-2"><a href="{{ asset('downloads/InventoryPrintAgentfull.zip') }}" class="btn btn-sm btn-outline-info"><i class="mdi mdi-download me-1"></i>Download Print Agent (Windows)</a></center>
                                         </div>
                                     </div>
                                 </form>
