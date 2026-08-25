@@ -19,7 +19,7 @@ var (
 	procStartPagePrinter = winspool.NewProc("StartPagePrinter")
 	procEndPagePrinter = winspool.NewProc("EndPagePrinter")
 	procWritePrinter  = winspool.NewProc("WritePrinter")
-	procGetDefaultPrinterW = syscall.NewLazyDLL("kernel32.dll").NewProc("GetDefaultPrinterW")
+	procGetDefaultPrinterW = winspool.NewProc("GetDefaultPrinterW")
 )
 
 const (
@@ -114,13 +114,10 @@ func EnumPrinters() ([]PrinterInfo, error) {
 
 // getDefaultPrinter returns the system default printer name.
 func getDefaultPrinter() string {
-	kernel32 := syscall.NewLazyDLL("kernel32.dll")
-	getDefault := kernel32.NewProc("GetDefaultPrinterW")
-
 	var size uint32 = 256
 	buf := make([]uint16, size)
 
-	ret, _, _ := getDefault.Call(
+	ret, _, _ := procGetDefaultPrinterW.Call(
 		uintptr(unsafe.Pointer(&buf[0])),
 		uintptr(unsafe.Pointer(&size)),
 	)
