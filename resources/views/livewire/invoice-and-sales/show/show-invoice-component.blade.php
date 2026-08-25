@@ -138,7 +138,12 @@
                             @endcan
                             @can('printThermal', $this->invoice)
                                 <li>
-                                    <a href="{{ route('invoiceandsales.pos_print',$this->invoice->id) }}" class="dropdown-item print">Print Thermal</a>
+                                    <a href="{{ route('invoiceandsales.pos_print',$this->invoice->id) }}" class="dropdown-item print">Print Thermal (PDF)</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0);" class="dropdown-item" onclick="escposPrint('{{ route('invoiceandsales.escpos_print', $this->invoice->id) }}')">
+                                        <i class="mdi mdi-printer me-1"></i>Print Thermal (ESC/POS)
+                                    </a>
                                 </li>
                             @endcan
                             @can('printWaybill', $this->invoice)

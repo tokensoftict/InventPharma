@@ -332,6 +332,8 @@
 </script>
 
 
+@include('shared.escpos-print-modal')
+
 </body>
 
 </html>

@@ -22,7 +22,8 @@ class Settings extends Valuestore
     public static array $printType = [
         'waybill' => 'waybill',
         'thermal' => 'thermal',
-        'a4' => 'a4'
+        'a4' => 'a4',
+        'escpos' => 'escpos'
     ];
 
     public static  $validation = [

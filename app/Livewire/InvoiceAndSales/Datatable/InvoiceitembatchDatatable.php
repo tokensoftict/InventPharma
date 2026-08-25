@@ -85,7 +85,8 @@ class InvoiceitembatchDatatable extends ExportDataTableComponent
                         }
 
                         if (auth()->user()->can('printThermal', $row->invoice)) {
-                            $html .= '<li><a href="' . route('invoiceandsales.pos_print', $row->invoice_id) . '" class="dropdown-item print">Print Thermal</a></li>';
+                            $html .= '<li><a href="' . route('invoiceandsales.pos_print', $row->invoice_id) . '" class="dropdown-item print">Print Thermal (PDF)</a></li>';
+                            $html .= '<li><a href="javascript:void(0);" class="dropdown-item" onclick="escposPrint(\'' . route('invoiceandsales.escpos_print', $row->invoice_id) . '\')"><i class="mdi mdi-printer me-1"></i>Print Thermal (ESC/POS)</a></li>';
                         }
                         if (auth()->user()->can('printWaybill', $row->invoice)) {
                             $html .= '<li><a href="' . route('invoiceandsales.print_way_bill', $row->invoice_id) . '" class="dropdown-item print">Print Waybill</a></li>';

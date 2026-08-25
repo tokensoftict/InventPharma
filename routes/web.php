@@ -340,6 +340,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('editInvoiceDate', ['as' => 'editInvoiceDate', 'uses' => 'InvoiceController@editInvoiceDate', 'custom_label' => 'Edit Invoice Date']);
                 Route::get('deleted', ['as' => 'deleted', 'uses' => 'InvoiceController@deleted', 'visible' => true, 'custom_label' => 'Deleted Invoice']);
                 Route::get('{invoice}/pos_print', ['as' => 'pos_print', 'uses' => 'InvoiceController@print_pos', 'custom_label' => 'Print Thermal']);
+                Route::get('{invoice}/escpos_print', ['as' => 'escpos_print', 'uses' => '\App\Http\Controllers\Printing\EscPosPrintController@print', 'custom_label' => 'Print ESC/POS Thermal']);
                 Route::get('{invoice}/print_afour', ['as' => 'print_afour', 'uses' => 'InvoiceController@print_afour', 'custom_label' => 'Print A4 Invoice']);
                 Route::get('{invoice}/dispatchInvoice', ['as' => 'dispatchInvoice', 'uses' => 'InvoiceController@dispatchInvoice', 'custom_label' => 'Dispatch Invoice']);
                 Route::get('{invoice}/print_way_bill', ['as' => 'print_way_bill', 'uses' => 'InvoiceController@print_way_bill', 'custom_label' => 'Print WayBill']);
@@ -397,6 +398,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{invoice}/edit', ['as' => 'edit', 'uses' => 'RetailSalesController@edit']);
 
                 Route::get('{invoice}/pos_print', ['as' => 'pos_print', 'uses' => 'RetailSalesController@print_pos', 'custom_label' => 'Print Thermal']);
+                Route::get('{invoice}/escpos_print', ['as' => 'escpos_print', 'uses' => '\App\Http\Controllers\Printing\EscPosPrintController@print', 'custom_label' => 'Print ESC/POS Thermal']);
 
                 Route::get('{invoice}/view', ['as' => 'view', 'uses' => 'RetailSalesController@view']);
 

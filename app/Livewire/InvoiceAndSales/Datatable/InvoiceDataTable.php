@@ -167,7 +167,8 @@ class InvoiceDataTable extends ExportDataTableComponent
                             }
 
                             if (auth()->user()->can('printThermal', $row)) {
-                                $html .= '<li><a href="' . route('invoiceandsales.pos_print', $row->id) . '" class="dropdown-item print">Print Thermal</a></li>';
+                                $html .= '<li><a href="' . route('invoiceandsales.pos_print', $row->id) . '" class="dropdown-item print">Print Thermal (PDF)</a></li>';
+                                $html .= '<li><a href="javascript:void(0);" class="dropdown-item" onclick="escposPrint(\'' . route('invoiceandsales.escpos_print', $row->id) . '\')"><i class="mdi mdi-printer me-1"></i>Print Thermal (ESC/POS)</a></li>';
                             }
 
                             if (auth()->user()->can('printWaybill', $row)) {
