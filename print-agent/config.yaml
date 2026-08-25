@@ -1,0 +1,22 @@
+# InventoryPrintAgent Configuration
+# Copy this file to the same directory as the executable.
+
+# Listen address (127.0.0.1 = local only, recommended for security)
+host: "127.0.0.1"
+
+# Port to listen on
+port: 9100
+
+# Authentication token (optional, leave empty to disable auth)
+# Must match PRINT_AGENT_TOKEN in your Laravel .env file
+auth_token: ""
+
+# Default printer name (leave empty to require selection)
+default_printer: ""
+
+# Allowed CORS origins (use * for any, or specific URLs)
+allowed_origins:
+  - "*"
+
+# Windows Service name
+service_name: "InventoryPrintAgent"
