@@ -257,6 +257,57 @@ class EscPosBuilder
     }
 
     /**
+     * Print a bordered row with | separators between columns.
+     * $columns = [['text' => 'foo', 'width' => 10, 'align' => 'left'], ...]
+     * Renders: |foo       |  bar|...
+     */
+    public function borderedMultiColumnLine(array $columns): self
+    {
+        $line = '|';
+        foreach ($columns as $col) {
+            $text = $col['text'] ?? '';
+            $width = $col['width'] ?? 10;
+            $align = $col['align'] ?? 'left';
+
+            // Truncate if too long
+            if (mb_strlen($text) > $width) {
+                $text = mb_substr($text, 0, $width);
+            }
+
+            switch ($align) {
+                case 'right':
+                    $line .= str_pad($text, $width, ' ', STR_PAD_LEFT);
+                    break;
+                case 'center':
+                    $padTotal = $width - mb_strlen($text);
+                    $padLeft = (int) floor($padTotal / 2);
+                    $padRight = $padTotal - $padLeft;
+                    $line .= str_repeat(' ', $padLeft) . $text . str_repeat(' ', $padRight);
+                    break;
+                default: // left
+                    $line .= str_pad($text, $width);
+                    break;
+            }
+            $line .= '|';
+        }
+        return $this->textLine($line);
+    }
+
+    /**
+     * Print a horizontal border line for a bordered table.
+     * $colWidths = [3, 15, 4, 9, 9, 8]
+     * Renders: +---+---------------+----+---------+---------+--------+
+     */
+    public function horizontalBorderLine(array $colWidths): self
+    {
+        $line = '+';
+        foreach ($colWidths as $w) {
+            $line .= str_repeat('-', $w) . '+';
+        }
+        return $this->textLine($line);
+    }
+
+    /**
      * Cut paper - GS V
      * Mode: 0=full cut, 1=partial cut, 66=partial cut with feed
      */

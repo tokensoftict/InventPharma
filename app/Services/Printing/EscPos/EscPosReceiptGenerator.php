@@ -104,13 +104,15 @@ class EscPosReceiptGenerator
         $this->builder->dashedLine();
 
         // ---- PRODUCT TABLE HEADER ----
+        $cols = $this->getProductColumnWidths();
+        $this->builder->horizontalBorderLine($cols);
         $this->renderProductHeader();
-
-        $this->builder->dashedLine();
+        $this->builder->horizontalBorderLine($cols);
 
         // ---- PRODUCT ROWS ----
         foreach ($data->items as $item) {
             $this->renderProductRow($item);
+            $this->builder->horizontalBorderLine($cols);
         }
 
         // ---- TOTALS ----
@@ -423,7 +425,7 @@ class EscPosReceiptGenerator
     {
         $cols = $this->getProductColumnWidths();
         $this->builder->setBold(true);
-        $this->builder->multiColumnLine([
+        $this->builder->borderedMultiColumnLine([
             ['text' => '#', 'width' => $cols[0]],
             ['text' => 'Name', 'width' => $cols[1]],
             ['text' => 'Qty', 'width' => $cols[2], 'align' => 'center'],
@@ -440,29 +442,40 @@ class EscPosReceiptGenerator
     private function renderProductRow(array $item): void
     {
         $cols = $this->getProductColumnWidths();
+        $name = $item['name'];
 
-        $this->builder->multiColumnLine([
+        // Word-wrap the name into lines that fit the Name column width
+        $nameLines = $this->wrapText($name, $cols[1]);
+
+        // First line: full row with all columns
+        $this->builder->borderedMultiColumnLine([
             ['text' => (string) $item['number'], 'width' => $cols[0]],
-            ['text' => mb_substr($item['name'], 0, $cols[1]), 'width' => $cols[1]],
+            ['text' => $nameLines[0], 'width' => $cols[1]],
             ['text' => (string) $item['quantity'], 'width' => $cols[2], 'align' => 'center'],
             ['text' => $this->formatMoney($item['selling_price']), 'width' => $cols[3], 'align' => 'right'],
             ['text' => $this->formatMoney($item['discounted_price']), 'width' => $cols[4], 'align' => 'right'],
             ['text' => $this->formatMoney($item['line_total']), 'width' => $cols[5], 'align' => 'right'],
         ]);
 
-        // Product name overflow (if truncated, print full on next line)
-        if (mb_strlen($item['name']) > $cols[1]) {
-            $this->builder->setFont(1); // Small font
-            $this->builder->textLine('  ' . mb_substr($item['name'], $cols[1]));
-            $this->builder->setFont(0);
+        // Continuation lines for long product names (same normal font, inside borders)
+        for ($i = 1; $i < count($nameLines); $i++) {
+            $this->builder->borderedMultiColumnLine([
+                ['text' => '', 'width' => $cols[0]],
+                ['text' => $nameLines[$i], 'width' => $cols[1]],
+                ['text' => '', 'width' => $cols[2]],
+                ['text' => '', 'width' => $cols[3]],
+                ['text' => '', 'width' => $cols[4]],
+                ['text' => '', 'width' => $cols[5]],
+            ]);
         }
 
         // Product options
         if (!empty($item['options'])) {
             $optionText = $this->formatOptions($item['options']);
-            $this->builder->setFont(1); // Small font
-            $this->builder->textLine('  ' . $optionText);
-            $this->builder->setFont(0);
+            $this->builder->borderedMultiColumnLine([
+                ['text' => '', 'width' => $cols[0]],
+                ['text' => mb_substr($optionText, 0, $cols[1] + $cols[2] + $cols[3] + $cols[4] + $cols[5] + 4), 'width' => $cols[1] + $cols[2] + $cols[3] + $cols[4] + $cols[5] + 4],
+            ]);
         }
     }
 
@@ -505,17 +518,56 @@ class EscPosReceiptGenerator
     }
 
     /**
+     * Word-wrap text to fit within a given character width.
+     * Returns an array of lines.
+     */
+    private function wrapText(string $text, int $width): array
+    {
+        if (mb_strlen($text) <= $width) {
+            return [$text];
+        }
+
+        $lines = [];
+        $remaining = $text;
+
+        while (mb_strlen($remaining) > 0) {
+            if (mb_strlen($remaining) <= $width) {
+                $lines[] = $remaining;
+                break;
+            }
+
+            // Try to break at a space
+            $chunk = mb_substr($remaining, 0, $width);
+            $lastSpace = mb_strrpos($chunk, ' ');
+
+            if ($lastSpace !== false && $lastSpace > (int)($width * 0.3)) {
+                // Break at the last space
+                $lines[] = mb_substr($remaining, 0, $lastSpace);
+                $remaining = ltrim(mb_substr($remaining, $lastSpace));
+            } else {
+                // No good space, hard break
+                $lines[] = $chunk;
+                $remaining = mb_substr($remaining, $width);
+            }
+        }
+
+        return $lines;
+    }
+
+    /**
      * Get product column widths based on paper width.
      * Total must equal charsPerLine.
      */
     private function getProductColumnWidths(): array
     {
         if ($this->builder->getCharsPerLine() >= 48) {
-            // 80mm: #(3) Name(15) Qty(4) Rate(9) Dis(9) Total(8) = 48
-            return [3, 15, 4, 9, 9, 8];
+            // 80mm: 7 borders (|) + content = 48 chars
+            // #(2) Name(14) Qty(3) Rate(8) Dis(7) Total(7) = 41 + 7 = 48
+            return [2, 14, 3, 8, 7, 7];
         }
-        // 58mm: #(2) Name(10) Qty(3) Rate(6) Dis(5) Total(6) = 32
-        return [2, 10, 3, 6, 5, 6];
+        // 58mm: 7 borders (|) + content = 32 chars
+        // #(2) Name(8) Qty(3) Rate(5) Dis(4) Total(3) = 25 + 7 = 32
+        return [2, 8, 3, 5, 4, 3];
     }
 
     /**
