@@ -138,8 +138,14 @@
             await window.printAgent.print(escPosBytes);
 
             // Success
-            setModalStatus('Receipt printed successfully!', 'success');
+            setModalStatus('Receipt printed successfully! Page will reload...', 'success');
             showModalSection('print-success');
+
+            // Reload page after short delay so cashier cannot print twice
+            // Only users with reprint permission will be able to print again
+            setTimeout(function() {
+                window.location.reload();
+            }, 1500);
 
         } catch (e) {
             setModalStatus('Print failed: ' + e.message, 'danger');
