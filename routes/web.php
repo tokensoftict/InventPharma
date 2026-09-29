@@ -2,6 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 
+// ─── Activation Status Pages (public — no auth, no activation check) ──────────
+// These pages are shown when the app is locked/expired. They must be accessible
+// without authentication and without going through the activation middleware.
+Route::prefix('activation')->name('activation.')->group(function () {
+    Route::get('/expired',  'ActivationController@expired')->name('expired');
+    Route::get('/required', 'ActivationController@required')->name('required');
+    Route::get('/locked',   'ActivationController@locked')->name('locked');
+});
 
 Route::get('/', ['as' => 'index', 'uses' => 'Auth\LoginController@index']);
 Route::get('/auth', ['as' => 'login', 'uses' => 'Auth\LoginController@index']);
@@ -11,7 +19,10 @@ Route::get('/scan', ['as' => 'scan', 'uses' => 'ProductScannerController']);
 Route::get('/waiting-list', ['as' => 'waiting-list', 'uses' => 'WaitingListController']);
 
 
-Route::middleware(['auth'])->group(function () {
+// ─── Authenticated + Activated Routes ─────────────────────────────────────────
+// app.active verifies the signed activation file — NOT the database.
+// Expired / tampered / missing activations are redirected to the pages above.
+Route::middleware(['auth', 'app.active'])->group(function () {
     Route::match(['post', 'get'], '/profile', 'Auth\LoginController@profile')->name('profile');
     Route::get('/dashboard', 'DashboardController@index')->name('dashboard');
     Route::get('/reports', 'ReportsController@index')->name('reports');

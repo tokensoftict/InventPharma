@@ -53,6 +53,10 @@
 
         <div class="page-content">
             <div class="container-fluid">
+
+                {{-- Activation expiry warning — reads from verified signed activation, NOT the database --}}
+                @include('shared.activation-warning')
+
                 @if(View::hasSection('pageHeaderTitle1'))
                     @include('shared.pageheader_layout')
                     @if(View::hasSection('contentInvoice'))

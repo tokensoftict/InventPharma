@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureApplicationIsActive;
 use App\Http\Middleware\PermitTask;
+use App\Services\Activation\ApplicationActivationService;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -21,8 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             '/*',
         ]);
-        $middleware->alias(['permit.task' =>PermitTask::class]);
-
+        $middleware->alias([
+            'permit.task' => PermitTask::class,
+            'app.active'  => EnsureApplicationIsActive::class,
+        ]);
     })->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
