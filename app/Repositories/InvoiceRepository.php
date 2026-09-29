@@ -14,6 +14,7 @@ use App\Models\MultipleInvoiceScanReport;
 use App\Models\Onlineordertotal;
 use App\Models\Stock;
 use App\Models\WaitingCustomer;
+use App\Services\PurchaseLimitService;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -321,6 +322,18 @@ class InvoiceRepository
 
         if($results['status'] === false) return $results['errors'];
 
+        // Purchase limit validation (wholesale departments only, skip walk-in customer)
+        if (in_array($invoiceData['department'], ['wholesales', 'bulksales'])) {
+            $customerId = $invoiceData['customer_id'] ?? null;
+            if ($customerId && is_numeric($customerId) && (int)$customerId !== 1) {
+                $limitService = new PurchaseLimitService();
+                $limitCheck = $limitService->validateInvoiceItems((int)$customerId, $items);
+                if ($limitCheck['status'] === false) {
+                    return $limitCheck['errors'];
+                }
+            }
+        }
+
         $this->calculateInvoiceTotal($invoiceData, array_column($results['results'], 'item'));
 
         $invoice = Invoice::create($invoiceData);
@@ -457,6 +470,27 @@ class InvoiceRepository
             Stock::removeSaleableBatches($invoice, $reverseItemsBatches, array_unique($columns));
 
             return $results['errors'];
+        }
+
+        // Purchase limit validation on update (wholesale departments only, skip walk-in customer)
+        if (in_array($invoiceData['department'], ['wholesales', 'bulksales'])) {
+            $customerId = $invoice->customer_id;
+            if ($customerId && (int)$customerId !== 1) {
+                $limitService = new PurchaseLimitService();
+                $limitCheck = $limitService->validateInvoiceItems((int)$customerId, $items);
+                if ($limitCheck['status'] === false) {
+                    // Reverse the stock return before rejecting
+                    $invoice->invoiceitembatches()->lockForUpdate()->get()->map->only(['stockbatch_id', 'department', 'av_qty', 'quantity'])->each(function($item, $key)use (&$reverseItemsBatches, &$columns) {
+                        $reverseItemsBatches[] = [
+                            'id' => $item['stockbatch_id'],
+                            $item['department'] =>  $item['av_qty'] - $item['quantity'],
+                            'department' => $item['department']
+                        ];
+                    });
+                    Stock::removeSaleableBatches($invoice, $reverseItemsBatches, array_unique($columns));
+                    return $limitCheck['errors'];
+                }
+            }
         }
 
         $this->calculateInvoiceTotal($invoiceData, array_column($results['results'], 'item'));

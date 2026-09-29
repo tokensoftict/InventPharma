@@ -193,6 +193,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{id}/product_option_fields/toggle', ['as' => 'toggle_product_option_fields', 'uses' => 'ProductOptionController@toggle_product_option_fields', 'custom_label' => 'Toggle Product Option Fields']);
                 Route::get('{id}/product_option_fields/update', ['as' => 'update_product_option_fields', 'uses' => 'ProductOptionController@update_product_option_fields', 'custom_label' => 'Update Product Option Fields']);
             });
+
             Route::prefix('member-group')->as('member-group.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'MemberGroupController@index', 'visible' => true, 'custom_label' => 'Member Groups']);
                 Route::get('create', ['as' => 'create', 'uses' => 'MemberGroupController@create']);
@@ -215,6 +216,7 @@ Route::middleware(['auth'])->group(function () {
 //                Route::put('{id}', ['as' => 'update', 'uses' => 'CustomPriceController@update']);
 //            });
         });
+
         Route::prefix('CustomerManager')->namespace('CustomerManager')->group(function () {
             Route::prefix('customer')->as('customer.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'CustomerController@index', 'visible' => true, 'custom_label' => 'List Whole Customer']);
@@ -230,7 +232,14 @@ Route::middleware(['auth'])->group(function () {
                 Route::match(['get', 'post'], '/payment_report', ['as' => 'payment_report', 'uses' => 'CustomerController@payment_report', 'custom_label' => "Customer Payment Report"]);
                 Route::match(['get', 'post'], '/balance_sheet', ['as' => 'balance_sheet', 'uses' => 'CustomerController@balance_sheet', 'custom_label' => "Customer Balance Sheet"]);
             });
+
+            Route::prefix('limits')->as('purchaselimit.')->group(function () {
+                Route::get('', ['as' => 'index', 'uses' => 'PurchaseLimitController@index', 'visible' => true, 'custom_label' => 'Customer Purchase Limits']);
+                Route::get('customer/{customer}/usage', ['as' => 'customer.usage', 'uses' => 'PurchaseLimitController@customerUsage', 'custom_label' => 'Customer Purchase Usage']);
+            });
+
         });
+
         Route::prefix('expenses')->namespace('Expenses')->group(function () {
             Route::prefix('expenses')->as('expenses.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'ExpensesController@index', 'visible' => true]);
@@ -239,6 +248,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::delete('{id}', ['as' => 'destroy', 'uses' => 'ExpensesController@destroy']);
             });
         });
+
         Route::prefix('stock')->namespace('ProductManager')->group(function () {
             Route::prefix('product')->as('product.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'ProductController@index', 'visible' => true, 'custom_label' => 'List Stock']);
@@ -261,6 +271,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::match(['post', 'get'], 'stock_export', ['as' => 'export_stock', 'uses' => 'ProductController@export_stock', 'custom_label' => 'Export / Import Stocks', 'visible' => true]);
             });
         });
+
         Route::prefix('transfer')->namespace('StockTransfer')->group(function () {
             Route::prefix('transfer')->as('transfer.')->group(function () {
 
@@ -282,6 +293,7 @@ Route::middleware(['auth'])->group(function () {
 
             });
         });
+
         Route::prefix('purchase')->namespace('PurchaseOrder')->group(function () {
 
             Route::prefix('purchase')->as('purchase.')->group(function () {
@@ -325,6 +337,7 @@ Route::middleware(['auth'])->group(function () {
                 });
             });
         });
+
         Route::prefix('invoiceandsales')->namespace('InvoiceAndSales')->group(function () {
             Route::prefix('invoice')->as('invoiceandsales.')->group(function () {
                 Route::get('create', ['as' => 'create', 'uses' => 'InvoiceController@create', 'custom_label' => 'New Invoice', 'visible' => true]);
@@ -340,7 +353,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('editInvoiceDate', ['as' => 'editInvoiceDate', 'uses' => 'InvoiceController@editInvoiceDate', 'custom_label' => 'Edit Invoice Date']);
                 Route::get('deleted', ['as' => 'deleted', 'uses' => 'InvoiceController@deleted', 'visible' => true, 'custom_label' => 'Deleted Invoice']);
                 Route::get('{invoice}/pos_print', ['as' => 'pos_print', 'uses' => 'InvoiceController@print_pos', 'custom_label' => 'Print Thermal']);
-                Route::get('{invoice}/escpos_print', ['as' => 'escpos_print', 'uses' => '\App\Http\Controllers\Printing\EscPosPrintController@print', 'custom_label' => 'Print ESC/POS Thermal']);
+                Route::get('{invoice}/escpos_print', ['as' => 'escpos_print', 'uses' => 'InvoiceController@print', 'custom_label' => 'Print ESC/POS Thermal']);
                 Route::get('{invoice}/print_afour', ['as' => 'print_afour', 'uses' => 'InvoiceController@print_afour', 'custom_label' => 'Print A4 Invoice']);
                 Route::get('{invoice}/dispatchInvoice', ['as' => 'dispatchInvoice', 'uses' => 'InvoiceController@dispatchInvoice', 'custom_label' => 'Dispatch Invoice']);
                 Route::get('{invoice}/print_way_bill', ['as' => 'print_way_bill', 'uses' => 'InvoiceController@print_way_bill', 'custom_label' => 'Print WayBill']);
@@ -372,6 +385,7 @@ Route::middleware(['auth'])->group(function () {
 
             });
         });
+
         Route::prefix('promotion')->namespace('PromotionManager')->group(function () {
             Route::prefix('promo')->as('promo.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'PromotionManagerController@index', 'visible' => true, 'custom_label' => 'List Promotion (s)']);
@@ -386,6 +400,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::delete('{id}', ['as' => 'destroy', 'uses' => 'PromotionManagerController@destroy', 'custom_label' => 'Delete Promotion']);
             });
         });
+
         Route::prefix('retailsales')->namespace('RetailSales')->group(function () {
             Route::prefix('retail')->as('retailsales.')->group(function () {
 
@@ -398,15 +413,16 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('{invoice}/edit', ['as' => 'edit', 'uses' => 'RetailSalesController@edit']);
 
                 Route::get('{invoice}/pos_print', ['as' => 'pos_print', 'uses' => 'RetailSalesController@print_pos', 'custom_label' => 'Print Thermal']);
-                Route::get('{invoice}/escpos_print', ['as' => 'escpos_print', 'uses' => '\App\Http\Controllers\Printing\EscPosPrintController@print', 'custom_label' => 'Print ESC/POS Thermal']);
+
+                Route::get('{invoice}/escpos_print', ['as' => 'escpos_print', 'uses' => 'RetailSalesController@print', 'custom_label' => 'Print ESC/POS Thermal']);
 
                 Route::get('{invoice}/view', ['as' => 'view', 'uses' => 'RetailSalesController@view']);
-
 
                 Route::match(['get', 'post'], 'requestForDiscount', ['as' => 'requestForDiscount', 'uses' => 'RetailSalesController@requestForDiscount', 'custom_label' => 'Request For Discount']);
 
             });
         });
+
         Route::prefix('paymentmanager')->namespace('PaymentManager')->group(function () {
             Route::prefix('payment')->as('payment.')->group(function () {
                 Route::get('create', ['as' => 'create', 'uses' => 'PaymentController@create', 'custom_label' => 'Add Payment', 'visible' => true]);
@@ -424,6 +440,7 @@ Route::middleware(['auth'])->group(function () {
                 */
             });
         });
+
         Route::prefix('reports')->as('reports.')->group(function () {
 
             Route::prefix('purchasesReport')->as('purchase.')->namespace('PurchaseReport')->group(function () {
@@ -491,7 +508,6 @@ Route::middleware(['auth'])->group(function () {
 
             });
 
-
             Route::prefix('stockTransferReport')->as('stockTransferReport.')->namespace('StockTransferReport')->group(function () {
 
                 Route::match(['get', 'post'], 'by_date', ['as' => 'by_date', 'uses' => 'StockTransferReportController@index', 'custom_label' => 'Stock Transfer Report By Date']);
@@ -506,9 +522,6 @@ Route::middleware(['auth'])->group(function () {
 
             });
 
-
-
-
             Route::prefix('customerReport')->as('customerReport.')->namespace('CustomerReport')->group(function () {
 
                 Route::match(['get', 'post'], 'balance_sheet', ['as' => 'balance_sheet', 'uses' => 'CustomerReportController@balance_sheet', 'custom_label' => 'Customer Balance Sheet']);
@@ -520,7 +533,6 @@ Route::middleware(['auth'])->group(function () {
                 Route::match(['get', 'post'], 'customer_sales_report', ['as' => 'customer_sales_report', 'uses' => 'CustomerReportController@customer_sales_report', 'custom_label' => 'Customer Sales Report']);
 
             });
-
 
             Route::prefix('productReport')->as('productReport.')->namespace('ProductReport')->group(function () {
 
@@ -551,7 +563,6 @@ Route::middleware(['auth'])->group(function () {
 
             });
 
-
             Route::prefix('expensesReport')->as('expensesReport.')->namespace('ExpensesReport')->group(function () {
 
                 Route::match(['get', 'post'], 'by_date', ['as' => 'by_date', 'uses' => 'ExpensesReportController@by_date', 'custom_label' => 'Expenses Report By Date']);
@@ -565,8 +576,6 @@ Route::middleware(['auth'])->group(function () {
                 Route::match(['get', 'post'], 'by_user', ['as' => 'by_user', 'uses' => 'ExpensesReportController@by_user', 'custom_label' => 'Expenses Report By User']);
 
             });
-
-
 
             Route::prefix('staffPerformanceReport')->as('staffPerformanceReport.')->namespace('StaffPerformanceReport')->group(function () {
 
