@@ -19,7 +19,7 @@
 declare(strict_types=1);
 
 define('TOOL_VERSION',           '1.0.0');
-define('DEFAULT_PRODUCT',        'pharmacy_inventory');
+define('DEFAULT_PRODUCT',        'invent');
 define('DEFAULT_MONTHS',         12);
 define('PRIVATE_KEY_FILE',       __DIR__ . '/keys/license_private.key');
 define('PUBLIC_KEY_FILE',        __DIR__ . '/keys/license_public.pem');
@@ -118,7 +118,7 @@ function printHelp(): void {
     echo "  --installation-id=PHARM-XXXX Generate activation for installation\n";
     echo "  --duration=12                Duration in months (default 12)\n";
     echo "  --customer=\"Name\"             Optional customer reference\n";
-    echo "  --product=pharmacy_inventory Product identifier\n";
+    echo "  --product=invent Product identifier\n";
     echo "  --renew=/path/activation.dat Renew existing activation\n";
     echo "  --output=/path/out.dat       Output file path\n\n";
     echo "PRIVATE KEY: keys/license_private.key — NEVER share or deploy to customer\n";

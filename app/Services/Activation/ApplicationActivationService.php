@@ -31,7 +31,7 @@ class ApplicationActivationService
     private const PUBLIC_KEY_PATH = 'keys/license_public.pem';
     private const INSTALL_ID_PATH = 'private/installation.id';
 
-    private const EXPECTED_PRODUCT = 'pharmacy_inventory';
+    private const EXPECTED_PRODUCT = 'invent';
     private const CACHE_KEY        = 'app_activation_result';
     private const CACHE_TTL        = 300; // 5 minutes
 

@@ -42,12 +42,12 @@
         <div class="activation-icon">
             <i class="mdi mdi-shield-alert-outline"></i>
         </div>
-        <h1 class="activation-title">Application Not Activated</h1>
+        <h1 class="activation-title">Invent Not Activated</h1>
         <p class="activation-subtitle">
-            This installation of the pharmacy inventory application has not been activated.
+            <b>Invent</b> has not been activated.
         </p>
         <p class="activation-subtitle">
-            Please contact your software provider to activate this application.
+            Please call <a href="tel:08130610626">08130610626</a> or email <a href="mailto:info@tokensoft.com.ng">info@tokensoft.com.ng</a> to activate this application.
         </p>
         <div class="contact-note">
             <i class="mdi mdi-phone-outline me-1"></i>

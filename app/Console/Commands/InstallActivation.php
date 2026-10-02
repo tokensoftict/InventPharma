@@ -26,8 +26,12 @@ class InstallActivation extends Command
     {
         $path = $this->argument('path');
 
+        if($path == "storage") {
+            $path = storage_path('activation.dat');
+        }
+
         $this->info('');
-        $this->line('  PS General Drug Centre — Activation Installer');
+        $this->line('  Invent — Activation Installer');
         $this->line('  ─────────────────────────────────────────────');
         $this->info('');
 
