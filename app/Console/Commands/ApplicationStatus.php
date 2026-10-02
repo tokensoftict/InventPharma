@@ -32,7 +32,7 @@ class ApplicationStatus extends Command
         $this->line('  ─────────────────────────────');
         $this->info('');
 
-        $product      = $payload['product'] ?? 'Pharmacy Inventory';
+        $product      = $payload['product'] ?? 'invent';
         $installId    = $this->activationService->installationId();
         $activationId = $payload['activation_id'] ?? 'N/A';
 
