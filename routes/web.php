@@ -23,8 +23,8 @@ Route::get('/waiting-list', ['as' => 'waiting-list', 'uses' => 'WaitingListContr
 // app.active verifies the signed activation file — NOT the database.
 // Expired / tampered / missing activations are redirected to the pages above.
 
-//'app.active'
-Route::middleware(['auth'])->group(function () {
+//''
+Route::middleware(['auth', 'app.active'])->group(function () {
     Route::match(['post', 'get'], '/profile', 'Auth\LoginController@profile')->name('profile');
     Route::get('/dashboard', 'DashboardController@index')->name('dashboard');
     Route::get('/reports', 'ReportsController@index')->name('reports');
@@ -214,6 +214,17 @@ Route::middleware(['auth'])->group(function () {
                 Route::put('{id}', ['as' => 'update', 'uses' => 'MemberGroupController@update']);
             });
 
+            Route::prefix('customer_group')->as('customer_group.')->group(function () {
+                Route::get('', ['as' => 'index', 'uses' => 'CustomerGroupController@index', 'visible' => true, 'custom_label' => 'Customer Groups']);
+                Route::get('list', ['as' => 'list', 'uses' => 'CustomerGroupController@listAll']);
+                Route::get('create', ['as' => 'create', 'uses' => 'CustomerGroupController@create']);
+                Route::post('', ['as' => 'store', 'uses' => 'CustomerGroupController@store']);
+                Route::get('{id}', ['as' => 'show', 'uses' => 'CustomerGroupController@show']);
+                Route::get('{id}/edit', ['as' => 'edit', 'uses' => 'CustomerGroupController@edit']);
+                Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'CustomerGroupController@toggle']);
+                Route::put('{id}', ['as' => 'update', 'uses' => 'CustomerGroupController@update']);
+                Route::delete('{id}', ['as' => 'destroy', 'uses' => 'CustomerGroupController@destroy']);
+            });
 
             //            Route::prefix('prescribers')->as('prescribers.')->group(function () {
 //                Route::get('', ['as' => 'index', 'uses' => 'PrescriberController@index', 'visible' => true, 'custom_label'=>'Prescribers']);
