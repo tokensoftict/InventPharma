@@ -22,7 +22,9 @@ Route::get('/waiting-list', ['as' => 'waiting-list', 'uses' => 'WaitingListContr
 // ─── Authenticated + Activated Routes ─────────────────────────────────────────
 // app.active verifies the signed activation file — NOT the database.
 // Expired / tampered / missing activations are redirected to the pages above.
-Route::middleware(['auth', 'app.active'])->group(function () {
+
+//'app.active'
+Route::middleware(['auth'])->group(function () {
     Route::match(['post', 'get'], '/profile', 'Auth\LoginController@profile')->name('profile');
     Route::get('/dashboard', 'DashboardController@index')->name('dashboard');
     Route::get('/reports', 'ReportsController@index')->name('reports');
