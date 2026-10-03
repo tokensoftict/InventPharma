@@ -15,4 +15,21 @@ class CustomerGroupController extends Controller
     public function listAll(){
         // Handled by Livewire
     }
+
+    public function create(){}
+
+    public function show(){}
+
+    public function store(){}
+
+    public function edit(){}
+
+    public function toggle($id){}
+
+    public function update(Request $request, $id){}
+
+    public function destroy($id){}
+
+
+
 }
