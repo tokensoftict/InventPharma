@@ -216,11 +216,11 @@ Route::middleware(['auth', 'app.active'])->group(function () {
 
             Route::prefix('customer_group')->as('customer_group.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'CustomerGroupController@index', 'visible' => true, 'custom_label' => 'Customer Type']);
-                Route::get('list', ['as' => 'list', 'uses' => 'CustomerGroupController@listAll']);
-                Route::get('create', ['as' => 'create', 'uses' => 'CustomerGroupController@create']);
-                Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'CustomerGroupController@toggle']);
-                Route::put('{id}', ['as' => 'update', 'uses' => 'CustomerGroupController@update']);
-                Route::delete('{id}', ['as' => 'destroy', 'uses' => 'CustomerGroupController@destroy']);
+                Route::get('list', ['as' => 'list', 'uses' => 'CustomerGroupController@listAll', 'custom_label' => 'List Customer Type']);
+                Route::get('create', ['as' => 'create', 'uses' => 'CustomerGroupController@create', 'custom_label' => 'Create Customer Type']);
+                Route::get('{id}/toggle', ['as' => 'toggle', 'uses' => 'CustomerGroupController@toggle', 'custom_label' => 'Toggle Customer Type']);
+                Route::put('{id}', ['as' => 'update', 'uses' => 'CustomerGroupController@update',  'custom_label' => 'Update Customer Type']);
+                Route::delete('{id}', ['as' => 'destroy', 'uses' => 'CustomerGroupController@destroy' , 'custom_label' => 'Delete Customer Type']);
             });
 
             //            Route::prefix('prescribers')->as('prescribers.')->group(function () {
