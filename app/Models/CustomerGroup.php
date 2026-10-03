@@ -47,7 +47,7 @@ class CustomerGroup extends Model
             'id'=> $this->id,
             'name'=> $this->name,
             'status'=> $this->status,
-            'description'=> $this->description,
+            //'description'=> $this->description,
         ];
     }
 
