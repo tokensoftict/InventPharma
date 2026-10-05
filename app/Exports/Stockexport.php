@@ -35,6 +35,7 @@ class Stockexport implements FromArray, WithHeadings
             'Category',
             'Manufacturer',
             'Classification',
+            'Major Classification',
             'Group',
             'Retail Price',
             'Whole Sales Price',
