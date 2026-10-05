@@ -170,6 +170,11 @@ class Stockimports implements ToCollection, WithChunkReading,WithHeadingRow
                 $stock->reorder = (int)$row['reorder'];
             }
 
+
+            if(isset($row['major_classification']) && !empty($row['major_classification'])) {
+                $stock->store_type = $row['major_classification'];
+            }
+
             $stock->saveQuietly();
 
 //            if(isset($row['quantity'])) {
