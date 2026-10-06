@@ -19,6 +19,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+Route::get('test', function (Request $request) {
+    return "hello well come";
+});
 // Invoice validation routes (accessible via Cloudflare Tunnel / external clients)
 Route::post('/invoice/validate', [InvoiceValidationController::class, 'validateInvoice'])->name('api.invoice.validate');
 Route::post('/invoice/validate-purchase-limits', [InvoiceValidationController::class, 'validatePurchaseLimits'])->name('api.invoice.validate-purchase-limits');
