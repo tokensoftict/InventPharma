@@ -15,6 +15,7 @@ use App\Models\Onlineordertotal;
 use App\Models\Stock;
 use App\Models\WaitingCustomer;
 use App\Services\PurchaseLimitService;
+use App\Services\InvoiceValidationService;
 use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -162,109 +163,17 @@ class InvoiceRepository
 
     public function resolvePriceByQuantity(int $quantity, float $defaultSellingPrice, array $customPrices, Stock $stock, string $department): float
     {
-        foreach ($customPrices as $priceRule) {
-            $min = (int) $priceRule['min_qty'];
-            $max = (int) $priceRule['max_qty'];
-
-            if($department == 'retail') {
-                if ($quantity >= $min && $quantity < $max) {
-                    return (float) $priceRule['price'];
-                }
-            } else{
-                if (($quantity / $stock->carton) >= $min && ($quantity / $stock->carton) < $max) {
-                    return (float) $priceRule['price'];
-                }
-            }
-        }
-
-        return $defaultSellingPrice;
+        return (new InvoiceValidationService())->resolvePriceByQuantity($quantity, $defaultSellingPrice, $customPrices, $stock, $department);
     }
 
     public function getOptionsTotalAmount(array $selectedOptions): float
     {
-        $total = 0;
-
-        foreach ($selectedOptions as $option) {
-            $amount = isset($option['amount'])
-                ? (float) $option['amount']
-                : 0;
-
-            if (($option['sign'] ?? '+') === '-') {
-                $amount *= -1;
-            }
-
-            $total += $amount;
-        }
-
-        return $total;
+        return (new InvoiceValidationService())->getOptionsTotalAmount($selectedOptions);
     }
 
     public function validateInvoiceItems(array $items, string $from)
     {
-        $items = collect($items);
-
-        $stocks = [];
-
-        $errors = [];
-
-        $items->each(function($item, $key) use(&$stocks){
-            $stocks[$item['stock_id']]['item'] = $item;
-        });
-
-        $products = Stock::with(['activeBatches', 'stockquantityprices'])->whereIn('id', array_keys($stocks))->get();
-
-        $products->each(function($product, $key) use(&$stocks, &$errors, &$from) {
-            //$stocks[$product->id]['product'] = $product;
-            $batch = $product->pingSaleableBatches($from, $stocks[$product->id]['item']['quantity'],  $product->activeBatches);
-
-            $status = $product->pingIfQuantityHasNotExceededTheMinimumQuantity($from, $stocks[$product->id]['item']['quantity']);
-            if($status === true and $batch !== false) {
-                $errors[$product->id] = $product->name." has exceeded the minimum quantity of ".$product->minimum_quantity." set by the administrator";
-            }
-
-            $total_cost_batch = collect($batch)->sum('cost_price');
-
-            if($batch === false) {
-                $errors[$product->id] = "Not enough available quantity to process ".$product->name.", available quantity is ". $product->{$from};
-            } else {
-                if($from == "retail") {
-                    if($product->stockquantityprices->count() > 0) {
-                        $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
-                            quantity:$stocks[$product->id]['item']['quantity'],
-                            defaultSellingPrice:$product->{selling_price_column(4)},
-                            customPrices: $product->stockquantityprices()->where('department', $from)->get()->toArray(),
-                            stock: $product,
-                            department: $from,
-                        );
-                    } else {
-                        $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column(4)};
-                    }
-                } else {
-                    if($product->stockquantityprices->count() > 0) {
-                        $stocks[$product->id]['item']['selling_price'] = $this->resolvePriceByQuantity(
-                            quantity:$stocks[$product->id]['item']['quantity'],
-                            defaultSellingPrice:$product->{selling_price_column()},
-                            customPrices: $product->stockquantityprices()->whereIn('department', [$from, "wholesale"])->get()->toArray(),
-                            stock: $product,
-                            department: $from,
-                        );
-                    } else {
-                        $stocks[$product->id]['item']['selling_price'] = $product->{selling_price_column()};
-                    }
-                }
-
-                $stocks[$product->id]['item']['selling_price'] += $this->getOptionsTotalAmount($stocks[$product->id]['item']['selectedOptions'] ?? []);
-
-                $stocks[$product->id]['item']['cost_price'] = abs($total_cost_batch / count($batch));
-                $stocks[$product->id]['batches'] = $batch;
-            }
-
-        });
-
-        if(count($errors) > 0) return ['status'=> false , 'errors'=>$errors];
-
-        return ['status' => true, 'results'=> $stocks];
-
+        return (new InvoiceValidationService())->validateItems($items, $from);
     }
 
     public function calculateInvoiceTotal(array &$invoiceData, array $items)
@@ -318,21 +227,18 @@ class InvoiceRepository
 
         Arr::forget($invoiceData, ['invoiceitems']);
 
-        $results =  $this->validateInvoiceItems($items, $invoiceData['department']);
+        $validationService = new InvoiceValidationService();
+        $validation = $validationService->validateInvoice(
+            $items,
+            $invoiceData['department'],
+            $invoiceData['customer_id'] ?? null
+        );
 
-        if($results['status'] === false) return $results['errors'];
-
-        // Purchase limit validation (wholesale departments only, skip walk-in customer)
-        if (in_array($invoiceData['department'], ['wholesales', 'bulksales'])) {
-            $customerId = $invoiceData['customer_id'] ?? null;
-            if ($customerId && is_numeric($customerId) && (int)$customerId !== 1) {
-                $limitService = new PurchaseLimitService();
-                $limitCheck = $limitService->validateInvoiceItems((int)$customerId, $items);
-                if ($limitCheck['status'] === false) {
-                    return $limitCheck['errors'];
-                }
-            }
+        if ($validation['status'] === false) {
+            return $validation['errors'];
         }
+
+        $results = ['status' => true, 'results' => $validation['results']];
 
         $this->calculateInvoiceTotal($invoiceData, array_column($results['results'], 'item'));
 
@@ -452,7 +358,13 @@ class InvoiceRepository
 
         Stock::returnStocks($invoice, $invoiceItemsBatches, array_unique($columns));
 
-        $results =  $this->validateInvoiceItems($items, $invoiceData['department']);
+        $validationService = new InvoiceValidationService();
+        $validation = $validationService->validateInvoice(
+            $items,
+            $invoiceData['department'],
+            $invoice->customer_id
+        );
+        $results = ['status' => $validation['status'], 'results' => $validation['results'], 'errors' => $validation['errors']];
 
 
         if($results['status'] === false) {
@@ -472,26 +384,7 @@ class InvoiceRepository
             return $results['errors'];
         }
 
-        // Purchase limit validation on update (wholesale departments only, skip walk-in customer)
-        if (in_array($invoiceData['department'], ['wholesales', 'bulksales'])) {
-            $customerId = $invoice->customer_id;
-            if ($customerId && (int)$customerId !== 1) {
-                $limitService = new PurchaseLimitService();
-                $limitCheck = $limitService->validateInvoiceItems((int)$customerId, $items);
-                if ($limitCheck['status'] === false) {
-                    // Reverse the stock return before rejecting
-                    $invoice->invoiceitembatches()->lockForUpdate()->get()->map->only(['stockbatch_id', 'department', 'av_qty', 'quantity'])->each(function($item, $key)use (&$reverseItemsBatches, &$columns) {
-                        $reverseItemsBatches[] = [
-                            'id' => $item['stockbatch_id'],
-                            $item['department'] =>  $item['av_qty'] - $item['quantity'],
-                            'department' => $item['department']
-                        ];
-                    });
-                    Stock::removeSaleableBatches($invoice, $reverseItemsBatches, array_unique($columns));
-                    return $limitCheck['errors'];
-                }
-            }
-        }
+        // Purchase limit validation already handled by InvoiceValidationService above
 
         $this->calculateInvoiceTotal($invoiceData, array_column($results['results'], 'item'));
 

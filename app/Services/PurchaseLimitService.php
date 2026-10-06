@@ -18,13 +18,14 @@ class PurchaseLimitService
      */
     protected function getEligibleStatusIds(): array
     {
-        return [
+        return array_values(array_filter([
             status('Paid'),
             status('Complete'),
             status('Dispatched'),
             status('Packed-Waiting-For-Payment'),
             status('Packing'),
-        ];
+            status('Draft'),
+        ]));
     }
 
     /**
@@ -34,20 +35,23 @@ class PurchaseLimitService
     protected function getExcludedStatusIds(): array
     {
         return [
-            status('Draft'),
             status('Deleted'),
         ];
     }
 
     /**
-     * Get all currently active purchase limits that apply to a given product.
+     * Get all currently active purchase limits that apply to a given product for a department.
      *
      * @param int $stockId
+     * @param string $department
      * @return Collection|PurchaseLimit[]
      */
-    public function getActiveLimitsForProduct(int $stockId): Collection
+    public function getActiveLimitsForProduct(int $stockId, string $department = 'wholesales'): Collection
     {
+        $targetDept = in_array(strtolower(trim($department)), ['retail', 'retail_store']) ? 'retail' : 'wholesales';
+
         return PurchaseLimit::active()
+            ->where('department', $targetDept)
             ->whereHas('stocks', function ($query) use ($stockId) {
                 $query->where('stocks.id', $stockId);
             })
@@ -58,15 +62,17 @@ class PurchaseLimitService
      * Calculate the total quantity a customer has purchased of a specific product
      * within the given rolling period window.
      *
-     * Only counts eligible (completed) invoices in wholesale departments.
+     * Retail limits only count retail invoices ('retail', 'retail_store').
+     * Wholesale limits only count wholesale invoices ('wholesales', 'bulksales').
      *
      * @param int $customerId
      * @param int $stockId
      * @param int $periodDays
      * @param Carbon|null $startDate Optional rule start date to clamp the window
+     * @param string $ruleDepartment Target limit department ('retail' or 'wholesales')
      * @return int Total purchased quantity in pieces
      */
-    public function getCustomerPurchasedQuantity(int $customerId, int $stockId, int $periodDays, ?Carbon $startDate = null): int
+    public function getCustomerPurchasedQuantity(int $customerId, int $stockId, int $periodDays, ?Carbon $startDate = null, string $ruleDepartment = 'wholesales'): int
     {
         $periodStart = Carbon::today()->subDays($periodDays);
 
@@ -76,11 +82,16 @@ class PurchaseLimitService
             $periodStart = $startDate;
         }
 
+        $ruleDept = in_array(strtolower(trim($ruleDepartment)), ['retail', 'retail_store']) ? 'retail' : 'wholesales';
+        $invoiceDepartments = $ruleDept === 'retail'
+            ? ['retail', 'retail_store']
+            : ['wholesales', 'bulksales'];
+
         return Invoiceitem::where('invoiceitems.stock_id', $stockId)
             ->where('invoiceitems.customer_id', $customerId)
-            ->whereHas('invoice', function ($query) use ($periodStart) {
+            ->whereHas('invoice', function ($query) use ($periodStart, $invoiceDepartments) {
                 $query->whereIn('status_id', $this->getEligibleStatusIds())
-                    ->whereIn('department', ['wholesales', 'bulksales'])
+                    ->whereIn('department', $invoiceDepartments)
                     ->where('invoice_date', '>=', $periodStart);
             })
             ->sum('quantity');
@@ -100,32 +111,40 @@ class PurchaseLimitService
             $customerId,
             $stockId,
             $limit->getPeriodInDays(),
-            $limit->start_date
+            $limit->start_date,
+            $limit->department ?? 'wholesales'
         );
 
         return $limit->max_quantity - $purchased;
     }
 
     /**
-     * Validate invoice items against all applicable purchase limits.
+     * Validate invoice items against all applicable purchase limits for the specified department.
      *
-     * This is the main validation entry point called from InvoiceRepository.
+     * Limits created for 'retail' apply only to retail invoices.
+     * Limits created for 'wholesales' apply only to wholesale and bulksale invoices.
+     *
      * Uses SELECT ... FOR UPDATE to prevent concurrent bypass.
      *
      * @param int $customerId
      * @param array $items Array of invoice items, each with 'stock_id' and 'quantity'
+     * @param string $invoiceDepartment The invoice department ('retail', 'retail_store', 'wholesales', 'bulksales')
      * @return array ['status' => true] or ['status' => false, 'errors' => [...]]
      */
-    public function validateInvoiceItems(int $customerId, array $items): array
+    public function validateInvoiceItems(int $customerId, array $items, string $invoiceDepartment = 'wholesales'): array
     {
         $errors = [];
 
         // Collect all stock IDs from the current invoice
         $stockIds = array_unique(array_column($items, 'stock_id'));
 
-        // Find all active limits that cover any of these products
+        $invoiceDept = strtolower(trim($invoiceDepartment));
+        $targetLimitDepartment = in_array($invoiceDept, ['retail', 'retail_store']) ? 'retail' : 'wholesales';
+
+        // Find all active limits for this department that cover any of these products
         // Lock the purchase limits to prevent concurrent modifications
         $applicableLimits = PurchaseLimit::active()
+            ->where('department', $targetLimitDepartment)
             ->whereHas('stocks', function ($query) use ($stockIds) {
                 $query->whereIn('stocks.id', $stockIds);
             })
@@ -158,7 +177,8 @@ class PurchaseLimitService
                     $customerId,
                     $stockId,
                     $limit->getPeriodInDays(),
-                    $limit->start_date
+                    $limit->start_date,
+                    $limit->department ?? $targetLimitDepartment
                 );
 
                 $requestedQty = $requestedQuantities[$stockId];
@@ -166,12 +186,9 @@ class PurchaseLimitService
                 $remaining = $limit->max_quantity - $previousPurchases;
 
                 if ($totalAfterPurchase > $limit->max_quantity) {
-                    $errors[$stockId] = "Purchase Limit Exceeded\n"
-                        . "Product: {$stock->name}\n"
-                        . "Maximum: {$limit->max_quantity} (per {$limit->period_value} {$limit->period_unit})\n"
-                        . "Already purchased: {$previousPurchases}\n"
-                        . "Requested: {$requestedQty}\n"
-                        . "Remaining allowance: " . max(0, $remaining);
+                    $allowed = max(0, $remaining);
+                    $periodUnit = ($limit->period_value == 1) ? rtrim($limit->period_unit, 's') : $limit->period_unit;
+                    $errors[$stockId] = "Purchase Limit Exceeded: You can purchase a maximum of {$limit->max_quantity} {$stock->name} every {$limit->period_value} {$periodUnit}. You requested {$requestedQty}, but only {$allowed} is currently allowed.";
                 }
             }
         }
@@ -189,11 +206,17 @@ class PurchaseLimitService
      * Used by the Customer Usage Visibility view (Phase 7).
      *
      * @param int $customerId
+     * @param string|null $department Optional filter by department ('retail' or 'wholesales')
      * @return Collection Each item: ['product' => Stock, 'limit' => PurchaseLimit, 'used' => int, 'remaining' => int]
      */
-    public function getCustomerUsageSummary(int $customerId): Collection
+    public function getCustomerUsageSummary(int $customerId, ?string $department = null): Collection
     {
-        $activeLimits = PurchaseLimit::active()->with('stocks')->get();
+        $targetDept = $department ? (in_array(strtolower(trim($department)), ['retail', 'retail_store']) ? 'retail' : 'wholesales') : null;
+
+        $activeLimits = PurchaseLimit::active()
+            ->when($targetDept, fn($q) => $q->where('department', $targetDept))
+            ->with('stocks')
+            ->get();
 
         $usage = collect();
 
@@ -203,7 +226,8 @@ class PurchaseLimitService
                     $customerId,
                     $stock->id,
                     $limit->getPeriodInDays(),
-                    $limit->start_date
+                    $limit->start_date,
+                    $limit->department ?? 'wholesales'
                 );
 
                 $remaining = max(0, $limit->max_quantity - $purchased);
@@ -212,6 +236,7 @@ class PurchaseLimitService
                     'product_name' => $stock->name,
                     'stock_id' => $stock->id,
                     'limit_name' => $limit->name ?? 'Unnamed',
+                    'department' => $limit->department ?? 'wholesales',
                     'max_quantity' => $limit->max_quantity,
                     'period_label' => $limit->period_value . ' ' . $limit->period_unit,
                     'used' => $purchased,
@@ -225,7 +250,8 @@ class PurchaseLimitService
 
     /**
      * Check for conflicting active rules: two active rules covering the same product
-     * with the same period should not be allowed.
+     * in the SAME department with overlapping period should not be allowed.
+     * Retail limits and Wholesale limits for the same product do NOT conflict.
      *
      * @param PurchaseLimit $limit The limit being created or updated
      * @param array $stockIds The product IDs being assigned
@@ -234,10 +260,12 @@ class PurchaseLimitService
     public function validateNoConflict(PurchaseLimit $limit, array $stockIds): array
     {
         $conflicts = [];
+        $ruleDept = in_array(strtolower(trim($limit->department ?? 'wholesales')), ['retail', 'retail_store']) ? 'retail' : 'wholesales';
 
-        // Find other active limits that share any of these products
+        // Find other active limits that share any of these products within the SAME department
         $overlapping = PurchaseLimit::active()
             ->where('id', '!=', $limit->id ?? 0)
+            ->where('department', $ruleDept)
             ->whereHas('stocks', function ($query) use ($stockIds) {
                 $query->whereIn('stocks.id', $stockIds);
             })
@@ -248,7 +276,8 @@ class PurchaseLimitService
             $sharedProducts = $existingLimit->stocks->whereIn('id', $stockIds);
 
             foreach ($sharedProducts as $product) {
-                $conflicts[] = "Product \"{$product->name}\" already has an active limit: "
+                $deptLabel = ucfirst($existingLimit->department ?? $ruleDept);
+                $conflicts[] = "Product \"{$product->name}\" already has an active {$deptLabel} limit: "
                     . "\"{$existingLimit->name}\" ({$existingLimit->max_quantity} / {$existingLimit->period_value} {$existingLimit->period_unit})";
             }
         }

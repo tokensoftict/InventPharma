@@ -29,6 +29,7 @@ class PurchaseLimitComponent extends Component
 
     // Form fields
     public string $name = "";
+    public string $department = "wholesales";
     public string $max_quantity = "";
     public string $period_value = "";
     public string $period_unit = "days";
@@ -130,17 +131,20 @@ class PurchaseLimitComponent extends Component
     public function save()
     {
         $this->validate([
+            'department' => 'required|in:wholesales,retail',
             'max_quantity' => 'required|integer|min:1',
             'period_value' => 'required|integer|min:1',
             'period_unit' => 'required|in:days,weeks,months',
             'selectedProducts' => 'required|array|min:1',
         ], [
+            'department.required' => 'Please select the department for this purchase limit.',
             'selectedProducts.required' => 'Please select at least one product.',
             'selectedProducts.min' => 'Please select at least one product.',
         ]);
 
         $limit = new PurchaseLimit();
         $limit->name = $this->name ?: null;
+        $limit->department = $this->department;
         $limit->max_quantity = (int)$this->max_quantity;
         $limit->period_value = (int)$this->period_value;
         $limit->period_unit = $this->period_unit;
@@ -193,6 +197,7 @@ class PurchaseLimitComponent extends Component
 
         $this->modelId = $limit->id;
         $this->name = $limit->name ?? "";
+        $this->department = $limit->department ?? "wholesales";
         $this->max_quantity = (string)$limit->max_quantity;
         $this->period_value = (string)$limit->period_value;
         $this->period_unit = $limit->period_unit;
@@ -213,11 +218,13 @@ class PurchaseLimitComponent extends Component
     public function update($id)
     {
         $this->validate([
+            'department' => 'required|in:wholesales,retail',
             'max_quantity' => 'required|integer|min:1',
             'period_value' => 'required|integer|min:1',
             'period_unit' => 'required|in:days,weeks,months',
             'selectedProducts' => 'required|array|min:1',
         ], [
+            'department.required' => 'Please select the department for this purchase limit.',
             'selectedProducts.required' => 'Please select at least one product.',
             'selectedProducts.min' => 'Please select at least one product.',
         ]);
@@ -228,6 +235,7 @@ class PurchaseLimitComponent extends Component
         }
 
         $limit->name = $this->name ?: null;
+        $limit->department = $this->department;
         $limit->max_quantity = (int)$this->max_quantity;
         $limit->period_value = (int)$this->period_value;
         $limit->period_unit = $this->period_unit;
@@ -315,6 +323,7 @@ class PurchaseLimitComponent extends Component
     {
         $this->modelId = null;
         $this->name = "";
+        $this->department = "wholesales";
         $this->max_quantity = "";
         $this->period_value = "";
         $this->period_unit = "days";

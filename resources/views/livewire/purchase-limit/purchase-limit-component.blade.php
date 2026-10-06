@@ -38,6 +38,7 @@
                         <tr>
                             <th>#</th>
                             <th>Name</th>
+                            <th>Department</th>
                             <th>Products</th>
                             <th>Max Quantity</th>
                             <th>Period</th>
@@ -53,6 +54,11 @@
                             <tr>
                                 <td>{{ $limits->firstItem() + $index }}</td>
                                 <td>{{ $limit->name ?? '—' }}</td>
+                                <td>
+                                    <span class="badge {{ $limit->department === 'retail' ? 'bg-warning text-dark' : 'bg-primary' }}">
+                                        {{ ucfirst($limit->department ?? 'wholesales') }}
+                                    </span>
+                                </td>
                                 <td>
                                     @foreach($limit->stocks as $stock)
                                         <span class="badge bg-info text-dark me-1 mb-1">{{ $stock->name }}</span>
@@ -86,7 +92,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center text-muted">No purchase limits found.</td>
+                                <td colspan="11" class="text-center text-muted">No purchase limits found.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -109,10 +115,20 @@
                     </div>
                     <div class="modal-body">
                         <div class="row">
-                            {{-- Rule Name --}}
-                            <div class="col-12 mb-3">
+                            {{-- Rule Name & Department Invoice --}}
+                            <div class="col-md-6 mb-3">
                                 <label class="form-label">Rule Name <small class="text-muted">(optional)</small></label>
                                 <input class="form-control" type="text" wire:model="name" placeholder="e.g. Controlled Substance Limit">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Department Invoice <span class="text-danger">*</span></label>
+                                <select class="form-select" wire:model="department">
+                                    <option value="wholesales">Wholesales</option>
+                                    <option value="retail">Retail</option>
+                                </select>
+                                <small class="text-muted">Wholesales applies to Wholesales & Bulksales invoices; Retail applies to Retail invoices.</small>
+                                @error('department') <span class="text-danger d-block">{{ $message }}</span> @enderror
                             </div>
 
                             {{-- Max Quantity & Period --}}
@@ -143,6 +159,7 @@
                                 <div class="col-12 mb-3">
                                     <div class="alert alert-info mb-0 py-2">
                                         <strong>Rule:</strong> {{ $max_quantity }} units / {{ $period_value }} {{ $period_unit }}
+                                        <span class="badge {{ $department === 'retail' ? 'bg-warning text-dark' : 'bg-primary' }} ms-2">{{ ucfirst($department) }} Invoices Only</span>
                                     </div>
                                 </div>
                             @endif

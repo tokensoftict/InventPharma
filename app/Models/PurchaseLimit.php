@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
  *
  * @property int $id
  * @property string|null $name
+ * @property string $department
  * @property int $max_quantity
  * @property int $period_value
  * @property string $period_unit
@@ -49,6 +50,7 @@ class PurchaseLimit extends Model
 
     protected $fillable = [
         'name',
+        'department',
         'max_quantity',
         'period_value',
         'period_unit',
@@ -98,6 +100,16 @@ class PurchaseLimit extends Model
                 $q->whereNull('end_date')
                     ->orWhere('end_date', '>=', Carbon::today());
             });
+    }
+
+    /**
+     * Scope: filter limits by department (retail vs wholesales).
+     */
+    public function scopeForDepartment($query, string $department)
+    {
+        $dept = strtolower(trim($department));
+        $target = in_array($dept, ['retail', 'retail_store']) ? 'retail' : 'wholesales';
+        return $query->where('department', $target);
     }
 
     /**

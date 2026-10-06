@@ -128,13 +128,15 @@ function generateRandom($length = 25) {
 
 function loadUserMenu($group_id = NULL)
 {
-    $group_id = $group_id === NULL ? auth()->user()->usergroup_id : $group_id;
+    $group_id = $group_id === NULL ? (auth()->user()?->usergroup_id ?? 1) : $group_id;
 
-    return Cache::remember('route-permission-'.$group_id,86400, function() use ($group_id){
-        return \App\Models\Usergroup::with(['tasks'=>function ($q) {
+    return Cache::remember('route-permission-'.$group_id, 86400, function() use ($group_id){
+        $group = \App\Models\Usergroup::with(['tasks'=>function ($q) {
             $q->join('modules', 'modules.id', '=', 'tasks.module_id');
             $q->orderBy('tasks.module_id', "ASC")->orderBy('tasks.id');
-        },'permissions','users','tasks','group_tasks','tasks.module'])->find($group_id)->tasks;
+        },'permissions','users','tasks','group_tasks','tasks.module'])->find($group_id);
+
+        return $group ? $group->tasks : collect();
     });
 }
 
@@ -246,7 +248,7 @@ function departments($active = false)
 function department_by_id($id)
 {
     return departments(true)->filter(function($item) use($id){
-        return $item->id === $id;
+        return $item->id == $id;
     })->first();
 }
 
@@ -256,7 +258,7 @@ function department_by_ids(int | array $id)
         if(is_array($id)) {
             return in_array($item->id, $id);
         } else {
-            return $item->id === $id;
+            return $item->id == $id;
         }
     });
 }
@@ -272,12 +274,16 @@ function cost_price_column($department_id = false){
 
     if($department_id === false)
     {
-        $department_id = auth()->user()->department_id;
+        $department_id = auth()->check() ? auth()->user()->department_id : 2;
     }
 
-    return  match (department_by_id($department_id)->quantity_column){
+    $dept = department_by_id($department_id);
+    $column = $dept ? $dept->quantity_column : ($department_id == 4 ? 'retail' : 'wholesales');
+
+    return match ($column){
         'quantity', 'wholesales', 'bulksales', NULL => 'cost_price',
         'retail', 'retail_store' => 'retail_cost_price',
+        default => 'cost_price'
     };
 }
 
@@ -285,9 +291,18 @@ function selling_price_column($department_id = false)
 {
     if($department_id === false)
     {
-        $department_id = auth()->user()->department_id;
+        $department_id = auth()->check() ? auth()->user()->department_id : 2;
     }
-    return department_by_id( $department_id )->price_column;
+    $dept = department_by_id($department_id);
+    if ($dept) {
+        return $dept->price_column;
+    }
+
+    if ($department_id == 4 || $department_id === 'retail' || $department_id === 'retail_store') {
+        return 'retail_price';
+    }
+
+    return 'whole_price';
 }
 
 function stockgroups($active = false)
@@ -450,7 +465,10 @@ function getUserMenu()
  */
 function userPermissions()
 {
-    return loadUserMenu();
+    if (!auth()->check()) {
+        return collect();
+    }
+    return loadUserMenu() ?? collect();
 }
 
 /**
@@ -677,26 +695,25 @@ function getPaginate()
 }
 
 function status($status){
-
-    /*
-    if(is_array($status))
-       return  \App\Models\Status::whereIn('name',$status)->pluck('id');
-    else
-        return \App\Models\Status::where('name',$status)->first()->id;
-    */
-    if(is_numeric($status))
-
+    if(is_numeric($status)) {
         $st = statuses()->filter(function ($item) use($status){
             return $item->id == $status;
         });
-    else
-
+    } else {
         $st = statuses()->filter(function ($item) use($status){
             return $item->name == $status;
         });
+    }
 
+    if ($st && $st->isNotEmpty() && $st->first()) {
+        return $st->first()->id;
+    }
 
-    return $st->first()->id;
+    $dbStatus = is_numeric($status)
+        ? \App\Models\Status::find($status)
+        : \App\Models\Status::where('name', $status)->first();
+
+    return $dbStatus?->id ?? (is_numeric($status) ? (int)$status : null);
 }
 
 function status_name($status){
