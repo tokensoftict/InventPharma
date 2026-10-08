@@ -69,7 +69,7 @@ class InvoiceValidationController extends Controller
         $checkPurchaseLimit = $request->boolean('check_purchase_limit', true);
 
         // Run validation through the extracted service
-        $result = $this->validationService->validateInvoice(
+        $result = $this->validationService->validateOnlineInvoice(
             items: $items,
             department: $department,
             customerId: $customerId,
