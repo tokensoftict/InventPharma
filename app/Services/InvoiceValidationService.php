@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Stock;
+use App\Services\Online\ProcessOrderService;
 use App\Services\PurchaseLimitService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -128,16 +129,21 @@ class InvoiceValidationService
             $stocks[$product->id]['item']['av_qty'] = $stocks[$product->id]['item']['av_qty'] ?? ($product->{$from} ?? 0);
 
             // Ping saleable batches in the specified department
-            $batch = $product->pingSaleableBatches($from, $requestedQty, $product->activeBatches);
+            $batch = $product->pingStockLocation($requestedQty, $product->activeBatches, ($from == "wholesales" ? ProcessOrderService::$onlineWholeSalesDepartment : ProcessOrderService::$onlineRetailSalesDepartment));
 
-            // Check if minimum inventory quantity threshold would be violated
+            // Check if minimum inventory quantity,  threshold would be violated
             $status = $product->pingIfQuantityHasNotExceededTheMinimumQuantity($from, $requestedQty);
             if ($status === true && $batch !== false) {
                 $errors[$product->id] = $product->name . " has exceeded the minimum quantity of " . $product->minimum_quantity . " set by the administrator";
             }
 
             if ($batch === false) {
-                $available = $product->{$from} ?? 0;
+                if($from == "wholesales") {
+                    $available = $product->getOnlineQuantity() ?? 0;
+                } else{
+                    $available = $product->getCurrentlevel($from) ?? 0;
+                }
+
                 if($available > 0) {
                     $errors[$product->id] = "Only $available units of " . $product->name . ($available == 1 ? ' is' : ' are') . " available";
                 } else {
