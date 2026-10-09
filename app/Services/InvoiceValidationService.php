@@ -457,7 +457,7 @@ class InvoiceValidationService
         $department = strtolower(trim($department));
 
         // 1. Validate stock availability, batches, minimum quantity & pricing
-        $itemValidation = $this->validateItems($items, $department);
+        $itemValidation = $this->validateOnlineInvoice($items, $department);
         $allErrors = $itemValidation['errors'] ?? [];
 
         // 2. Validate customer purchase limits
