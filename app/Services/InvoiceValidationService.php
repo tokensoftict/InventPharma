@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Stock;
+use App\Services\Online\ProcessOrderService;
 use App\Services\PurchaseLimitService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -457,7 +458,7 @@ class InvoiceValidationService
         $department = strtolower(trim($department));
 
         // 1. Validate stock availability, batches, minimum quantity & pricing
-        $itemValidation = $this->validateOnlineInvoice($items, $department);
+        $itemValidation = $this->validateOnlineItems($items, $department);
         $allErrors = $itemValidation['errors'] ?? [];
 
         // 2. Validate customer purchase limits
