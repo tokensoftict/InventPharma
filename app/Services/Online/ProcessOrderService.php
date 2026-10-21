@@ -37,32 +37,32 @@ class ProcessOrderService
 
     public static function handle(array $order) : bool|string|array|object
     {
-        if($order['action'] !== KafkaAction::PROCESS_ORDER) {
-            return false;
-        }
+        return DB::transaction(function () use ($order) {
+            if ($order['action'] !== KafkaAction::PROCESS_ORDER) {
+                return false;
+            }
 
-        if(!isset($order['action'])) return false;
+            if (!isset($order['action'])) return false;
 
-        $order = $order['order'];
+            $order = $order['order'];
 
-        $errors = [];
-        Auth::loginUsingId(1);
+            $errors = [];
+            Auth::loginUsingId(1);
 
-        if(!isset($order['store'])) {
-            $order['store'] = self::$OnlineStoreIDMapper[$order['app_id']];
-        }
+            if (!isset($order['store'])) {
+                $order['store'] = self::$OnlineStoreIDMapper[$order['app_id']];
+            }
 
-        $invoice = Invoice::with(['invoiceitembatches','invoiceitembatches.stock','invoiceitems', 'customer', 'payment', 'customer', 'user'])->where('invoice_number',$order['invoice_no'])->first();
+            $invoice = Invoice::with(['invoiceitembatches', 'invoiceitembatches.stock', 'invoiceitems', 'customer', 'payment', 'customer', 'user'])->where('invoice_number', $order['invoice_no'])->first();
 
-        //this invoice exist we need to really delete it from the database
-        if($invoice) {
-            DB::transaction(function() use ($invoice) {
+            //this invoice exist we need to really delete it from the database
+            if ($invoice) {
 
-                if($invoice->payment_id && $invoice->payment()->exists()){
+                if ($invoice->payment_id && $invoice->payment()->exists()) {
 
-                    Creditpaymentlog::where('payment_id',  $invoice->payment_id)->delete();
+                    Creditpaymentlog::where('payment_id', $invoice->payment_id)->delete();
 
-                    CustomerLedger::where('payment_id', $invoice->payment_id )->delete();
+                    CustomerLedger::where('payment_id', $invoice->payment_id)->delete();
 
                     $invoice->customer->updateCreditBalance();
 
@@ -74,139 +74,138 @@ class ProcessOrderService
                 $returnBatches = [];
                 $columns = [];
 
-                $invoice->invoiceitembatches->each(function($item) use(&$returnBatches, &$columns) {
+                $invoice->invoiceitembatches->each(function ($item) use (&$returnBatches, &$columns) {
 
                     $columns[] = $item->department;
 
                     $returnBatches[] = array_merge([
                         'id' => $item->stockbatch_id,
-                        $item->department=> $item->av_qty + $item->quantity,
+                        $item->department => $item->av_qty + $item->quantity,
                         'department' => $item->department
-                    ], addOtherDepartment($item->stockbatch, $item->department ));
+                    ], addOtherDepartment($item->stockbatch, $item->department));
 
                 });
 
                 Stock::returnStocks($invoice, $returnBatches, array_unique($columns)); //return the stock batches
 
-                dispatch(new PushStockUpdateToServer(array_column( $invoice->invoiceitems->toArray(), 'stock_id')));
+                dispatch(new PushStockUpdateToServer(array_column($invoice->invoiceitems->toArray(), 'stock_id')));
 
                 $invoice->delete();
 
+            }
+
+            // if the invoice have been deleted or the invoice does not exists on the database let proceed by processing the invoice
+            $invoiceRepo = new InvoiceRepository();
+
+            //now lets try to process the order, let get all department we can pick stock from
+            //before we start, the default place to pick the stock from the bulk department
+            //so lets start
+            $orderproducts = $order['order_products']; // lets get the order product
+            //validating local database stock level to see if it can process this order
+            $products = [];
+
+            array_walk($orderproducts, function ($item) use (&$products) {
+                $products[$item['localid']]['item'] = $item;
             });
-        }
-
-        // if the invoice have been deleted or the invoice does not exists on the database let proceed by processing the invoice
-        $invoiceRepo = new InvoiceRepository();
-
-        //now lets try to process the order, let get all department we can pick stock from
-        //before we start, the default place to pick the stock from the bulk department
-        //so lets start
-        $orderproducts = $order['order_products']; // lets get the order product
-        //validating local database stock level to see if it can process this order
-        $products = [];
-
-        array_walk( $orderproducts, function($item) use(&$products){
-            $products[$item['localid']]['item'] = $item;
-        });
 
 
-        $stocks = Stock::with(['activeBatches'])->whereIn('id',array_keys($products))->get();
+            $stocks = Stock::with(['activeBatches'])->whereIn('id', array_keys($products))->get();
 
-        $stocks->each(function($stock, $key) use(&$products) {
-            $products[$stock->id]['stock'] = $stock;
-        });
+            $stocks->each(function ($stock, $key) use (&$products) {
+                $products[$stock->id]['stock'] = $stock;
+            });
 
 
-        foreach ($products as $key=>$product)
-        {
-            $batches = $product['stock']->pingStockLocation($product['item']['quantity'],  $product['stock']->activeBatches, (self::$OnlineStoreIDMapper[$order['app_id']] == "WHOLESALES" ? self::$onlineWholeSalesDepartment : self::$onlineRetailSalesDepartment));
-            if($batches === false) {
-                $errors[$key] = "Not enough quantity to process <b>".$product['item']['name']."</b> on local database ";
-            }else {
-                $products[$key]['batches'] = $batches;
+            foreach ($products as $key => $product) {
+                $batches = $product['stock']->pingStockLocation($product['item']['quantity'], $product['stock']->activeBatches, (self::$OnlineStoreIDMapper[$order['app_id']] == "WHOLESALES" ? self::$onlineWholeSalesDepartment : self::$onlineRetailSalesDepartment));
+                if ($batches === false) {
+                    $errors[$key] = "Not enough quantity to process <b>" . $product['item']['name'] . "</b> on local database ";
+                } else {
+                    $products[$key]['batches'] = $batches;
+                }
             }
-        }
 
-        //all have been validated and store successfully, now we can store the order products inside the array
-        //lets check if there is an error
-        if(count($errors) > 0){
-            self::sendBackErrorMessage($order['id'], $order['local_order_id'], $errors);
-            return $errors;
-        }
-
-
-        //after validating the order we can remove stock finalize processing
-
-        //oya lets do normal local sales computation first
-
-        $customer = $order['user']['cus_exist'] ?? 1;
-        if($customer == "1") {
-            $localCustomer = Customer::where('phone_number', $order['user']['phone'])->first();
-            if($localCustomer) {
-                $customer = $localCustomer->id;
+            //all have been validated and store successfully, now we can store the order products inside the array
+            //lets check if there is an error
+            if (count($errors) > 0) {
+                self::sendBackErrorMessage($order['id'], $order['local_order_id'], $errors);
+                return $errors;
             }
-        }
-
-        if($customer === "") {
-            $customer = 1;
-        }
 
 
-        $invoiceData = InvoiceRepository::invoice(new Invoice(), new InvoiceFormComponent());
+            //after validating the order we can remove stock finalize processing
 
-        $total_cost = 0;
+            //oya lets do normal local sales computation first
 
-        $total_sub = 0;
+            $customer = $order['user']['cus_exist'] ?? 1;
+            if ($customer == "1") {
+                $localCustomer = Customer::where('phone_number', $order['user']['phone'])->first();
+                if ($localCustomer) {
+                    $customer = $localCustomer->id;
+                }
+            }
 
-        $invoiceData['invoiceitems'] = collect($products)->map(function($item, $key) use($customer, &$total_cost, &$total_sub) {
-
-            $cost =  abs((collect($item['batches'])->sum('cost_price')) / count($item['batches']));
-
-            $total_cost += ($cost * $item['item']['quantity']);
-            $total_sub  +=($cost *  $item['item']['price']);
-
-            return [
-                'stock_id' => $key,
-                'quantity' => $item['item']['quantity'],
-                'customer_id' => $customer,
-                'added_by' => auth()->user()->id,
-                'discount_added_by' => null,
-                'cost_price' => abs((collect($item['batches'])->sum('cost_price')) / count($item['batches'])),
-                'selling_price' => $item['item']['price'],
-                'profit' => $item['item']['price'] - $item['stock']->cost_price,
-                'discount_value' => 0,
-                'discount_amount' => 0,
-                'discount_type' => 'Fixed',
-                'batches' => $item['batches'],
-                'selectedOptions' => $item['item']['options'] ?? []
-            ] ;
-        })->toArray();
+            if ($customer === "") {
+                $customer = 1;
+            }
 
 
-        $invoiceData['customer_id'] = $customer;
+            $invoiceData = InvoiceRepository::invoice(new Invoice(), new InvoiceFormComponent());
 
-        $invoiceData['invoice_number'] = $order['invoice_no'];
+            $total_cost = 0;
 
-        $invoiceData['department'] =  $order['store'] == "WHOLESALES" ? 'bulksales' : "retail";
+            $total_sub = 0;
 
-        $invoiceData['in_department'] =$order['store'] == "WHOLESALES" ? 'bulksales' : "retail";
+            $invoiceData['invoiceitems'] = collect($products)->map(function ($item, $key) use ($customer, &$total_cost, &$total_sub) {
 
-        $invoiceData['online_order_status'] = 1;
+                $cost = abs((collect($item['batches'])->sum('cost_price')) / count($item['batches']));
 
-        $invoiceData['onliner_order_id']= $order['id'];
+                $total_cost += ($cost * $item['item']['quantity']);
+                $total_sub += ($cost * $item['item']['price']);
 
-        $invoiceData["sub_total"] = $order['total'];
+                return [
+                    'stock_id' => $key,
+                    'quantity' => $item['item']['quantity'],
+                    'customer_id' => $customer,
+                    'added_by' => auth()->user()->id,
+                    'discount_added_by' => null,
+                    'cost_price' => abs((collect($item['batches'])->sum('cost_price')) / count($item['batches'])),
+                    'selling_price' => $item['item']['price'],
+                    'profit' => $item['item']['price'] - $item['stock']->cost_price,
+                    'discount_value' => 0,
+                    'discount_amount' => 0,
+                    'discount_type' => 'Fixed',
+                    'batches' => $item['batches'],
+                    'selectedOptions' => $item['item']['options'] ?? []
+                ];
+            })->toArray();
 
-        $invoiceData['total_cost'] = $total_cost;
 
-        $invoiceData['total_profit'] = $total_sub - $total_cost;
+            $invoiceData['customer_id'] = $customer;
 
-        $invoiceRepo->createOnlineInvoice($invoiceData, collect($order['order_total_orders']));
+            $invoiceData['invoice_number'] = $order['invoice_no'];
+
+            $invoiceData['department'] = $order['store'] == "WHOLESALES" ? 'bulksales' : "retail";
+
+            $invoiceData['in_department'] = $order['store'] == "WHOLESALES" ? 'bulksales' : "retail";
+
+            $invoiceData['online_order_status'] = 1;
+
+            $invoiceData['onliner_order_id'] = $order['id'];
+
+            $invoiceData["sub_total"] = $order['total'];
+
+            $invoiceData['total_cost'] = $total_cost;
+
+            $invoiceData['total_profit'] = $total_sub - $total_cost;
+
+            $invoiceRepo->createOnlineInvoice($invoiceData, collect($order['order_total_orders']));
 
 
-        self::sendBackSuccessMessage($order['id'], $order['local_order_id']);
+            self::sendBackSuccessMessage($order['id'], $order['local_order_id']);
 
-        return true;
+            return true;
+        });
     }
 
     /**
@@ -250,7 +249,7 @@ class ProcessOrderService
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-           // _GET('processorder/'.$online_local_order_id."/2");
+            // _GET('processorder/'.$online_local_order_id."/2");
 
         } else {
 
@@ -269,7 +268,7 @@ class ProcessOrderService
             }
 
             if(!is_null($online_local_order_id)) {
-               // _GET('processorder/'.$online_local_order_id."/2");
+                // _GET('processorder/'.$online_local_order_id."/2");
             }
         }
     }
@@ -285,7 +284,7 @@ class ProcessOrderService
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-           // _GET('processorder/'.$online_local_order_id."/5");
+            // _GET('processorder/'.$online_local_order_id."/5");
 
         } else {
 
@@ -381,7 +380,7 @@ class ProcessOrderService
 
         if(config('app.KAFKA_STATUS') !== true) {
 
-           // _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
+            // _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
 
         } else {
 
@@ -399,7 +398,7 @@ class ProcessOrderService
                 report($exception);
             }
 
-           // _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
+            // _GET('processorder/'.$online_local_order_id."/4?cartoon=".$carton);
         }
     }
 
