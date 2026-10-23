@@ -21,7 +21,7 @@
             <div class="col-lg-3 col-sm-6 col-12">
                 <div class="mb-3" wire:ignore>
                     <label>Store Type</label>
-                    <select class="form-control" required wire:model="product_data.store_type">
+                    <select class="form-control product-select2" required wire:model="product_data.store_type">
                         <option value="">Select Store Type</option>
                         <option value="SUPERMARKET">SUPERMARKET</option>
                         <option value="PHARMACY">PHARMACY</option>
@@ -40,7 +40,7 @@
             <div class="col-lg-3 col-sm-6 col-12">
                 <div class="mb-3" wire:ignore>
                     <label>Brand</label>
-                    <select class="form-control" {{ count($this->brands) > 0 ? 'required' : '' }}  wire:model="product_data.brand_id">
+                    <select class="form-control product-select2" {{ count($this->brands) > 0 ? 'required' : '' }}  wire:model="product_data.brand_id">
                         <option value="">Choose Brand</option>
                         @foreach($this->brands as $brand)
                             <option value="{{ $brand->id }}">{{ $brand->name }}</option>
@@ -53,7 +53,7 @@
             <div class="col-lg-3 col-sm-6 col-12">
                 <div class="mb-3" wire:ignore>
                     <label>Category</label>
-                    <select class="form-control" {{ count($this->categories) > 0 ? 'required' : '' }}  wire:model="product_data.category_id">
+                    <select class="form-control product-select2" {{ count($this->categories) > 0 ? 'required' : '' }}  wire:model="product_data.category_id">
                         <option value="">Choose Category</option>
                         @foreach($this->categories as $category)
                             <option value="{{ $category->id }}">{{ $category->name }}</option>
@@ -65,7 +65,7 @@
             <div class="col-lg-3 col-sm-6 col-12">
                 <div class="mb-3" wire:ignore>
                     <label>Manufacturers</label>
-                    <select class="form-control" {{ count($this->manufacturers) > 0 ? 'required' : '' }} name="category_id" wire:model="product_data.manufacturer_id">
+                    <select class="form-control product-select2" {{ count($this->manufacturers) > 0 ? 'required' : '' }} name="category_id" wire:model="product_data.manufacturer_id">
                         <option value="">Choose Manufacturer</option>
                         @foreach($this->manufacturers as $manufacturer)
                             <option value="{{ $manufacturer->id }}">{{ $manufacturer->name }}</option>
@@ -77,7 +77,7 @@
             <div class="col-lg-3 col-sm-6 col-12">
                 <div class="mb-3" wire:ignore>
                     <label>Classification</label>
-                    <select class="form-control" {{ count($this->classifications) > 0 ? 'required' : '' }} name="category_id" wire:model="product_data.classification_id">
+                    <select class="form-control product-select2" {{ count($this->classifications) > 0 ? 'required' : '' }} name="category_id" wire:model="product_data.classification_id">
                         <option value="">Choose Classification</option>
                         @foreach($this->classifications as $classification)
                             <option value="{{ $classification->id }}">{{ $classification->name }}</option>
@@ -89,7 +89,7 @@
             <div class="col-lg-3 col-sm-6 col-12">
                 <div class="mb-3" wire:ignore>
                     <label>Stock Group</label>
-                    <select class="form-control" {{ count($this->stockgroups) > 0 ? 'required' : '' }} name="category_id" wire:model="product_data.stockgroup_id">
+                    <select class="form-control product-select2" {{ count($this->stockgroups) > 0 ? 'required' : '' }} name="category_id" wire:model="product_data.stockgroup_id">
                         <option value="">Choose Stock Group</option>
                         @foreach($this->stockgroups as $stockgroup)
                             <option value="{{ $stockgroup->id }}">{{ $stockgroup->name }}</option>
@@ -101,7 +101,7 @@
             <div class="col-lg-3 col-sm-6 col-12" >
                 <div class="mb-3" wire:ignore>
                     <label>Can Product Expiry ?</label>
-                    <select class="form-control" required name="expiry" wire:model="product_data.expiry">
+                    <select class="form-control product-select2" required name="expiry" wire:model="product_data.expiry">
                         <option value="">Select One</option>
                         <option value="1">Yes</option>
                         <option value="0">No</option>
@@ -149,7 +149,7 @@
             <div class="col-lg-3 col-sm-6 col-12" >
                 <div class="mb-3" wire:ignore>
                     <label>Sachet Product ?</label>
-                    <select class="form-control" required name="sachet" wire:model="product_data.sachet">
+                    <select class="form-control product-select2" required name="sachet" wire:model="product_data.sachet">
                         <option value="">Select One</option>
                         <option value="1">Yes</option>
                         <option selected value="0">No</option>
@@ -497,6 +497,15 @@
 
         window.addEventListener("load", function (){
             $(document).ready(function(){
+                // Searchable select2 menus; sync changes back to Livewire (wire:model listens for native 'change')
+                $('.product-select2').each(function () {
+                    const el = this;
+                    $(el).select2({ width: '100%' });
+                    $(el).on('select2:select select2:clear', function () {
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    });
+                });
+
                 let myModal = "";
                 myModal = new bootstrap.Modal(document.getElementById("simpleBarcodeModal"), {});
 
