@@ -23,4 +23,28 @@ class ManufacturerController extends Controller
         ];
         return view('settings.manufacturer.stocks', $data);
     }
+
+    public function create(){
+
+    }
+
+    public function edit($id){
+
+    }
+
+    public function toggle($id){
+
+    }
+
+    public function update($id){
+
+    }
+
+    public function destroy($id){
+
+    }
+
+    public function store(){
+
+    }
 }
