@@ -180,6 +180,22 @@ Route::middleware(['auth', 'app.active'])->group(function () {
                 Route::put('update', ['as' => 'update', 'uses' => 'StoreSettings@update']);
                 // Route::get('backup', ['as' => 'backup', 'uses' => 'StoreSettings@backup', 'visible' => true,'custom_label'=>"Back Up Database"]);
             });
+
+            // ── Backup Manager ───────────────────────────────────────────────
+            Route::prefix('backup-manager')->as('backup.')->group(function () {
+                Route::get('', ['as' => 'index', 'uses' => 'BackupController@index', 'visible' => true, 'custom_label' => 'Backup Manager']);
+                Route::get('history', ['as' => 'history', 'uses' => 'BackupController@history', 'custom_label' => 'Backup History']);
+                Route::get('settings', ['as' => 'settings', 'uses' => 'BackupController@settings', 'custom_label' => 'Backup Settings']);
+                Route::put('configure', ['as' => 'configure', 'uses' => 'BackupController@configure', 'custom_label' => 'Configure Backup']);
+                Route::post('run', ['as' => 'run', 'uses' => 'BackupController@run', 'custom_label' => 'Backup Now']);
+                Route::get('google/connect', ['as' => 'google.connect', 'uses' => 'BackupController@googleConnect', 'custom_label' => 'Connect Google Drive']);
+                Route::get('google/callback', ['as' => 'google.callback', 'uses' => 'BackupController@googleCallback', 'custom_label' => 'Google Drive Callback']);
+                Route::post('google/{id}/disconnect', ['as' => 'google.disconnect', 'uses' => 'BackupController@googleDisconnect', 'custom_label' => 'Disconnect Google Drive']);
+                Route::post('destination/{id}/test', ['as' => 'test', 'uses' => 'BackupController@test', 'custom_label' => 'Test Backup Destination']);
+                Route::get('{id}/download', ['as' => 'download', 'uses' => 'BackupController@download', 'custom_label' => 'Download Backup']);
+                Route::post('{id}/restore', ['as' => 'restore', 'uses' => 'BackupController@restore', 'custom_label' => 'Restore Backup']);
+                Route::delete('{id}', ['as' => 'delete', 'uses' => 'BackupController@delete', 'custom_label' => 'Delete Backup']);
+            });
             Route::prefix('expenses_type')->as('expenses_type.')->group(function () {
                 Route::get('', ['as' => 'index', 'uses' => 'ExpensesTypeController@index', 'visible' => true, 'custom_label' => 'Expenses Type']);
                 Route::get('list', ['as' => 'list', 'uses' => 'ExpensesTypeController@listAll']);

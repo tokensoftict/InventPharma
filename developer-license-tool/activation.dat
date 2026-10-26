@@ -1,0 +1,11 @@
+{
+    "payload": {
+        "activated_at": "2026-10-26T12:19:00Z",
+        "activation_id": "ACT-4EADB8F329F49536",
+        "expires_at": "2027-10-26T12:19:00Z",
+        "installation_id": "PHARM-AD7AA88B",
+        "product": "invent",
+        "version": 1
+    },
+    "signature": "1zQD6ou+NWx7RAnvXcGTYFVTGKgEpF5aXdLavlrrunBs4L9Bg9PPm5EIhX5sOWUGtSccSB2xEW8GP728snehAw=="
+}

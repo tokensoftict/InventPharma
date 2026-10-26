@@ -52,6 +52,36 @@ class PermissionComponent extends Component
         return view('livewire.access-control.permission-component');
     }
 
+    public function isModuleFullySelected($module): bool
+    {
+        if ($module->tasks->isEmpty()) {
+            return false;
+        }
+
+        foreach ($module->tasks as $task) {
+            if (empty($this->privileges[$task->id])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function toggleModule($moduleId)
+    {
+        $module = $this->modules->firstWhere('id', $moduleId);
+
+        if (!$module) {
+            return;
+        }
+
+        $select = !$this->isModuleFullySelected($module);
+
+        foreach ($module->tasks as $task) {
+            $this->privileges[$task->id] = $select;
+        }
+    }
+
     public function syncPermission()
     {
        $selectedPrivileges =  Arr::where($this->privileges, function($value, $key){

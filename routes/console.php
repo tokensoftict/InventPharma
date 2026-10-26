@@ -23,3 +23,9 @@ Schedule::command('sync:old_stock')->everyTwoHours();
 //Schedule::command('download:product-image')->withoutOverlapping()->everyMinute()->appendOutputTo('storage/app/imageDownload.txt');
 
 Schedule::command('uploadproduct:image')->withoutOverlapping()->everyMinute()->appendOutputTo('storage/app/imageUpload.txt');
+// ── Backup Manager ──────────────────────────────────────────────────────────
+// One cheap tick per minute: dispatches a due scheduled backup (idempotent per slot),
+// recovers interrupted backups and re-queues lost jobs. Retention runs after each backup
+// and once daily as a safety net.
+Schedule::command('backup:schedule')->everyMinute()->withoutOverlapping(10);
+Schedule::command('backup:cleanup')->dailyAt('05:30')->withoutOverlapping();
