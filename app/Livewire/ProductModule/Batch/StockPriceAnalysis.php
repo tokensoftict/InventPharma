@@ -11,14 +11,23 @@ use Illuminate\Support\Facades\DB;
 use PowerComponents\LivewirePowerGrid\Rules\{Rule, RuleActions};
 use PowerComponents\LivewirePowerGrid\Filters\Filter;
 use PowerComponents\LivewirePowerGrid\Traits\ActionButton;
-use PowerComponents\LivewirePowerGrid\{Button, Column, Exportable, Footer, Header, PowerGrid, PowerGridComponent, PowerGridEloquent};
+use PowerComponents\LivewirePowerGrid\{Button,
+    Column,
+    Exportable,
+    Footer,
+    Header,
+    PowerGrid,
+    PowerGridComponent,
+    PowerGridEloquent,
+    PowerGridFields};
 
 final class StockPriceAnalysis extends PowerGridComponent
 {
+
     use PowerGridComponentTrait;
 
 
-    public $key = 'stockbatches.stock_id';
+    public $key = 'stock_id';
 
     /*
     |--------------------------------------------------------------------------
@@ -83,47 +92,47 @@ final class StockPriceAnalysis extends PowerGridComponent
     |    the database using the `e()` Laravel Helper function.
     |
     */
-    public function addColumns(): PowerGridEloquent
+    public function fields(): PowerGridFields
     {
-        return PowerGrid::eloquent()
+        return PowerGrid::fields()
 
-            ->addColumn('stock_id')
-            ->addColumn('supplier', function(Stockbatch $stockbatch){
+            ->add('stock_id')
+            ->add('supplier', function(Stockbatch $stockbatch){
                 return $stockbatch->last_supplier->name ?? "N/A";
             })
-            ->addColumn('name', function(Stockbatch $stockbatch){
+            ->add('name', function(Stockbatch $stockbatch){
                 return $stockbatch->stock->name;
             })
-            ->addColumn('box', function(Stockbatch $stockbatch){
+            ->add('box', function(Stockbatch $stockbatch){
                 return $stockbatch->stock->box;
             })
-            ->addColumn('selling_price', function(Stockbatch $stockbatch){
+            ->add('selling_price', function(Stockbatch $stockbatch){
                 return money($stockbatch->stock->whole_price);
             })
-            ->addColumn('retail_selling_price', function(Stockbatch $stockbatch){
+            ->add('retail_selling_price', function(Stockbatch $stockbatch){
                 return money($stockbatch->stock->retail_price);
             })
-            ->addColumn('tt_qty', function(Stockbatch $stockbatch){
+            ->add('tt_qty', function(Stockbatch $stockbatch){
                 return $stockbatch->bs+$stockbatch->ws+$stockbatch->ms+round(abs((divide($stockbatch->rt,$stockbatch->stock->box))));
             })
-            ->addColumn('ws')
-            ->addColumn('av_retail_cost_price', function(Stockbatch $stockbatch){
+            ->add('ws')
+            ->add('av_retail_cost_price', function(Stockbatch $stockbatch){
                 if($stockbatch->total_rt_cost_total == 0) return  number_format(0,2);
                return money((abs( $stockbatch->total_rt_cost_total/($stockbatch->rt))));
             })
-            ->addColumn('av_cost', function(Stockbatch $stockbatch){
+            ->add('av_cost', function(Stockbatch $stockbatch){
                 if($stockbatch->total_cost_total == 0) return  number_format(0,2);
                return  money((abs( $stockbatch->total_cost_total/($stockbatch->ms+$stockbatch->bs+$stockbatch->ws))));
             })
-            ->addColumn('bs')
-            ->addColumn('ms')
-            ->addColumn('rt')
-            ->addColumn('rtbox', function(Stockbatch $stockbatch){
+            ->add('bs')
+            ->add('ms')
+            ->add('rt')
+            ->add('rtbox', function(Stockbatch $stockbatch){
                 return divide($stockbatch->rt,$stockbatch->stock->box);
             })
-            ->addColumn('tt_batch')
-            ->addColumn('total_cost_total')
-            ->addColumn('total_rt_cost_total');
+            ->add('tt_batch')
+            ->add('total_cost_total')
+            ->add('total_rt_cost_total');
 
    }
 
