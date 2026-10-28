@@ -29,15 +29,15 @@ class PaymentByPaymentMethodReportComponents extends Component
         if(isset($this->filters['user_id'])) {
             $data['payments'] =  Paymentmethod::with(['paymentmethoditems'=>function($query){
                 $query->with(['invoice','payment','user','customer'])->where('user_id', $this->filters['user_id'])
-                    ->where("payment_date",$this->filters['payment_date'])
-                    ->where('invoice_type', '<>',  Creditpaymentlog::class);
-            }])->where('id','<>',6)->get();
+                    ->where("payment_date",$this->filters['payment_date']);
+                    //->where('invoice_type', '<>',  Creditpaymentlog::class);
+            }])->where('id','<>',6)->where('id','<>',4)->get();
         }else{
         $data['payments'] =  Paymentmethod::with(['paymentmethoditems'=>function($query){
             $query->with(['invoice','payment','user','customer'])
-                ->where("payment_date",$this->filters['payment_date'])
-            ->where('invoice_type', '<>',  Creditpaymentlog::class);
-        }])->where('id','<>',6)->get();
+                ->where("payment_date",$this->filters['payment_date']);
+            //->where('invoice_type', '<>',  Creditpaymentlog::class);
+        }])->where('id','<>',6)->where('id','<>',4)->get();
         }
         return view('components.payment-by-payment-method-report-components', $data);
     }

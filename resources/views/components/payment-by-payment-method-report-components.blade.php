@@ -25,8 +25,10 @@
         @endphp
             @foreach($payment->paymentmethoditems as $item)
                 @php
+                if($item->paymentmethod_id != 6) {
                     $grandTotal+=$item->amount;
                      $total+=$item->amount;
+                     }
                 @endphp
             <tr>
                 <td>{{ $loop->iteration }}</td>

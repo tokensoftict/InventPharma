@@ -105,7 +105,7 @@ class PaymentReportsController extends Controller
             $data['filters']['filters']['between.payment_date'] = Arr::only(array_values( $request->get('filter')), [0,1]);
             $data['filters']['filters']['paymentmethod_id'] = $data['filters']['paymentmethod_id'];
         }
-        return setPageContent('reports.payment.paymentmethoditemlist', $data);
+        return view('reports.payment.paymentmethoditemlist', $data);
     }
 
 
@@ -174,7 +174,7 @@ class PaymentReportsController extends Controller
             $data['filters'] = $request->get('filter');
             $data['filters']['filters']['payment_date'] = $request->get('filter')['from'];
         }
-        return setPageContent('reports.payment.payment_methods', $data);
+        return view('reports.payment.payment_methods', $data);
     }
 
     public function payment_method_by_user(Request $request)
