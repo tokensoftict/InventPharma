@@ -58,6 +58,21 @@ type printerInfo2 struct {
 	averagePPM      uint32
 }
 
+// PRINTER_INFO_4W: works for local printers and per-user network connections.
+type printerInfo4 struct {
+	pPrinterName *uint16
+	pServerName  *uint16
+	attributes   uint32
+}
+
+func utf16PtrToString(p *uint16) string {
+	var u []uint16
+	for ptr := unsafe.Pointer(p); *(*uint16)(ptr) != 0; ptr = unsafe.Add(ptr, 2) {
+		u = append(u, *(*uint16)(ptr))
+	}
+	return syscall.UTF16ToString(u)
+}
+
 // EnumPrinters returns a list of installed printers.
 func EnumPrinters() ([]PrinterInfo, error) {
 	var needed, returned uint32
@@ -67,7 +82,7 @@ func EnumPrinters() ([]PrinterInfo, error) {
 	procEnumPrintersW.Call(
 		uintptr(flags),
 		0, // pName - NULL for local
-		2, // Level 2
+		4, // Level 4 (name only; fast and works for network connections)
 		0, // pPrinterEnum - NULL
 		0, // cbBuf
 		uintptr(unsafe.Pointer(&needed)),
@@ -83,7 +98,7 @@ func EnumPrinters() ([]PrinterInfo, error) {
 	ret, _, err := procEnumPrintersW.Call(
 		uintptr(flags),
 		0,
-		2,
+		4,
 		uintptr(unsafe.Pointer(&buf[0])),
 		uintptr(needed),
 		uintptr(unsafe.Pointer(&needed)),
@@ -97,11 +112,14 @@ func EnumPrinters() ([]PrinterInfo, error) {
 	defaultPrinter := getDefaultPrinter()
 
 	printers := make([]PrinterInfo, 0, returned)
-	size := unsafe.Sizeof(printerInfo2{})
+	size := unsafe.Sizeof(printerInfo4{})
 
 	for i := uint32(0); i < returned; i++ {
-		info := (*printerInfo2)(unsafe.Pointer(&buf[uintptr(i)*size]))
-		name := syscall.UTF16ToString((*[256]uint16)(unsafe.Pointer(info.pPrinterName))[:])
+		info := (*printerInfo4)(unsafe.Pointer(&buf[uintptr(i)*size]))
+		if info.pPrinterName == nil {
+			continue
+		}
+		name := utf16PtrToString(info.pPrinterName)
 
 		printers = append(printers, PrinterInfo{
 			Name:    name,

@@ -1,39 +1,42 @@
 @echo off
 echo ===================================================
-echo Installing Inventory Print Agent as a Windows Service
+echo Installing Inventory Print Agent (runs as logged-in user)
 echo ===================================================
 echo.
-echo NOTE: Please run this script as Administrator!
+echo Runs under YOUR Windows account at logon, so shared/network
+echo printers installed for your user are visible to the agent.
+echo (No administrator rights needed.)
 echo.
 
-set SERVICE_NAME=InventoryPrintAgent
-set BIN_PATH=%~dp0InventoryPrintAgent.exe
+set TASK_NAME=InventoryPrintAgent
+set DIR=%~dp0
+set VBS=%DIR%run-hidden.vbs
 
-:: Stop the service if it's already running
-sc stop %SERVICE_NAME% >nul 2>&1
-:: Delete the service if it already exists
-sc delete %SERVICE_NAME% >nul 2>&1
+:: Remove old Windows service (older versions ran as a service under SYSTEM,
+:: which cannot see per-user network printers). Ignored if not present / no admin.
+sc stop InventoryPrintAgent >nul 2>&1
+sc delete InventoryPrintAgent >nul 2>&1
 
-:: Create the service
-sc create %SERVICE_NAME% binPath= "\"%BIN_PATH%\"" start= auto DisplayName= "Inventory Print Agent"
+:: Stop any running instance
+taskkill /F /IM InventoryPrintAgent.exe >nul 2>&1
+schtasks /Delete /TN %TASK_NAME% /F >nul 2>&1
+
+:: Launcher that starts the exe without a console window
+> "%VBS%" echo Set sh = CreateObject("WScript.Shell")
+>> "%VBS%" echo sh.CurrentDirectory = "%DIR%"
+>> "%VBS%" echo sh.Run """%DIR%InventoryPrintAgent.exe""", 0, False
+
+schtasks /Create /TN %TASK_NAME% /TR "wscript.exe \"%VBS%\"" /SC ONLOGON /RL LIMITED /F
 if %errorlevel% neq 0 (
-    echo [ERROR] Failed to create service. Did you run as Administrator?
+    echo [ERROR] Failed to create the startup task.
     pause
     exit /b %errorlevel%
 )
 
-:: Set description
-sc description %SERVICE_NAME% "ESC/POS thermal receipt printing agent for Inventory Management System"
-
-:: Start the service
-sc start %SERVICE_NAME%
-if %errorlevel% neq 0 (
-    echo [ERROR] Failed to start service.
-    pause
-    exit /b %errorlevel%
-)
+:: Start now
+schtasks /Run /TN %TASK_NAME%
 
 echo.
-echo [SUCCESS] Inventory Print Agent installed and started successfully!
-echo You can now print thermal receipts from the web application.
+echo [SUCCESS] Print agent installed and started. It will auto-start at every logon.
+echo Keep this folder in place (do not move/delete it).
 pause
