@@ -52,8 +52,13 @@ class ReportFilterComponent extends Component
             $data['users'] = User::where('status',1)->select('id','name')->get();
         }
 
-        if(isset($this->filters['customer_id']) || isset($this->filters['array.customer_id'])) {
-            $data['customers'] = Customer::where('status',1)->select('id','firstname','lastname')->get();
+        // Never load the whole customer table (tens of thousands of rows) - the single customer
+        // picker is populated via ajax, and the multi picker only needs the selected customers.
+        if(isset($this->filters['array.customer_id'])) {
+            $data['customers'] = Customer::whereIn('id', (array) $this->filters['array.customer_id'])
+                ->select('id','firstname','lastname')->get();
+        } elseif(isset($this->filters['customer_id'])) {
+            $data['customers'] = collect();
         }
 
         if(isset($this->filters['department_id']) || isset($this->filters['department'])){

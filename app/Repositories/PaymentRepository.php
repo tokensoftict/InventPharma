@@ -232,8 +232,10 @@ class PaymentRepository
         foreach ($methods as $method)
         {
             if(get_class($obj) !== ChequePaymentApprovalDialog::class && get_class($obj) !== CreditPaymentApprovalDialog::class) {
-               // if ($method['paymentmethod_id'] == "4") continue;
-                if ($method['paymentmethod_id'] == "8") continue;
+                if(config('app.isPSGDC')) {
+                    if ($method['paymentmethod_id'] == "4") continue;
+                    if ($method['paymentmethod_id'] == "8") continue;
+                }
             }
 
             $pmethods[] = new Paymentmethoditem(

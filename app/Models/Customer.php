@@ -62,6 +62,7 @@ class Customer extends Model
         'retail_member_group_id' => 'int',
         'is_manual_member_group' => 'bool',
         'is_manual_retail_member_group' => 'bool',
+        'customer_type' => 'string',
 	];
 
 	protected $fillable = [
@@ -72,6 +73,7 @@ class Customer extends Model
 		'address',
 		'phone_number',
 		'retail_customer',
+        'customer_type',
 		'city_id',
 		'credit_balance',
 		'deposit_balance',
@@ -84,11 +86,103 @@ class Customer extends Model
 	];
 
 
-    protected $appends = ['fullname'];
+    protected $appends = ['fullname', 'department_type', 'type_label'];
 
     public function getFullnameAttribute()
     {
         return $this->firstname." ".$this->lastname;
+    }
+
+    public function getDepartmentTypeAttribute(): string
+    {
+        if (!empty($this->customer_type) && in_array($this->customer_type, ['both', 'retail', 'wholesale'])) {
+            return $this->customer_type;
+        }
+
+        // Check if query already computed spent in both
+        if (isset($this->attributes['retail_spent']) && isset($this->attributes['wholesale_spent'])) {
+            if ((float)$this->attributes['retail_spent'] > 0 && (float)$this->attributes['wholesale_spent'] > 0) {
+                return 'both';
+            }
+            if ((float)$this->attributes['retail_spent'] > 0) {
+                return 'retail';
+            }
+            if ((float)$this->attributes['wholesale_spent'] > 0) {
+                return 'wholesale';
+            }
+        }
+
+        // Check customer invoices in_department if loaded:
+        // 'bulksales' & 'wholesales' => wholesale, 'retail' => retail
+        if ($this->relationLoaded('invoices') && $this->invoices->isNotEmpty()) {
+            $hasWholesale = $this->invoices->contains(fn($inv) => in_array($inv->in_department, ['bulksales', 'wholesales']));
+            $hasRetail = $this->invoices->contains(fn($inv) => $inv->in_department === 'retail');
+            if ($hasWholesale && $hasRetail) {
+                return 'both';
+            }
+            if ($hasRetail) {
+                return 'retail';
+            }
+            if ($hasWholesale) {
+                return 'wholesale';
+            }
+        }
+
+        // If customer has both wholesale and retail member groups assigned
+        if (!empty($this->member_group_id) && !empty($this->retail_member_group_id)) {
+            return 'both';
+        }
+
+        return $this->retail_customer ? 'retail' : 'wholesale';
+    }
+
+    public function getTypeLabelAttribute(): string
+    {
+        return match ($this->department_type) {
+            'both' => 'Wholesales & Retail',
+            'retail' => 'Retail',
+            default => 'Wholesales',
+        };
+    }
+
+    public function getTypeBadgeAttribute(): string
+    {
+        return match ($this->department_type) {
+            'both' => '<span class="badge text-white px-2 py-1" style="background-color: #6f42c1 !important; font-size: 11px;"><i class="bx bx-git-merge me-1"></i> Both (Wholesale &amp; Retail)</span>',
+            'retail' => '<span class="badge bg-success-subtle text-success border border-success px-2 py-1" style="font-size: 11px;"><i class="bx bx-store me-1"></i> Retail</span>',
+            default => '<span class="badge bg-primary-subtle text-primary border border-primary px-2 py-1" style="font-size: 11px;"><i class="bx bx-buildings me-1"></i> Wholesales</span>',
+        };
+    }
+
+    public function getIsOwingAttribute(): bool
+    {
+        return (float) $this->credit_balance < 0;
+    }
+
+    public function getOwingAmountAttribute(): float
+    {
+        return $this->is_owing ? abs((float) $this->credit_balance) : 0.0;
+    }
+
+    public function getOwingBadgeAttribute(): string
+    {
+        if ($this->is_owing) {
+            return '<span class="badge bg-danger-subtle text-danger border border-danger px-2 py-1 fw-bold" style="font-size: 11px;"><i class="bx bx-error-circle me-1"></i> Owing ' . money($this->owing_amount) . '</span>';
+        }
+        if ((float) $this->credit_balance > 0) {
+            return '<span class="badge bg-success-subtle text-success border border-success px-2 py-1" style="font-size: 11px;"><i class="bx bx-wallet me-1"></i> Deposit ' . money($this->credit_balance) . '</span>';
+        }
+        return '<span class="badge bg-light text-muted border px-2 py-1" style="font-size: 11px;">₦0.00 (Cleared)</span>';
+    }
+
+    public function retail_invoices()
+    {
+        return $this->hasMany(Invoice::class)->where('in_department', 'retail');
+    }
+
+    public function wholesale_invoices()
+    {
+        return $this->hasMany(Invoice::class)->whereIn('in_department', ['bulksales', 'wholesales']);
     }
 
 	public function city()
@@ -187,6 +281,7 @@ class Customer extends Model
             'retail_member_group_id' => $this->retail_member_group_id,
             'is_manual_member_group' => $this->is_manual_member_group,
             'is_manual_retail_member_group' => $this->is_manual_retail_member_group,
+            'customer_type' => $this->customer_type,
         ];
     }
 

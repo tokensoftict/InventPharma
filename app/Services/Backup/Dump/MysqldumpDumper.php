@@ -38,6 +38,7 @@ class MysqldumpDumper implements DatabaseDumper
             'C:\\xampp\\mysql\\bin\\mysqldump.exe',
             'C:\\laragon\\bin\\mysql\\mysql-8.0\\bin\\mysqldump.exe',
             'C:\\wamp64\\bin\\mysql\\mysql8.0\\bin\\mysqldump.exe',
+            
         ]);
 
         foreach ($candidates as $candidate) {

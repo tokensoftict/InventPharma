@@ -302,81 +302,123 @@
             </div>
         </div>
     </div>
+    {{-- Add Customer modal (same design as the Customer Dashboard form) --}}
     <div wire:ignore.self class="modal fade" id="simpleComponentModal" tabindex="-1" role="dialog" aria-hidden="true">
-        <form method="post" wire:submit="saveCustomers()">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">{{ $this->modalTitle }} {{ $this->modalName }}</h5>
-                        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+        <form method="post" wire:submit="saveCustomers">
+            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                <div class="modal-content shadow border-0">
+                    <div class="modal-header bg-light py-3">
+                        <h5 class="modal-title fw-bold">
+                            <i class="bx bx-user-plus me-2 text-primary"></i>
+                            {{ $this->modalTitle }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="row">
 
-                            <div class="col-12">
-                                <div class="row">
-                                    <div class="col-6">
-                                        <div class="mb-3">
-                                            <label>Firstname</label>
-                                            <input class="form-control" type="text" wire:model="firstname"  name="firstname" value="{{ $this->firstname }}" placeholder="Firstname">
-                                            @error('firstname') <span class="text-danger">{{ $message }}</span> @enderror
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="mb-3">
-                                            <label>Lastname</label>
-                                            <input class="form-control" type="text" wire:model="lastname"  name="lastname" value="{{ $this->lastname }}" placeholder="Lastname">
-                                            @error('lastname') <span class="text-danger">{{ $message }}</span> @enderror
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-
-
-                                    <div class="mb-3">
-                                        <label>Email Address</label>
-                                        <input class="form-control" type="email" wire:model="email"  name="email" value="{{ $this->email }}" placeholder="Email Address">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label>Phone Number</label>
-                                        <input class="form-control" type="text" wire:model="phone_number"  name="phone_number" value="{{ $this->phone_number }}" placeholder="Phone Number">
-                                        @error('phone_number') <span class="text-danger">{{ $message }}</span> @enderror
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label>City</label>
-                                        <select class="form-control" wire:model="city_id">
-                                            <option value="">Select City</option>
-                                            @foreach($this->cities as $city)
-                                                <option value="{{ $city->id }}">{{ $city->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label>Address</label>
-                                        <textarea class="form-control" wire:model="address"  name="address" placeholder="Address"></textarea>
-                                        @error('address') <span class="text-danger">{{ $message }}</span> @enderror
-                                    </div>
-
-                                </div>
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Firstname <span class="text-danger">*</span></label>
+                                <input class="form-control" type="text" wire:model="firstname" placeholder="e.g. John" required>
+                                @error('firstname') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Lastname <span class="text-danger">*</span></label>
+                                <input class="form-control" type="text" wire:model="lastname" placeholder="e.g. Doe" required>
+                                @error('lastname') <span class="text-danger small">{{ $message }}</span> @enderror
                             </div>
 
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Phone Number <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bx-phone"></i></span>
+                                    <input class="form-control" type="text" wire:model.live.debounce.400ms="phone_number" placeholder="e.g. 08012345678" required>
+                                </div>
+                                <div class="form-text small text-muted">Required. Uniquely identifies the customer (e.g. 080..., +234...).</div>
+                                @error('phone_number') <span class="text-danger small">{{ $message }}</span> @enderror
+
+                                @if($duplicatePhoneWarning)
+                                    <div class="alert alert-danger py-2 px-3 small mt-2 mb-0">
+                                        <i class="bx bx-error-circle me-1"></i> {{ $duplicatePhoneWarning }}
+                                        <div class="mt-2 d-flex flex-wrap align-items-center gap-3">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" wire:click="useExistingCustomer">
+                                                <i class="bx bx-user-check me-1"></i> Use existing customer
+                                            </button>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bx bx-envelope"></i></span>
+                                    <input class="form-control" type="email" wire:model="email" placeholder="customer@example.com">
+                                </div>
+                                @error('email') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-semibold d-block">Customer Category / Department <span class="text-danger">*</span></label>
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <div class="form-check card p-2 border {{ $customer_type === 'wholesale' ? 'border-primary bg-primary-subtle' : 'border' }} mb-0">
+                                            <input class="form-check-input ms-1" type="radio" wire:model.live="customer_type" value="wholesale" id="invTypeWholesale">
+                                            <label class="form-check-label ms-2 fw-semibold" for="invTypeWholesale">
+                                                <i class="bx bx-buildings text-primary me-1"></i> Wholesales
+                                                <div class="small text-muted fw-normal">Customer buys in wholesale</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check card p-2 border {{ $customer_type === 'retail' ? 'border-success bg-success-subtle' : 'border' }} mb-0">
+                                            <input class="form-check-input ms-1" type="radio" wire:model.live="customer_type" value="retail" id="invTypeRetail">
+                                            <label class="form-check-label ms-2 fw-semibold" for="invTypeRetail">
+                                                <i class="bx bx-store text-success me-1"></i> Retail
+                                                <div class="small text-muted fw-normal">Customer buys in retail</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check card p-2 border mb-0" style="{{ $customer_type === 'both' ? 'border-color: #6f42c1 !important; background-color: rgba(111, 66, 193, 0.08);' : '' }}">
+                                            <input class="form-check-input ms-1" type="radio" wire:model.live="customer_type" value="both" id="invTypeBoth">
+                                            <label class="form-check-label ms-2 fw-semibold" for="invTypeBoth">
+                                                <i class="bx bx-git-merge me-1" style="color: #6f42c1;"></i> Both
+                                                <div class="small text-muted fw-normal">Wholesale &amp; Retail</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                @error('customer_type') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">City</label>
+                                <select class="form-select" wire:model="city_id">
+                                    <option value="">Select City</option>
+                                    @foreach($this->cities as $city)
+                                        <option value="{{ $city->id }}">{{ $city->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Address</label>
+                                <textarea class="form-control" rows="2" wire:model="address" placeholder="Physical Address"></textarea>
+                                @error('address') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
                         </div>
                     </div>
-                    <div class="modal-footer ">
-                        <button type="submit" wire:target="saveCustomers" wire:loading.attr="disabled" class="btn btn-primary">
+
+                    <div class="modal-footer bg-light py-2 d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" wire:target="saveCustomers" wire:loading.attr="disabled" class="btn btn-primary btn-sm px-4">
                             <span wire:loading wire:target="saveCustomers" class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <i wire:loading.remove wire:target="saveCustomers" class="bx bx-check me-1"></i>
                             {{ $this->saveButton }}
                         </button>
-                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
                     </div>
                 </div>
-
             </div>
         </form>
     </div>

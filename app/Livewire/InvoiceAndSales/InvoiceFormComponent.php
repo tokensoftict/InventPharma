@@ -47,6 +47,9 @@ class InvoiceFormComponent extends Component
     public string $email = "";
     public string $city_id = "";
     public string $member_group_id = "";
+    public string $customer_type = "wholesale"; // 'wholesale', 'retail', 'both'
+    public ?string $duplicatePhoneWarning = null;
+    public ?int $duplicateCustomerId = null;
     public array $selectedProductOption = [];
     public string $selectedProductName = "";
     public array $selectedProductInfo = ["selectedOptions"];
@@ -127,127 +130,101 @@ class InvoiceFormComponent extends Component
 
     public function newCustomer()
     {
+        $this->resetCustomerForm();
 
-        $this->modalTitle = "New";
+        $this->modalTitle = "New Customer";
 
-        $this->saveButton = "Save";
+        $this->saveButton = "Save Customer";
 
         $this->dispatch("openModal", []);
+    }
+
+    private function resetCustomerForm(): void
+    {
+        $this->firstname = "";
+        $this->lastname = "";
+        $this->email = "";
+        $this->phone_number = "";
+        $this->address = "";
+        $this->city_id = "";
+        // Default category follows the logged-in user's department (4 = retail)
+        $this->customer_type = (auth()->user()->department_id === 4) ? 'retail' : 'wholesale';
+        $this->duplicatePhoneWarning = null;
+        $this->duplicateCustomerId = null;
+        $this->resetValidation();
+    }
+
+    public function updatedPhoneNumber()
+    {
+        // Typing a new number clears any previous duplicate warning
+        $this->duplicatePhoneWarning = null;
+        $this->duplicateCustomerId = null;
     }
 
     public function saveCustomers()
     {
         $this->validate([
-            'firstname' => 'required',
-            'lastname' => 'required',
-            //'phone_number' => 'required|digits_between:11,11|unique:customers,phone_number',
+            'firstname' => 'required|string|max:100',
+            'lastname' => 'required|string|max:100',
+            'email' => 'nullable|email|max:150',
+            'phone_number' => 'required|string|max:25',
+            'customer_type' => 'required|in:wholesale,retail,both',
         ]);
 
-        $this->customer = Customer::where('phone_number', $this->phone_number)->where('status', 1)->get()->first();
+        $cleanedPhone = trim(preg_replace('/[\s\-\(\)]+/', '', $this->phone_number));
 
-        if (!$this->customer) {
-            $status = $this->save();
-            $message = "Customer has been created successfully";
-        } else {
-            $status = $this->update($this->customer);
-            $message = "Customer has been updated successfully";
+        if ($cleanedPhone === '') {
+            $this->addError('phone_number', 'Phone number is required.');
+            return;
         }
-        if ($status === true) {
-            $this->alert(
-                "success",
-                "Customer",
-                [
-                    'position' => 'center',
-                    'timer' => 2000,
-                    'toast' => false,
-                    'text' => $message
-                ]
-            );
-        }
-    }
 
-    public function save()
-    {
-        $this->validate([
-            'firstname' => 'required',
-            'lastname' => 'required',
-            'phone_number' => 'required|digits_between:11,11|unique:customers,phone_number',
-        ]);
+        // Phone number uniquely identifies a customer: never create a duplicate
+        $duplicate = Customer::where('phone_number', $cleanedPhone)->first();
+        if ($duplicate) {
+            $this->duplicateCustomerId = $duplicate->id;
+            $this->duplicatePhoneWarning = "'{$cleanedPhone}' already belongs to {$duplicate->firstname} {$duplicate->lastname}"
+                . ($duplicate->status ? '' : ' (inactive)') . ". Use that customer instead of adding a new one.";
+            return;
+        }
 
         $customer = new Customer();
-
-        $memberGroup = MemberGroup::find(4);
-        $memberGroupId = null;
-        if($memberGroup) {
-            $memberGroupId = $memberGroup->id;
-        }
-
         $customer->firstname = $this->firstname;
         $customer->lastname = $this->lastname;
-        $customer->email = $this->email;
-        $customer->phone_number = $this->phone_number;
-        $customer->address = $this->address;
-        $customer->city_id = $this->city_id == "" ? null : $this->city_id;
-        $customer->member_group_id = $memberGroupId;
-        $customer->retail_member_group_id = $memberGroupId;
+        $customer->email = $this->email ?: null;
+        $customer->phone_number = $cleanedPhone;
+        $customer->address = $this->address ?: null;
+        $customer->city_id = $this->city_id ?: null;
+        $customer->customer_type = $this->customer_type;
+        $customer->retail_customer = $this->customer_type === 'retail' ? 1 : 0;
+
+        $memberGroup = MemberGroup::find(4);
+        $customer->member_group_id = $memberGroup?->id;
+        $customer->retail_member_group_id = $memberGroup?->id;
 
         $customer->save();
 
+        $this->dispatch("newCustomer", ['customer' => $customer->fresh()->toArray()]);
 
-
-        $this->dispatch("newCustomer", ['customer' => $customer->toArray()]);
-
-        return true;
-    }
-
-    public function update(Customer $customer)
-    {
-
-        $this->validate([
-            'firstname' => 'required',
-            'lastname' => 'required',
-            'phone_number' => 'required',
+        $this->alert("success", "Customer", [
+            'position' => 'center',
+            'timer' => 2000,
+            'toast' => false,
+            'text' => "Customer has been created successfully"
         ]);
-
-        $customer_ = Customer::where('phone_number', $this->phone_number)->where('status', 1)->get()->first();
-
-        $memberGroup = MemberGroup::find(4);
-        $memberGroupId = null;
-        if($memberGroup) {
-            $memberGroupId = $memberGroup->id;
-        }
-
-        if ($customer_ && $customer_->id != $customer->id) {
-            $this->alert(
-                "error",
-                "Customer",
-                [
-                    'position' => 'center',
-                    'timer' => 2000,
-                    'toast' => false,
-                    'text' => "Customer Phone Number already exists with name " . $customer_->firstname . " " . $customer_->lastname
-                ]
-            );
-            return false;
-        }
-
-        $customer->firstname = $this->firstname;
-        $customer->lastname = $this->lastname;
-        $customer->email = $this->email ?? "";
-        $customer->phone_number = $this->phone_number;
-        $customer->address = $this->address;
-        $customer->retail_customer = (auth()->user()->department_id === 4 ? 1 : 0);
-        $customer->city_id = $this->city_id == "" ? NULL : $this->city_id;
-        $customer->member_group_id = $memberGroupId;
-        $customer->retail_member_group_id = $memberGroupId;
-
-
-        $customer->save();
-
-        $this->dispatch("newCustomer", ['customer' => $customer->toArray()]);
-
-        return true;
     }
+
+    public function useExistingCustomer()
+    {
+        $customer = $this->duplicateCustomerId ? Customer::find($this->duplicateCustomerId) : null;
+        if (!$customer) {
+            return;
+        }
+
+        $this->duplicatePhoneWarning = null;
+        $this->duplicateCustomerId = null;
+        $this->dispatch("newCustomer", ['customer' => $customer->toArray()]);
+    }
+
 
     public function generateInvoice()
     {

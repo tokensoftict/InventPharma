@@ -9,14 +9,14 @@ class CustomerController extends Controller
 {
     public function index(){
         $data = [
-            'filters' => ['retail_customer' => 0]
+            'filters' => []
         ];
         return view('customermanager.index', $data);
     }
 
     public function retails(){
         $data = [
-            'filters' => ['retail_customer' => 1]
+            'filters' => ['department_type' => 'retail']
         ];
         return view('customermanager.index', $data);
     }

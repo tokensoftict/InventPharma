@@ -256,8 +256,8 @@ Route::middleware(['auth', 'app.active'])->group(function () {
 
         Route::prefix('CustomerManager')->namespace('CustomerManager')->group(function () {
             Route::prefix('customer')->as('customer.')->group(function () {
-                Route::get('', ['as' => 'index', 'uses' => 'CustomerController@index', 'visible' => true, 'custom_label' => 'List Whole Customer']);
-                Route::get('/retails', ['as' => 'retail', 'uses' => 'CustomerController@retails', 'visible' => true, 'custom_label' => 'List retail Customer']);
+                Route::get('', ['as' => 'index', 'uses' => 'CustomerController@index', 'visible' => true, 'custom_label' => 'All Customer']);
+                //Route::get('/retails', ['as' => 'retail', 'uses' => 'CustomerController@retails', 'visible' => true, 'custom_label' => 'List retail Customer']);
                 Route::get('list', ['as' => 'list', 'uses' => 'CustomerController@list_all']);
                 Route::get('changeorassigncustumertomembergroup', ['as' => 'changeorassigncustumertomembergroup', 'uses' => 'CustomerController@changeorassigncustumertomembergroup', 'custom_label' => "Assign Customer to Member Group"]);
                 Route::get('create', ['as' => 'create', 'uses' => 'CustomerController@create']);
