@@ -59,6 +59,10 @@ trait PaymentComponentTrait
 
     public String $select2key = "";
 
+    public bool $opay_approved = false; // OPay POS payment approved by terminal
+
+    public array $opay_data = []; // OPay POS transaction details (saved in payment_info)
+
     public array $data = [];
 
     public function boot(PaymentRepository $paymentRepository, InvoiceRepository $invoiceRepository)
@@ -79,8 +83,64 @@ trait PaymentComponentTrait
         $this->paymentRepository->updateDisplay($this);
     }
 
+    /**
+     * Called from the browser after the OPay POS terminal (via the Print Agent)
+     * reported the result of a purchase. Only an approved payment whose amount
+     * matches the amount due unlocks "Save Payment".
+     */
+    public function opayApproved(array $result) : void
+    {
+        $this->opay_approved = false;
+        $this->opay_data = [];
+
+        $data = $result['data'] ?? [];
+        $expectedKobo = (string) (int) round(((float) $this->sub_total) * 100);
+
+        if (($result['response_code'] ?? '') !== '202' || ($result['status'] ?? '') !== 'success') {
+            $this->alert('error', 'OPay POS', ['position' => 'center', 'timer' => 4000, 'toast' => false, 'text' => 'Payment was not approved on the OPay terminal.']);
+            return;
+        }
+
+        if ((string) ($data['amount'] ?? '') !== $expectedKobo) {
+            $this->alert('error', 'OPay POS', ['position' => 'center', 'timer' => 6000, 'toast' => false, 'text' => 'Amount paid on the terminal does not match the amount due.']);
+            return;
+        }
+
+        $this->opay_approved = true;
+        $this->opay_data = [
+            'provider' => 'opay',
+            'order_no' => $data['orderNo'] ?? null,
+            'order_number' => $data['orderNumber'] ?? null,
+            'transaction_number' => $data['transactionNumber'] ?? null,
+            'terminal_sn' => $data['SN'] ?? null,
+            'cashier_method' => $data['cashierMethod'] ?? null,
+            'card_type' => $data['cardType'] ?? null,
+            'card_number' => $data['cardNumber'] ?? null,
+            'amount_kobo' => $data['amount'] ?? null,
+            'response_code' => $result['response_code'] ?? null,
+            'response' => $data['response'] ?? null,
+        ];
+    }
+
+    public function opayReset() : void
+    {
+        $this->opay_approved = false;
+        $this->opay_data = [];
+    }
+
+    public function updatedPaymentMethod() : void
+    {
+        // Switching method discards any previous OPay approval.
+        $this->opayReset();
+    }
+
     public function savePayment()
     {
+        if ($this->payment_method === "9" && !$this->opay_approved) {
+            $this->alert('error', 'OPay POS', ['position' => 'center', 'timer' => 4000, 'toast' => false, 'text' => 'Collect the payment on the OPay terminal first.']);
+            return;
+        }
+
         DB::transaction(function(){
             $this->paymentRepository->savePayment($this);
             $filterChequeAndCredit = 0;
@@ -103,6 +163,11 @@ trait PaymentComponentTrait
 
     public function saveCreditPayment() : void
     {
+        if ($this->payment_method === "9" && !$this->opay_approved) {
+            $this->alert('error', 'OPay POS', ['position' => 'center', 'timer' => 4000, 'toast' => false, 'text' => 'Collect the payment on the OPay terminal first.']);
+            return;
+        }
+
         DB::transaction(function(){
             $this->paymentRepository->saveCreditPayment($this);
         });

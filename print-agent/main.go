@@ -59,6 +59,10 @@ func startHTTPServer() {
 	mux.HandleFunc("/printer", corsMiddleware(authMiddleware(handleGetPrinter)))
 	mux.HandleFunc("/printer/select", corsMiddleware(authMiddleware(handleSelectPrinter)))
 	mux.HandleFunc("/print", corsMiddleware(authMiddleware(handlePrint)))
+	mux.HandleFunc("/pos/ports", corsMiddleware(authMiddleware(handlePOSPorts)))
+	mux.HandleFunc("/pos/echo", corsMiddleware(authMiddleware(handlePOSEcho)))
+	mux.HandleFunc("/pos/purchase", corsMiddleware(authMiddleware(handlePOSPurchase)))
+	mux.HandleFunc("/pos/inquiry", corsMiddleware(authMiddleware(handlePOSInquiry)))
 	mux.HandleFunc("/test-print", corsMiddleware(authMiddleware(handleTestPrint)))
 
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)

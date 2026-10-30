@@ -14,6 +14,7 @@ type Config struct {
 	DefaultPrinter string   `yaml:"default_printer"`
 	AllowedOrigins []string `yaml:"allowed_origins"`
 	ServiceName    string   `yaml:"service_name"`
+	POS            POSConfig `yaml:"pos"`
 }
 
 // DefaultConfig returns a config with sensible defaults.
@@ -25,6 +26,7 @@ func DefaultConfig() *Config {
 		DefaultPrinter: "",
 		AllowedOrigins: []string{"*"},
 		ServiceName:    "InventoryPrintAgent",
+		POS:            defaultPOSConfig(),
 	}
 }
 

@@ -20,3 +20,14 @@ allowed_origins:
 
 # Windows Service name
 service_name: "InventoryPrintAgent"
+
+# OPay POS terminal (USB / 232 serial)
+pos:
+  enabled: true
+  port: ""            # e.g. COM3 (see GET /pos/ports)
+  baud_rate: 115200   # confirm with the OPay Serial Port Emulator package
+  data_bits: 8
+  parity: none        # none | even | odd
+  stop_bits: 1
+  timeout_seconds: 120
+  append_newline: false

@@ -119,7 +119,7 @@ class PaymentRepository
             }
         }
 
-        $totalPaid = $payment->paymentmethoditems()->whereIn('paymentmethod_id', [1,2,3])->sum('amount');
+        $totalPaid = $payment->paymentmethoditems()->whereIn('paymentmethod_id', [1,2,3,9])->sum('amount');
 
         if($totalPaid > 0 && $payment->customer_id !== 1) { // customer ledger for walking customer
             dispatch(new AddLogToCustomerLedger([
@@ -323,6 +323,8 @@ class PaymentRepository
                 'cheque_date' => $component->cheque_date,
                 'comment' => $component->comment
             ];
+        }else if($component->payment_method === "9"){
+            return $component->opay_data;
         }
         else {
             return [
@@ -430,6 +432,12 @@ class PaymentRepository
             }else{
                 $obj->btnEnabled = true;
             }
+
+        }
+        else if($obj->payment_method === "9"){
+
+            // OPay POS: only enabled once the terminal approved the exact amount
+            $obj->btnEnabled = $obj->opay_approved === true;
 
         }
         else if($obj->payment_method === "")

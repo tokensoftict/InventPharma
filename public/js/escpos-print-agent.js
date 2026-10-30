@@ -133,6 +133,41 @@ class EscPosPrintAgent {
         return await response.json();
     }
 
+    // ---------------- OPay POS terminal (USB serial, via the agent) ----------------
+
+    async _posRequest(path, body, timeoutMs) {
+        const response = await fetch(this.agentUrl + path, {
+            method: 'POST',
+            headers: this._headers(),
+            body: body ? JSON.stringify(body) : undefined,
+            signal: AbortSignal.timeout(timeoutMs),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result.error || result.message || ('POS agent returned ' + response.status));
+        }
+        return result;
+    }
+
+    /** Test the link between the agent and the OPay terminal. */
+    posEcho() {
+        return this._posRequest('/pos/echo', null, 10000);
+    }
+
+    /**
+     * Start a purchase on the terminal and wait for the customer to pay.
+     * @param {number} amountKobo integer amount in kobo
+     * @param {string} orderNo    business order number (max 32 chars)
+     */
+    posPurchase(amountKobo, orderNo, timeoutMs = 150000) {
+        return this._posRequest('/pos/purchase', { amount: amountKobo, order_no: orderNo }, timeoutMs);
+    }
+
+    /** Re-check the status of an earlier order. */
+    posInquiry(orderNo) {
+        return this._posRequest('/pos/inquiry', { order_no: orderNo }, 20000);
+    }
+
     /**
      * Remember the selected printer in localStorage.
      */
