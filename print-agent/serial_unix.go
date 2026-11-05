@@ -112,13 +112,22 @@ func openSerial(pc POSConfig) (serialPort, error) {
 
 func listSerialPorts() []string {
 	ports := []string{}
-	for _, pat := range []string{"/dev/cu.*", "/dev/ttyUSB*", "/dev/ttyACM*", "/dev/pts/*"} {
+	for _, pat := range []string{"/dev/cu.usb*", "/dev/cu.*", "/dev/ttyUSB*", "/dev/ttyACM*"} {
 		m, _ := filepath.Glob(pat)
 		for _, p := range m {
-			if strings.Contains(p, "Bluetooth") {
+			if strings.Contains(p, "Bluetooth") || strings.Contains(p, "debug-console") {
 				continue
 			}
-			ports = append(ports, p)
+			already := false
+			for _, existing := range ports {
+				if existing == p {
+					already = true
+					break
+				}
+			}
+			if !already {
+				ports = append(ports, p)
+			}
 		}
 	}
 	sort.Strings(ports)

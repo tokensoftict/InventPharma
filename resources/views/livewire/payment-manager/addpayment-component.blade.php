@@ -152,12 +152,16 @@
                             {{-- SPLIT --}}
                             @if($this->payment_method === "6")
                                 <table class="table table-bordered table-striped bg-white mb-0">
-                                    @foreach($this->payments->filter(function($item){ return !in_array($item->id, [7, 9]); }) as $payment)
+                                    @foreach($this->payments->filter(function($item){ return $item->id !== 7; }) as $payment)
                                         @if($payment->id != 6)
                                             <tr>
                                                 <th class="align-middle">{{ $pmIcons[$payment->id] ?? '' }} {{ $payment->name }}</th>
-                                                <th><input class="form-control form-control-lg" wire:model.live.debounce="split_payments.{{ $payment->id }}.amount"></th>
                                                 <th>
+                                                    <input class="form-control form-control-lg"
+                                                           @if($payment->id === 9) id="opaySplitInput" @endif
+                                                           wire:model.live.debounce="split_payments.{{ $payment->id }}.amount">
+                                                </th>
+                                                <th class="align-middle">
                                                     @if(in_array($payment->id,[2,3]))
                                                         <select class="select form-control form-control-lg" wire:model.live="split_payments.{{ $payment->id }}.bank_account_id">
                                                             <option value="">Select Bank Account</option>
@@ -184,6 +188,39 @@
                                                             <span class="text-danger">{{ $this->error_deposit }}</span>
                                                         @endif
                                                     @endif
+
+                                                    @if($payment->id === 9)
+                                                        @php($splitOpayKobo = (int) round(((float) ($this->split_payments[9]['amount'] ?? 0)) * 100))
+                                                        <div id="opayPanel"
+                                                             data-opay-kobo="{{ $splitOpayKobo }}"
+                                                             data-opay-invoice="{{ $this->invoice->invoice_number }}"
+                                                             data-opay-last-order="{{ $this->opay_last_order_no }}"
+                                                             data-opay-url="{{ config('printing.escpos.print_agent_url') }}"
+                                                             data-opay-token="{{ config('printing.escpos.print_agent_token') }}">
+                                                            @if($this->opay_approved && (int) ($this->opay_data['amount_kobo'] ?? 0) === $splitOpayKobo && $splitOpayKobo > 0)
+                                                                <div class="alert alert-success py-2 px-3 mb-0">
+                                                                    <i class="fa fa-check-circle"></i> Approved ({{ money($splitOpayKobo / 100) }})
+                                                                    @if(!empty($this->opay_data['cashier_method'])) · {{ $this->opay_data['cashier_method'] }} @endif
+                                                                    <br/><small>Ref: {{ $this->opay_data['transaction_number'] ?? '' }}</small>
+                                                                </div>
+                                                            @else
+                                                                <div class="d-grid gap-1">
+                                                                    <button type="button" class="btn btn-success btn-sm w-100" id="opayChargeBtn" onclick="opayCharge()">
+                                                                        📱 Send to OPay POS
+                                                                    </button>
+                                                                    <button type="button"
+                                                                            class="btn btn-outline-warning btn-sm w-100 {{ $this->opay_last_order_no !== '' ? '' : 'd-none' }}"
+                                                                            id="opayInquiryBtn"
+                                                                            onclick="opayInquiry()"
+                                                                            wire:ignore.self>
+                                                                        🔄 Re-confirm Last Payment
+                                                                        <small class="d-block opacity-75" id="opayLastOrderLabel">{{ $this->opay_last_order_no !== '' ? 'Order: ' . $this->opay_last_order_no : '' }}</small>
+                                                                    </button>
+                                                                </div>
+                                                            @endif
+                                                            <div id="opayStatus" class="mt-1" wire:ignore></div>
+                                                        </div>
+                                                    @endif
                                                 </th>
                                             </tr>
                                         @endif
@@ -202,6 +239,7 @@
                                 <div class="text-center"
                                      data-opay-kobo="{{ $opayKobo }}"
                                      data-opay-invoice="{{ $this->invoice->invoice_number }}"
+                                     data-opay-last-order="{{ $this->opay_last_order_no }}"
                                      data-opay-url="{{ config('printing.escpos.print_agent_url') }}"
                                      data-opay-token="{{ config('printing.escpos.print_agent_token') }}"
                                      id="opayPanel">
@@ -215,9 +253,19 @@
                                             <br/><small>Ref: {{ $this->opay_data['transaction_number'] ?? '' }}</small>
                                         </div>
                                     @else
-                                        <button type="button" class="btn btn-success btn-lg w-100" id="opayChargeBtn" onclick="opayCharge()">
-                                            📱 Send to OPay POS
-                                        </button>
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-success btn-lg w-100" id="opayChargeBtn" onclick="opayCharge()">
+                                                📱 Send to OPay POS
+                                            </button>
+                                            <button type="button"
+                                                    class="btn btn-outline-warning btn-lg w-100 {{ $this->opay_last_order_no !== '' ? '' : 'd-none' }}"
+                                                    id="opayInquiryBtn"
+                                                    onclick="opayInquiry()"
+                                                    wire:ignore.self>
+                                                🔄 Re-confirm Last Payment on POS
+                                                <small class="d-block opacity-75" id="opayLastOrderLabel">{{ $this->opay_last_order_no !== '' ? 'Order: ' . $this->opay_last_order_no : '' }}</small>
+                                            </button>
+                                        </div>
                                     @endif
                                     <div id="opayStatus" class="mt-2" wire:ignore></div>
                                 </div>
@@ -226,7 +274,7 @@
                         </div>
                     @endif
 
-                    <button wire:click="savePayment" wire:target="savePayment" wire:loading.attr="disabled"
+                    <button id="savePaymentBtn" wire:click="savePayment" wire:target="savePayment" wire:loading.attr="disabled"
                             {{ $this->btnEnabled === true ? '' : 'disabled="disabled"' }}
                             class="btn pay-save w-100 mt-4">
                         Save Payment
@@ -239,42 +287,123 @@
     </div>
 
     <script>
-        function opayStatus(msg, cls) {
+        function opayStatus(msg, cls, loading) {
             const el = document.getElementById('opayStatus');
-            if (el) el.innerHTML = '<div class="alert alert-' + cls + ' mb-0">' + msg + '</div>';
+            if (!el) return;
+            el.replaceChildren();
+            const alertBox = document.createElement('div');
+            alertBox.className = 'alert alert-' + cls + ' mb-0';
+            if (loading) {
+                const spin = document.createElement('span');
+                spin.className = 'spinner-border spinner-border-sm me-2';
+                alertBox.appendChild(spin);
+            }
+            alertBox.appendChild(document.createTextNode(msg));
+            el.appendChild(alertBox);
+        }
+
+        function opayShowInquiryBtn(orderNo) {
+            const panel = document.getElementById('opayPanel');
+            const inqBtn = document.getElementById('opayInquiryBtn');
+            const label = document.getElementById('opayLastOrderLabel');
+            if (panel) panel.dataset.opayLastOrder = orderNo;
+            if (label) label.textContent = 'Order: ' + orderNo;
+            if (inqBtn) inqBtn.classList.remove('d-none');
         }
 
         async function opayCharge() {
             const panel = document.getElementById('opayPanel');
             const btn = document.getElementById('opayChargeBtn');
+            const inqBtn = document.getElementById('opayInquiryBtn');
             if (!panel || !btn) return;
 
-            const kobo = parseInt(panel.dataset.opayKobo, 10);
-            if (!kobo || kobo <= 0) { opayStatus('Invalid amount.', 'danger'); return; }
+            let kobo = parseInt(panel.dataset.opayKobo, 10);
+            const splitInput = document.getElementById('opaySplitInput');
+            if (splitInput) {
+                const splitAmount = parseFloat(splitInput.value || '0');
+                kobo = Math.round(splitAmount * 100);
+                panel.dataset.opayKobo = String(kobo);
+                await @this.set('split_payments.9.amount', splitAmount);
+            }
+            if (!kobo || kobo <= 0) { opayStatus('Enter a valid OPay POS amount first.', 'danger', false); return; }
 
             // Unique order number per attempt (OPay limit: 32 chars)
             const suffix = '-' + Date.now().toString(36);
             const orderNo = (panel.dataset.opayInvoice || 'INV').slice(0, 32 - suffix.length) + suffix;
+            opayShowInquiryBtn(orderNo);
 
             const agent = new EscPosPrintAgent(panel.dataset.opayUrl || 'http://127.0.0.1:9100');
             if (panel.dataset.opayToken) agent.setToken(panel.dataset.opayToken);
 
             btn.disabled = true;
-            opayStatus('<span class="spinner-border spinner-border-sm me-2"></span>Waiting for customer to pay on the OPay terminal...', 'info');
+            if (inqBtn) inqBtn.disabled = true;
+            opayStatus('Waiting for customer to pay on the OPay terminal...', 'info', true);
+
+            // Persist attempt before waiting so orderNo is saved even if POS or browser times out
+            @this.call('opayStartAttempt', orderNo, kobo);
 
             try {
                 const result = await agent.posPurchase(kobo, orderNo);
                 if (result.success) {
-                    opayStatus('Approved. Finishing...', 'success');
-                    @this.call('opayApproved', result);
+                    opayStatus('Approved! Completing payment...', 'success', true);
+                    await @this.call('opayApproved', Object.assign({order_no: orderNo}, result));
+                    const saveBtn = document.getElementById('savePaymentBtn');
+                    if (saveBtn && !saveBtn.disabled) {
+                        saveBtn.click();
+                    }
                 } else {
                     const labels = {cancelled: 'Cancelled on terminal', failed: 'Payment failed', pending: 'Payment still pending', timeout: 'Timed out waiting for the terminal'};
-                    opayStatus((labels[result.status] || 'Not approved') + (result.message ? ': ' + result.message : '') + '. You can try again.', 'danger');
+                    opayStatus((labels[result.status] || 'Not approved') + (result.message ? ': ' + result.message : '') + '. Click "Re-confirm Last Payment on POS" to check status, or send again.', 'warning', false);
                     btn.disabled = false;
+                    if (inqBtn) inqBtn.disabled = false;
+                    @this.call('opayLogAttempt', Object.assign({order_no: orderNo}, result));
                 }
             } catch (e) {
-                opayStatus('Could not reach the OPay terminal via the Print Agent: ' + e.message, 'danger');
+                opayStatus('Connection/timeout error (' + e.message + '). Click "Re-confirm Last Payment on POS" to check if the payment went through.', 'warning', false);
                 btn.disabled = false;
+                if (inqBtn) inqBtn.disabled = false;
+            }
+        }
+
+        async function opayInquiry() {
+            const panel = document.getElementById('opayPanel');
+            const btn = document.getElementById('opayChargeBtn');
+            const inqBtn = document.getElementById('opayInquiryBtn');
+            if (!panel) return;
+
+            const orderNo = panel.dataset.opayLastOrder;
+            if (!orderNo) {
+                opayStatus('No previous OPay order found to re-confirm.', 'warning', false);
+                return;
+            }
+
+            const agent = new EscPosPrintAgent(panel.dataset.opayUrl || 'http://127.0.0.1:9100');
+            if (panel.dataset.opayToken) agent.setToken(panel.dataset.opayToken);
+
+            if (btn) btn.disabled = true;
+            if (inqBtn) inqBtn.disabled = true;
+            opayStatus('Re-confirming order ' + orderNo + ' with the OPay POS terminal...', 'info', true);
+
+            try {
+                const result = await agent.posInquiry(orderNo);
+                if (result.success) {
+                    opayStatus('Confirmed! Payment was approved on POS. Completing payment...', 'success', true);
+                    await @this.call('opayApproved', Object.assign({order_no: orderNo}, result));
+                    const saveBtn = document.getElementById('savePaymentBtn');
+                    if (saveBtn && !saveBtn.disabled) {
+                        saveBtn.click();
+                    }
+                } else {
+                    const labels = {cancelled: 'Cancelled on terminal', failed: 'Payment failed on terminal', pending: 'Still pending on terminal', timeout: 'POS terminal did not respond in time'};
+                    opayStatus('Re-confirm result for ' + orderNo + ': ' + (labels[result.status] || 'Not approved') + (result.message ? ' (' + result.message + ')' : ''), 'danger', false);
+                    if (btn) btn.disabled = false;
+                    if (inqBtn) inqBtn.disabled = false;
+                    @this.call('opayLogAttempt', Object.assign({order_no: orderNo}, result));
+                }
+            } catch (e) {
+                opayStatus('Could not re-confirm with POS terminal: ' + e.message, 'danger', false);
+                if (btn) btn.disabled = false;
+                if (inqBtn) inqBtn.disabled = false;
             }
         }
 

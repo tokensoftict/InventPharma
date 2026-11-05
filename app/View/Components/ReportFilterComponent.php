@@ -5,6 +5,7 @@ namespace App\View\Components;
 use App\Models\Customer;
 use App\Models\Department;
 use App\Models\ExpensesType;
+use App\Models\OpayPaymentLog;
 use App\Models\Paymentmethod;
 use App\Models\Production;
 use App\Models\Productionline;
@@ -48,7 +49,7 @@ class ReportFilterComponent extends Component
             $data['suppliers'] = Supplier::where('status',1)->select('id','name','phonenumber')->get();
         }
 
-        if(isset($this->filters['created_by']) || isset($this->filters['user_id']) || isset($this->filters['transfer_by_id']) || isset($this->filters['request_by_id'])){
+        if(isset($this->filters['created_by']) || isset($this->filters['user_id']) || isset($this->filters['transfer_by_id']) || isset($this->filters['request_by_id']) || array_key_exists('opay_user_id', $this->filters)){
             $data['users'] = User::where('status',1)->select('id','name')->get();
         }
 
@@ -95,6 +96,14 @@ class ReportFilterComponent extends Component
 
         if(isset($this->filters['expenses_type_id'])){
             $data['expenses_types'] = ExpensesType::where('status',1)->select('id','name')->get();
+        }
+
+        if(array_key_exists('terminal_sn', $this->filters)){
+            $data['terminal_sns'] = OpayPaymentLog::whereNotNull('terminal_sn')
+                ->where('terminal_sn', '!=', '')
+                ->distinct()
+                ->orderBy('terminal_sn')
+                ->pluck('terminal_sn');
         }
         return view('components.report-filter-component', $data);
     }

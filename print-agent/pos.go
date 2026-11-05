@@ -65,7 +65,7 @@ type posResult struct {
 
 func statusFromCode(code string) string {
 	switch code {
-	case posSuccess:
+	case posSuccess, "00":
 		return "success"
 	case posCancel:
 		return "cancelled"
@@ -75,6 +75,19 @@ func statusFromCode(code string) string {
 		return "failed"
 	}
 	return "failed"
+}
+
+// resolvePOSPort returns the configured serial port, or auto-detects one
+// from the system's connected serial ports.
+func resolvePOSPort(pc POSConfig) string {
+	if pc.Port != "" && !strings.EqualFold(pc.Port, "auto") {
+		return pc.Port
+	}
+	ports := listSerialPorts()
+	if len(ports) > 0 {
+		return ports[0]
+	}
+	return ""
 }
 
 // extractJSON returns the first complete top-level JSON object in buf and the
@@ -124,13 +137,21 @@ func posExchange(req map[string]interface{}, timeout time.Duration, waitPastPend
 	if !pc.Enabled {
 		return nil, fmt.Errorf("POS integration is disabled in config.yaml")
 	}
+	pc.Port = resolvePOSPort(pc)
 	if pc.Port == "" {
-		return nil, fmt.Errorf("POS serial port is not configured (set pos.port in config.yaml, e.g. COM3)")
+		return nil, fmt.Errorf("no POS serial port detected (ensure the POS is connected via USB and in SelfcheckoutMode)")
 	}
 
 	port, err := openSerial(pc)
 	if err != nil {
-		return nil, fmt.Errorf("cannot open %s: %v", pc.Port, err)
+		// If configured port failed, try auto-detected port fallback
+		if ports := listSerialPorts(); len(ports) > 0 && ports[0] != pc.Port {
+			pc.Port = ports[0]
+			port, err = openSerial(pc)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("cannot open %s: %v", pc.Port, err)
+		}
 	}
 	defer port.Close()
 
@@ -191,7 +212,7 @@ func buildResult(m map[string]interface{}, err error, expectedAmount string) pos
 	code, _ := m["responseCode"].(string)
 	msg, _ := m["response"].(string)
 	res := posResult{
-		Success:      code == posSuccess,
+		Success:      code == posSuccess || code == "00",
 		Status:       statusFromCode(code),
 		ResponseCode: code,
 		Message:      msg,

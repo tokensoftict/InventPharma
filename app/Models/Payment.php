@@ -85,6 +85,11 @@ class Payment extends Model
 		return $this->hasMany(Paymentmethoditem::class);
 	}
 
+    public function opayPaymentLogs()
+    {
+        return $this->hasMany(OpayPaymentLog::class);
+    }
+
     public function invoice(){
 
         return $this->morphTo();

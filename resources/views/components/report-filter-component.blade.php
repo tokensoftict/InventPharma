@@ -292,6 +292,48 @@
                 </div>
             @endif
 
+            @if(array_key_exists('terminal_sn', $filters))
+                <div class="col-lg-3">
+                    <div class="mb-3">
+                        <label class="form-label">Terminal SN</label>
+                        <select class="form-control" data-trigger name="filter[terminal_sn]" id="choices-terminal-sn" placeholder="All Terminals">
+                            <option value="" {{ empty($filters['terminal_sn']) ? 'selected' : '' }}>All Terminals</option>
+                            @foreach(($terminal_sns ?? []) as $sn)
+                                <option value="{{ $sn }}" {{ ($filters['terminal_sn'] ?? '') === $sn ? 'selected' : '' }}>{{ $sn }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            @endif
+
+            @if(array_key_exists('opay_user_id', $filters))
+                <div class="col-lg-3">
+                    <div class="mb-3">
+                        <label class="form-label">Cashier</label>
+                        <select class="form-control" data-trigger name="filter[opay_user_id]" id="choices-opay-user" placeholder="All Cashiers">
+                            <option value="" {{ empty($filters['opay_user_id']) ? 'selected' : '' }}>All Cashiers</option>
+                            @foreach(($users ?? []) as $user)
+                                <option value="{{ $user->id }}" {{ (string) ($filters['opay_user_id'] ?? '') === (string) $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            @endif
+
+            @if(array_key_exists('opay_status', $filters))
+                <div class="col-lg-2">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select class="form-control" data-trigger name="filter[opay_status]" id="choices-opay-status" placeholder="All Statuses">
+                            <option value="" {{ empty($filters['opay_status']) ? 'selected' : '' }}>All Statuses</option>
+                            @foreach(['success' => 'Approved (Success)', 'pending' => 'Pending', 'cancelled' => 'Cancelled', 'failed' => 'Failed', 'timeout' => 'Timeout'] as $stKey => $stLabel)
+                                <option value="{{ $stKey }}" {{ ($filters['opay_status'] ?? '') === $stKey ? 'selected' : '' }}>{{ $stLabel }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            @endif
+
 
             <div class="col-auto">
                 <button type="submit" class="btn btn-primary mt-4">Filter</button>

@@ -253,6 +253,11 @@ class Invoice extends Model
         return $this->hasMany(Invoiceprinthistory::class);
     }
 
+    public function opayPaymentLogs()
+    {
+        return $this->hasMany(OpayPaymentLog::class);
+    }
+
     public function waitingCustomer()
     {
         return $this->hasOne(WaitingCustomer::class, );

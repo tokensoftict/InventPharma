@@ -11,6 +11,7 @@ use App\Models\Creditpaymentlog;
 use App\Models\Customerdeposit;
 use App\Models\CustomerLedger;
 use App\Models\Invoice;
+use App\Models\OpayPaymentLog;
 use App\Models\Payment;
 use App\Models\Paymentmethoditem;
 use App\Services\Online\ProcessOrderService;
@@ -77,6 +78,8 @@ class PaymentRepository
 
         $payment->paymentmethoditems()->saveMany($paymentItems['items']);
 
+        $this->linkOpayPaymentLogs($payment, $obj);
+
         if(count( $paymentItems['credit']) > 0)
         {
             $credit = $payment->paymentmethoditems()->where('paymentmethod_id', 4)->first();
@@ -134,6 +137,70 @@ class PaymentRepository
 
         return $payment;
 
+    }
+
+    /**
+     * Link OPay POS terminal logs to the Invoice (or Creditpaymentlog when paying credit),
+     * Payment, and Paymentmethoditem records.
+     */
+    protected function linkOpayPaymentLogs(Payment $payment, $obj): void
+    {
+        $isInvoice = $payment->invoice_type === Invoice::class;
+        $isCredit = $payment->invoice_type === Creditpaymentlog::class;
+
+        $invoiceId = $isInvoice ? $payment->invoice_id : null;
+        $creditLogId = $isCredit ? $payment->invoice_id : null;
+
+        // Attach all OPay terminal attempts from this component session to the invoice or creditpaymentlog
+        if (!empty($obj->opay_log_ids) && is_array($obj->opay_log_ids)) {
+            $linkUpdate = array_filter([
+                'invoice_id' => $invoiceId,
+                'creditpaymentlog_id' => $creditLogId,
+                'customer_id' => $payment->customer_id,
+            ], fn($v) => !is_null($v));
+
+            if (!empty($linkUpdate)) {
+                OpayPaymentLog::whereIn('id', $obj->opay_log_ids)->update($linkUpdate);
+            }
+        }
+
+        // Attach the approved OPay payment item to its specific OpayPaymentLog record
+        $opayItem = $payment->paymentmethoditems()->where('paymentmethod_id', 9)->first();
+        if ($opayItem) {
+            $approvedLogId = $obj->opay_data['opay_log_id'] ?? null;
+            if ($approvedLogId) {
+                OpayPaymentLog::where('id', $approvedLogId)->update([
+                    'invoice_id' => $invoiceId,
+                    'creditpaymentlog_id' => $creditLogId,
+                    'payment_id' => $payment->id,
+                    'paymentmethoditem_id' => $opayItem->id,
+                    'customer_id' => $payment->customer_id,
+                ]);
+            } elseif (!empty($obj->opay_data)) {
+                $amountKobo = (int) ($obj->opay_data['amount_kobo'] ?? round($opayItem->amount * 100));
+                OpayPaymentLog::create([
+                    'invoice_id' => $invoiceId,
+                    'creditpaymentlog_id' => $creditLogId,
+                    'payment_id' => $payment->id,
+                    'paymentmethoditem_id' => $opayItem->id,
+                    'customer_id' => $payment->customer_id,
+                    'user_id' => $payment->user_id ?? auth()->id(),
+                    'order_no' => $obj->opay_data['order_no'] ?? null,
+                    'order_number' => $obj->opay_data['order_number'] ?? null,
+                    'transaction_number' => $obj->opay_data['transaction_number'] ?? null,
+                    'terminal_sn' => $obj->opay_data['terminal_sn'] ?? null,
+                    'cashier_method' => $obj->opay_data['cashier_method'] ?? null,
+                    'card_type' => $obj->opay_data['card_type'] ?? null,
+                    'card_number' => $obj->opay_data['card_number'] ?? null,
+                    'amount' => $opayItem->amount,
+                    'amount_kobo' => $amountKobo,
+                    'status' => 'success',
+                    'response_code' => $obj->opay_data['response_code'] ?? '202',
+                    'response_message' => $obj->opay_data['response'] ?? null,
+                    'raw_payload' => $obj->opay_data,
+                ]);
+            }
+        }
     }
 
 
@@ -374,6 +441,14 @@ class PaymentRepository
             if ($obj->split_payments[8]['amount'] > 0 && (empty($obj->split_payments[8]['bank']) || empty($obj->split_payments[8]['cheque_date']) )) return false;
         }
 
+        if (isset($obj->split_payments[9]) && (float) $obj->split_payments[9]['amount'] > 0) {
+            $splitOpayKobo = (int) round(((float) $obj->split_payments[9]['amount']) * 100);
+            $approvedKobo = (int) ($obj->opay_data['amount_kobo'] ?? 0);
+            if ($obj->opay_approved !== true || $splitOpayKobo !== $approvedKobo) {
+                return false;
+            }
+        }
+
         if(($tt < $obj->sub_total)) return false;
 
         if(($tt > $obj->sub_total)) return false;
@@ -461,10 +536,13 @@ class PaymentRepository
             foreach ($obj->split_payments as $key=>$split_payment)
             {
                 if( $split_payment['amount'] > 0) {
+                    $paymentInfo = ((int) $key === 9 && !empty($obj->opay_data))
+                        ? $obj->opay_data
+                        : $obj->split_payments[$key];
                     $payment_data_items[] = [
                         'amount' => $split_payment['amount'],
                         'paymentmethod_id' => $key,
-                        'payment_info' => json_encode($obj->split_payments[$key]),
+                        'payment_info' => json_encode($paymentInfo),
                     ];
                 }
             }

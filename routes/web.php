@@ -523,6 +523,8 @@ Route::middleware(['auth', 'app.active'])->group(function () {
                 Route::match(['get', 'post'], 'credit_report', ['as' => 'credit_report', 'uses' => 'PaymentReportsController@credit_report', 'custom_label' => 'Credit Report By Date']);
 
                 Route::match(['get', 'post'], 'credit_payment_report', ['as' => 'credit_payment_report', 'uses' => 'PaymentReportsController@credit_payment_report', 'custom_label' => 'Credit Payment Report By Date']);
+
+                Route::match(['get', 'post'], 'opay_payment_report', ['as' => 'opay_payment_report', 'uses' => 'PaymentReportsController@opay_payment_report', 'custom_label' => 'OPay POS Payment Report']);
             });
 
             Route::prefix('invoiceReport')->as('invoice.')->namespace('InvoiceReport')->group(function () {

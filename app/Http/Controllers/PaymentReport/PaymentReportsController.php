@@ -244,4 +244,53 @@ class PaymentReportsController extends Controller
         return view('reports.payment.creditpaymentreport', $data);
     }
 
+    public function opay_payment_report(Request $request)
+    {
+        $from = todaysDate();
+        $to = todaysDate();
+        $terminalSn = '';
+        $opayUserId = '';
+        $opayStatus = '';
+
+        if ($request->get('filter')) {
+            $filterInput = $request->get('filter');
+            $from = $filterInput['from'] ?? $from;
+            $to = $filterInput['to'] ?? $to;
+            $terminalSn = trim((string) ($filterInput['terminal_sn'] ?? ''));
+            $opayUserId = trim((string) ($filterInput['opay_user_id'] ?? ''));
+            $opayStatus = trim((string) ($filterInput['opay_status'] ?? ''));
+        }
+
+        $queryFilters = [
+            'between.created_at' => [$from . ' 00:00:00', $to . ' 23:59:59'],
+        ];
+
+        if ($terminalSn !== '') {
+            $queryFilters['terminal_sn'] = $terminalSn;
+        }
+
+        if ($opayUserId !== '') {
+            $queryFilters['user_id'] = (int) $opayUserId;
+        }
+
+        if ($opayStatus !== '') {
+            $queryFilters['status'] = $opayStatus;
+        }
+
+        $data = [
+            'title' => 'OPay POS Payment Report',
+            'subtitle' => 'View OPay POS Terminal Payment Logs By Date Range, Terminal SN, Cashier & Status',
+            'filters' => [
+                'from' => $from,
+                'to' => $to,
+                'terminal_sn' => $terminalSn,
+                'opay_user_id' => $opayUserId,
+                'opay_status' => $opayStatus,
+                'filters' => $queryFilters,
+            ]
+        ];
+
+        return setPageContent('reports.payment.opaypaymentreport', $data);
+    }
+
 }

@@ -94,4 +94,9 @@ class Creditpaymentlog extends Model
     public function invoicelog(){
         return $this->morphTo();
     }
+
+    public function opayPaymentLogs()
+    {
+        return $this->hasMany(OpayPaymentLog::class);
+    }
 }
