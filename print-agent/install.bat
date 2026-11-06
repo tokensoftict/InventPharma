@@ -16,6 +16,14 @@ taskkill /F /IM InventoryPrintAgent.exe >nul 2>&1
 taskkill /F /IM InventoryPrintAgent-32bit.exe >nul 2>&1
 schtasks /Delete /TN %TASK_NAME% /F >nul 2>&1
 
+:: If an older SYSTEM service or process is still running, elevate once to stop and remove it
+tasklist /FI "IMAGENAME eq InventoryPrintAgent.exe" 2>NUL | find /I /N "InventoryPrintAgent.exe">NUL
+if "%ERRORLEVEL%"=="0" (
+    echo [INFO] Stopping previous InventoryPrintAgent service with Administrator privileges...
+    powershell -NoProfile -Command "Start-Process cmd -Verb RunAs -WindowStyle Hidden -Wait -ArgumentList '/c sc stop InventoryPrintAgent & sc delete InventoryPrintAgent & taskkill /F /IM InventoryPrintAgent.exe & taskkill /F /IM InventoryPrintAgent-32bit.exe'"
+    timeout /t 2 /nobreak >nul
+)
+
 :: Detect 32-bit vs 64-bit Windows
 if "%PROCESSOR_ARCHITECTURE%"=="x86" if not defined PROCESSOR_ARCHITEW6432 (
     echo [INFO] Detected 32-bit Windows system.

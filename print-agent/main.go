@@ -5,15 +5,19 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
-const version = "1.0.0"
+const version = "2.0.0"
 
 var (
 	cfg            *Config
@@ -59,6 +63,7 @@ func startHTTPServer() {
 	mux.HandleFunc("/printer", corsMiddleware(authMiddleware(handleGetPrinter)))
 	mux.HandleFunc("/printer/select", corsMiddleware(authMiddleware(handleSelectPrinter)))
 	mux.HandleFunc("/print", corsMiddleware(authMiddleware(handlePrint)))
+	mux.HandleFunc("/pos", corsMiddleware(authMiddleware(handlePOSPorts)))
 	mux.HandleFunc("/pos/ports", corsMiddleware(authMiddleware(handlePOSPorts)))
 	mux.HandleFunc("/pos/echo", corsMiddleware(authMiddleware(handlePOSEcho)))
 	mux.HandleFunc("/pos/purchase", corsMiddleware(authMiddleware(handlePOSPurchase)))
@@ -66,15 +71,53 @@ func startHTTPServer() {
 	mux.HandleFunc("/test-print", corsMiddleware(authMiddleware(handleTestPrint)))
 
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
-	log.Printf("InventoryPrintAgent v%s starting on %s", version, addr)
+	log.Printf("InventoryPrintAgent v%s (with OPay POS support) starting on %s", version, addr)
+
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Printf("Port %d is busy (%v). Stopping any older InventoryPrintAgent instance...", cfg.Port, err)
+		freeAgentPort(cfg.Port)
+		for i := 0; i < 12; i++ {
+			time.Sleep(500 * time.Millisecond)
+			ln, err = net.Listen("tcp", addr)
+			if err == nil {
+				break
+			}
+		}
+		if err != nil {
+			log.Fatalf("Failed to bind %s after stopping previous instance: %v", addr, err)
+		}
+	}
 
 	server := &http.Server{
 		Addr:    addr,
 		Handler: mux,
 	}
 
-	if err := server.ListenAndServe(); err != nil {
+	if err := server.Serve(ln); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
+	}
+}
+
+// freeAgentPort stops any older InventoryPrintAgent service or process holding the port.
+func freeAgentPort(port int) {
+	myPID := strconv.Itoa(os.Getpid())
+	if runtime.GOOS == "windows" {
+		_ = exec.Command("sc", "stop", "InventoryPrintAgent").Run()
+		_ = exec.Command("sc", "delete", "InventoryPrintAgent").Run()
+		_ = exec.Command("taskkill", "/F", "/FI", "PID ne "+myPID, "/IM", "InventoryPrintAgent.exe").Run()
+		_ = exec.Command("taskkill", "/F", "/FI", "PID ne "+myPID, "/IM", "InventoryPrintAgent-32bit.exe").Run()
+
+		// If the old instance is still holding the port (e.g. running as a SYSTEM service), elevate to stop it.
+		checkAddr := fmt.Sprintf("127.0.0.1:%d", port)
+		if c, err := net.DialTimeout("tcp", checkAddr, 500*time.Millisecond); err == nil {
+			_ = c.Close()
+			cmdStr := fmt.Sprintf("/c sc stop InventoryPrintAgent & sc delete InventoryPrintAgent & taskkill /F /FI \"PID ne %s\" /IM InventoryPrintAgent.exe & taskkill /F /FI \"PID ne %s\" /IM InventoryPrintAgent-32bit.exe", myPID, myPID)
+			_ = exec.Command("powershell", "-NoProfile", "-Command",
+				fmt.Sprintf("Start-Process cmd -Verb RunAs -WindowStyle Hidden -Wait -ArgumentList '%s'", cmdStr)).Run()
+		}
+	} else {
+		_ = exec.Command("pkill", "-f", "InventoryPrintAgent").Run()
 	}
 }
 
@@ -87,9 +130,22 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, http.StatusOK, map[string]interface{}{
-		"status":  "ok",
-		"version": version,
-		"os":      runtime.GOOS,
+		"status":      "ok",
+		"version":     version,
+		"os":          runtime.GOOS,
+		"pos_enabled": cfg.POS.Enabled,
+		"endpoints": []string{
+			"/health",
+			"/printers",
+			"/printer",
+			"/printer/select",
+			"/print",
+			"/test-print",
+			"/pos/ports",
+			"/pos/echo",
+			"/pos/purchase",
+			"/pos/inquiry",
+		},
 	})
 }
 
