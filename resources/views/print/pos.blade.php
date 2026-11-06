@@ -189,7 +189,6 @@
         <img src="data:image/png;base64,' . {{ DNS1D::getBarcodePNG((string)$invoice->id, 'C39',3,120) }} . '" alt="barcode"   />
     </div>
     <br/>
-    <div class="text-center"> Develop By Tokensoft ICT - 08130610626</div>
 </div>
 </body>
 </html>

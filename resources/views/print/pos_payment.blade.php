@@ -132,7 +132,6 @@
     <hr>
     <div class="text-center">  {{ $store->footer_notes }}</div>
     <div class="text-center"> {!! softwareStampWithDate() !!}</div>
-    <div class="text-center"> Develop By Tokensoft ICT - 08130610626</div>
 </div>
 </body>
 </html>
