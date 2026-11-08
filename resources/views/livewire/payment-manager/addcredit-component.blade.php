@@ -154,7 +154,7 @@
                                                     @endif
 
                                                     @if($payment->id === 9)
-                                                        @php($splitOpayKobo = (int) round(((float) ($this->split_payments[9]['amount'] ?? 0)) * 100))
+                                                        @php $splitOpayKobo = (int) round(((float) ($this->split_payments[9]['amount'] ?? 0)) * 100); @endphp
                                                         <div id="opayPanel"
                                                              data-opay-kobo="{{ $splitOpayKobo }}"
                                                              data-opay-invoice="CREDIT-{{ $this->customer->id }}"
@@ -199,7 +199,7 @@
 
                             {{-- OPAY POS --}}
                             @if($this->payment_method === "9")
-                                @php($opayKobo = (int) round(((float) $this->sub_total) * 100))
+                                @php $opayKobo = (int) round(((float) $this->sub_total) * 100); @endphp
                                 <div class="text-center"
                                      data-opay-kobo="{{ $opayKobo }}"
                                      data-opay-invoice="CREDIT-{{ $this->customer->id }}"

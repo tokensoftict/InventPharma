@@ -164,7 +164,7 @@
                                 <b>{{ $invoice_number }}</b>
                             </div>
 
-                            @php($customerNameOnly = app(\App\Classes\Settings::class)->isCustomerNameOnly())
+                            @php $customerNameOnly = app(\App\Classes\Settings::class)->isCustomerNameOnly(); @endphp
                             <div class="mb-3">
                                 <label>Search For Customer :</label>
                                 <input class="form-control input-sm" id="customer-search-text" x-model="searchCustomerString"  x-on:keyup.debounce="searchCustomer(this.value)"  placeholder="{{ $customerNameOnly ? 'Search for customer by firstname or lastname' : 'Search for customer by phone number, name or email address' }}">
@@ -361,39 +361,41 @@
                                 </div>
                             @endif
 
-                            <div class="col-12">
-                                <label class="form-label fw-semibold d-block">Customer Category / Department <span class="text-danger">*</span></label>
-                                <div class="row g-2">
-                                    <div class="col-md-4">
-                                        <div class="form-check card p-2 border {{ $customer_type === 'wholesale' ? 'border-primary bg-primary-subtle' : 'border' }} mb-0">
-                                            <input class="form-check-input ms-1" type="radio" wire:model.live="customer_type" value="wholesale" id="invTypeWholesale">
-                                            <label class="form-check-label ms-2 fw-semibold" for="invTypeWholesale">
-                                                <i class="bx bx-buildings text-primary me-1"></i> Wholesales
-                                                <div class="small text-muted fw-normal">Customer buys in wholesale</div>
-                                            </label>
+                            @if(department_by_quantity_column('wholesales', false)->status && department_by_quantity_column('retail', false)->status)
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold d-block">Customer Category / Department <span class="text-danger">*</span></label>
+                                    <div class="row g-2">
+                                        <div class="col-md-4">
+                                            <div class="form-check card p-2 border {{ $customer_type === 'wholesale' ? 'border-primary bg-primary-subtle' : 'border' }} mb-0">
+                                                <input class="form-check-input ms-1" type="radio" wire:model.live="customer_type" value="wholesale" id="invTypeWholesale">
+                                                <label class="form-check-label ms-2 fw-semibold" for="invTypeWholesale">
+                                                    <i class="bx bx-buildings text-primary me-1"></i> Wholesales
+                                                    <div class="small text-muted fw-normal">Customer buys in wholesale</div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check card p-2 border {{ $customer_type === 'retail' ? 'border-success bg-success-subtle' : 'border' }} mb-0">
+                                                <input class="form-check-input ms-1" type="radio" wire:model.live="customer_type" value="retail" id="invTypeRetail">
+                                                <label class="form-check-label ms-2 fw-semibold" for="invTypeRetail">
+                                                    <i class="bx bx-store text-success me-1"></i> Retail
+                                                    <div class="small text-muted fw-normal">Customer buys in retail</div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check card p-2 border mb-0" style="{{ $customer_type === 'both' ? 'border-color: #6f42c1 !important; background-color: rgba(111, 66, 193, 0.08);' : '' }}">
+                                                <input class="form-check-input ms-1" type="radio" wire:model.live="customer_type" value="both" id="invTypeBoth">
+                                                <label class="form-check-label ms-2 fw-semibold" for="invTypeBoth">
+                                                    <i class="bx bx-git-merge me-1" style="color: #6f42c1;"></i> Both
+                                                    <div class="small text-muted fw-normal">Wholesale &amp; Retail</div>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check card p-2 border {{ $customer_type === 'retail' ? 'border-success bg-success-subtle' : 'border' }} mb-0">
-                                            <input class="form-check-input ms-1" type="radio" wire:model.live="customer_type" value="retail" id="invTypeRetail">
-                                            <label class="form-check-label ms-2 fw-semibold" for="invTypeRetail">
-                                                <i class="bx bx-store text-success me-1"></i> Retail
-                                                <div class="small text-muted fw-normal">Customer buys in retail</div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check card p-2 border mb-0" style="{{ $customer_type === 'both' ? 'border-color: #6f42c1 !important; background-color: rgba(111, 66, 193, 0.08);' : '' }}">
-                                            <input class="form-check-input ms-1" type="radio" wire:model.live="customer_type" value="both" id="invTypeBoth">
-                                            <label class="form-check-label ms-2 fw-semibold" for="invTypeBoth">
-                                                <i class="bx bx-git-merge me-1" style="color: #6f42c1;"></i> Both
-                                                <div class="small text-muted fw-normal">Wholesale &amp; Retail</div>
-                                            </label>
-                                        </div>
-                                    </div>
+                                    @error('customer_type') <span class="text-danger small">{{ $message }}</span> @enderror
                                 </div>
-                                @error('customer_type') <span class="text-danger small">{{ $message }}</span> @enderror
-                            </div>
+                            @endif
 
                             @if(!$customerNameOnly)
                                 <div class="col-md-6">

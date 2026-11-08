@@ -70,6 +70,29 @@ class CustomerManagerComponent extends Component
 
         $this->cities = City::orderBy('name', 'asc')->get();
         $this->memberGroups = MemberGroup::where('status', 1)->orderBy('label', 'asc')->get();
+        $this->customer_type = $this->resolveDefaultCustomerType(
+            ($this->currentDepartmentFilter === 'retail') ? 'retail' : 'wholesale'
+        );
+    }
+
+    protected function resolveDefaultCustomerType(?string $preferred = null): string
+    {
+        $wholesalesActive = (bool) (department_by_quantity_column('wholesales', false)?->status ?? false);
+        $retailActive = (bool) (department_by_quantity_column('retail', false)?->status ?? false);
+
+        if (!$wholesalesActive && !$retailActive) {
+            return 'both';
+        }
+
+        if (!$wholesalesActive && $retailActive) {
+            return 'retail';
+        }
+
+        if ($wholesalesActive && !$retailActive) {
+            return 'wholesale';
+        }
+
+        return in_array($preferred, ['wholesale', 'retail', 'both'], true) ? $preferred : 'wholesale';
     }
 
     public function render()
@@ -248,7 +271,9 @@ class CustomerManagerComponent extends Component
         $this->phone_number = "";
         $this->address = "";
         $this->city_id = "";
-        $this->customer_type = ($this->currentDepartmentFilter === 'retail') ? 'retail' : 'wholesale';
+        $this->customer_type = $this->resolveDefaultCustomerType(
+            ($this->currentDepartmentFilter === 'retail') ? 'retail' : 'wholesale'
+        );
         $this->member_group_id = "";
         $this->retail_member_group_id = "";
         $this->duplicatePhoneWarning = null;
@@ -281,7 +306,8 @@ class CustomerManagerComponent extends Component
         $this->phone_number = $customer->phone_number ?? "";
         $this->address = $customer->address ?? "";
         $this->city_id = $customer->city_id ? (string) $customer->city_id : "";
-        $this->customer_type = $customer->customer_type ?: ($customer->retail_customer ? 'retail' : 'wholesale');
+        $existingType = $customer->customer_type ?: ($customer->retail_customer ? 'retail' : 'wholesale');
+        $this->customer_type = $this->resolveDefaultCustomerType($existingType);
 
         if (userCanView("customer.changeorassigncustumertomembergroup")) {
             $this->member_group_id = $customer->member_group_id ? (string) $customer->member_group_id : "";
@@ -328,6 +354,7 @@ class CustomerManagerComponent extends Component
     public function saveCustomers()
     {
         $nameOnly = app(\App\Classes\Settings::class)->isCustomerNameOnly();
+        $this->customer_type = $this->resolveDefaultCustomerType($this->customer_type);
 
         $this->validate([
             'firstname'     => 'required|string|max:100',

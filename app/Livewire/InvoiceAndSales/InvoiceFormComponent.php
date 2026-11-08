@@ -147,11 +147,32 @@ class InvoiceFormComponent extends Component
         $this->phone_number = "";
         $this->address = "";
         $this->city_id = "";
-        // Default category follows the logged-in user's department (4 = retail)
-        $this->customer_type = (auth()->user()->department_id === 4) ? 'retail' : 'wholesale';
+        // Default category follows active departments and logged-in user's department (4 = retail)
+        $preferred = (auth()->user()->department_id === 4) ? 'retail' : 'wholesale';
+        $this->customer_type = $this->resolveDefaultCustomerType($preferred);
         $this->duplicatePhoneWarning = null;
         $this->duplicateCustomerId = null;
         $this->resetValidation();
+    }
+
+    protected function resolveDefaultCustomerType(?string $preferred = null): string
+    {
+        $wholesalesActive = (bool) (department_by_quantity_column('wholesales', false)?->status ?? false);
+        $retailActive = (bool) (department_by_quantity_column('retail', false)?->status ?? false);
+
+        if (!$wholesalesActive && !$retailActive) {
+            return 'both';
+        }
+
+        if (!$wholesalesActive && $retailActive) {
+            return 'retail';
+        }
+
+        if ($wholesalesActive && !$retailActive) {
+            return 'wholesale';
+        }
+
+        return in_array($preferred, ['wholesale', 'retail', 'both'], true) ? $preferred : 'wholesale';
     }
 
     public function updatedPhoneNumber()
@@ -164,6 +185,7 @@ class InvoiceFormComponent extends Component
     public function saveCustomers()
     {
         $nameOnly = app(\App\Classes\Settings::class)->isCustomerNameOnly();
+        $this->customer_type = $this->resolveDefaultCustomerType($this->customer_type);
 
         $this->validate([
             'firstname' => 'required|string|max:100',

@@ -480,7 +480,7 @@
                                 @error('lastname') <span class="text-danger small">{{ $message }}</span> @enderror
                             </div>
 
-                            @php($customerNameOnly = app(\App\Classes\Settings::class)->isCustomerNameOnly())
+                            @php $customerNameOnly = app(\App\Classes\Settings::class)->isCustomerNameOnly(); @endphp
                             @if(!$customerNameOnly)
                                 {{-- Phone Number (Flexible & Non-blocking) --}}
                                 <div class="col-md-6">
@@ -512,39 +512,41 @@
                             @endif
 
                             {{-- Customer Category / Department (Wholesale, Retail, Both) --}}
-                            <div class="col-12">
-                                <label class="form-label fw-semibold d-block">Customer Category / Department <span class="text-danger">*</span></label>
-                                <div class="row g-2">
-                                    <div class="col-md-4">
-                                        <div class="form-check card p-2 border {{ $customer_type === 'wholesale' ? 'border-primary bg-primary-subtle' : 'border' }} mb-0">
-                                            <input class="form-check-input ms-1" type="radio" wire:model="customer_type" value="wholesale" id="typeWholesale">
-                                            <label class="form-check-label ms-2 fw-semibold" for="typeWholesale">
-                                                <i class="bx bx-buildings text-primary me-1"></i> Wholesales
-                                                <div class="small text-muted fw-normal">Customer buys in wholesale</div>
-                                            </label>
+                            @if(department_by_quantity_column('wholesales', false)->status && department_by_quantity_column('retail', false)->status)
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold d-block">Customer Category / Department <span class="text-danger">*</span></label>
+                                    <div class="row g-2">
+                                        <div class="col-md-4">
+                                            <div class="form-check card p-2 border {{ $customer_type === 'wholesale' ? 'border-primary bg-primary-subtle' : 'border' }} mb-0">
+                                                <input class="form-check-input ms-1" type="radio" wire:model="customer_type" value="wholesale" id="typeWholesale">
+                                                <label class="form-check-label ms-2 fw-semibold" for="typeWholesale">
+                                                    <i class="bx bx-buildings text-primary me-1"></i> Wholesales
+                                                    <div class="small text-muted fw-normal">Customer buys in wholesale</div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check card p-2 border {{ $customer_type === 'retail' ? 'border-success bg-success-subtle' : 'border' }} mb-0">
+                                                <input class="form-check-input ms-1" type="radio" wire:model="customer_type" value="retail" id="typeRetail">
+                                                <label class="form-check-label ms-2 fw-semibold" for="typeRetail">
+                                                    <i class="bx bx-store text-success me-1"></i> Retail
+                                                    <div class="small text-muted fw-normal">Customer buys in retail</div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check card p-2 border {{ $customer_type === 'both' ? 'border-purple text-dark' : 'border' }} mb-0" style="{{ $customer_type === 'both' ? 'border-color: #6f42c1 !important; background-color: rgba(111, 66, 193, 0.08);' : '' }}">
+                                                <input class="form-check-input ms-1" type="radio" wire:model="customer_type" value="both" id="typeBoth">
+                                                <label class="form-check-label ms-2 fw-semibold" for="typeBoth">
+                                                    <i class="bx bx-git-merge text-purple me-1" style="color: #6f42c1;"></i> Both (Wholesale &amp; Retail)
+                                                    <div class="small text-muted fw-normal">Customer buys in both</div>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check card p-2 border {{ $customer_type === 'retail' ? 'border-success bg-success-subtle' : 'border' }} mb-0">
-                                            <input class="form-check-input ms-1" type="radio" wire:model="customer_type" value="retail" id="typeRetail">
-                                            <label class="form-check-label ms-2 fw-semibold" for="typeRetail">
-                                                <i class="bx bx-store text-success me-1"></i> Retail
-                                                <div class="small text-muted fw-normal">Customer buys in retail</div>
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-check card p-2 border {{ $customer_type === 'both' ? 'border-purple text-dark' : 'border' }} mb-0" style="{{ $customer_type === 'both' ? 'border-color: #6f42c1 !important; background-color: rgba(111, 66, 193, 0.08);' : '' }}">
-                                            <input class="form-check-input ms-1" type="radio" wire:model="customer_type" value="both" id="typeBoth">
-                                            <label class="form-check-label ms-2 fw-semibold" for="typeBoth">
-                                                <i class="bx bx-git-merge text-purple me-1" style="color: #6f42c1;"></i> Both (Wholesale &amp; Retail)
-                                                <div class="small text-muted fw-normal">Customer buys in both</div>
-                                            </label>
-                                        </div>
-                                    </div>
+                                    @error('customer_type') <span class="text-danger small">{{ $message }}</span> @enderror
                                 </div>
-                                @error('customer_type') <span class="text-danger small">{{ $message }}</span> @enderror
-                            </div>
+                            @endif
 
                             @if(!$customerNameOnly)
                                 {{-- City --}}
@@ -568,24 +570,28 @@
 
                             {{-- Member Groups (Controlled by Permission) --}}
                             @if(userCanView("customer.changeorassigncustumertomembergroup"))
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Wholesale Member Group</label>
-                                    <select class="form-select" wire:model="member_group_id">
-                                        <option value="">Select Member Group</option>
-                                        @foreach($this->memberGroups as $mg)
-                                            <option value="{{ $mg->id }}">{{ $mg->label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Retail Member Group</label>
-                                    <select class="form-select" wire:model="retail_member_group_id">
-                                        <option value="">Select Retail Member Group</option>
-                                        @foreach($this->memberGroups as $mg)
-                                            <option value="{{ $mg->id }}">{{ $mg->label }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                                @if(department_by_quantity_column('wholesales', false)->status || (!department_by_quantity_column('wholesales', false)->status && !department_by_quantity_column('retail', false)->status))
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Wholesale Member Group</label>
+                                        <select class="form-select" wire:model="member_group_id">
+                                            <option value="">Select Member Group</option>
+                                            @foreach($this->memberGroups as $mg)
+                                                <option value="{{ $mg->id }}">{{ $mg->label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @endif
+                                @if(department_by_quantity_column('retail', false)->status || (!department_by_quantity_column('wholesales', false)->status && !department_by_quantity_column('retail', false)->status))
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">Retail Member Group</label>
+                                        <select class="form-select" wire:model="retail_member_group_id">
+                                            <option value="">Select Retail Member Group</option>
+                                            @foreach($this->memberGroups as $mg)
+                                                <option value="{{ $mg->id }}">{{ $mg->label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                @endif
                             @endif
                         </div>
                     </div>
