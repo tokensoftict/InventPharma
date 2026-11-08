@@ -34,6 +34,9 @@ class StoresettingsComponent extends Component
         if(!isset($this->store['point_rate_retail'])) {
             $this->store['point_rate_retail'] = 0;
         }
+        if(!isset($this->store['customer_name_only'])) {
+            $this->store['customer_name_only'] = 0;
+        }
 
 
        /*

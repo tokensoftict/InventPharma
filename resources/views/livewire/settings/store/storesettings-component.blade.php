@@ -105,6 +105,15 @@
                     @error('store.point_rate_retail') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
 
+                <div class="mb-3">
+                    <label>Collect Only Customer Firstname &amp; Lastname (No Phone Number Required)</label>
+                    <select wire:model="store.customer_name_only" class="form-control" name="customer_name_only">
+                        <option value="0">No (Require Phone Number &amp; Full Customer Details)</option>
+                        <option value="1">Yes (Collect Only Firstname &amp; Lastname)</option>
+                    </select>
+                    @error('store.customer_name_only') <span class="text-danger">{{ $message }}</span> @enderror
+                </div>
+
 
                 <div class="mb-3">
                     <label>Store Address Line</label>

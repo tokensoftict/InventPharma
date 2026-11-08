@@ -327,27 +327,31 @@ class CustomerManagerComponent extends Component
 
     public function saveCustomers()
     {
+        $nameOnly = app(\App\Classes\Settings::class)->isCustomerNameOnly();
+
         $this->validate([
             'firstname'     => 'required|string|max:100',
             'lastname'      => 'required|string|max:100',
             'email'         => 'nullable|email|max:150',
-            'phone_number'  => 'required|string|max:25',
+            'phone_number'  => $nameOnly ? 'nullable|string|max:25' : 'required|string|max:25',
             'customer_type' => 'required|in:wholesale,retail,both',
         ]);
 
         $cleanedPhone = trim(preg_replace('/[\s\-\(\)]+/', '', $this->phone_number));
 
-        if ($cleanedPhone === '') {
+        if (!$nameOnly && $cleanedPhone === '') {
             $this->addError('phone_number', 'Phone number is required.');
             return;
         }
 
-        // Phone number uniquely identifies a customer: never allow duplicates
-        $duplicate = $this->findPhoneOwner($cleanedPhone);
-        if ($duplicate) {
-            $this->duplicatePhoneWarning = $this->duplicateMessage($cleanedPhone, $duplicate);
-            $this->addError('phone_number', 'This phone number is already registered.');
-            return;
+        // Phone number uniquely identifies a customer when provided
+        if ($cleanedPhone !== '') {
+            $duplicate = $this->findPhoneOwner($cleanedPhone);
+            if ($duplicate) {
+                $this->duplicatePhoneWarning = $this->duplicateMessage($cleanedPhone, $duplicate);
+                $this->addError('phone_number', 'This phone number is already registered.');
+                return;
+            }
         }
 
         if ($this->modelId) {
@@ -411,7 +415,7 @@ class CustomerManagerComponent extends Component
         $customer->firstname = $this->firstname;
         $customer->lastname = $this->lastname;
         $customer->email = $this->email ?: null;
-        $customer->phone_number = $cleanedPhone;
+        $customer->phone_number = $cleanedPhone !== '' ? $cleanedPhone : null;
         $customer->address = $this->address ?: null;
         $customer->city_id = $this->city_id ?: null;
         $customer->customer_type = $this->customer_type;

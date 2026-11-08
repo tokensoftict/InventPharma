@@ -480,33 +480,36 @@
                                 @error('lastname') <span class="text-danger small">{{ $message }}</span> @enderror
                             </div>
 
-                            {{-- Phone Number (Flexible & Non-blocking) --}}
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Phone Number <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bx bx-phone"></i></span>
-                                    <input class="form-control" type="text" wire:model.live.debounce.400ms="phone_number" placeholder="e.g. 08012345678" required>
-                                </div>
-                                <div class="form-text small text-muted">Required. Uniquely identifies the customer (e.g. 080..., +234...).</div>
-                                @error('phone_number') <span class="text-danger small">{{ $message }}</span> @enderror
-
-                                {{-- Duplicate Phone Warning Alert --}}
-                                @if($duplicatePhoneWarning)
-                                    <div class="alert alert-danger py-2 px-3 small mt-2 mb-0">
-                                        <i class="bx bx-error-circle me-1"></i> {{ $duplicatePhoneWarning }}
+                            @php($customerNameOnly = app(\App\Classes\Settings::class)->isCustomerNameOnly())
+                            @if(!$customerNameOnly)
+                                {{-- Phone Number (Flexible & Non-blocking) --}}
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Phone Number <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bx bx-phone"></i></span>
+                                        <input class="form-control" type="text" wire:model.live.debounce.400ms="phone_number" placeholder="e.g. 08012345678" required>
                                     </div>
-                                @endif
-                            </div>
+                                    <div class="form-text small text-muted">Required. Uniquely identifies the customer (e.g. 080..., +234...).</div>
+                                    @error('phone_number') <span class="text-danger small">{{ $message }}</span> @enderror
 
-                            {{-- Email Address --}}
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Email Address</label>
-                                <div class="input-group">
-                                    <span class="input-group-text"><i class="bx bx-envelope"></i></span>
-                                    <input class="form-control" type="email" wire:model="email" placeholder="customer@example.com">
+                                    {{-- Duplicate Phone Warning Alert --}}
+                                    @if($duplicatePhoneWarning)
+                                        <div class="alert alert-danger py-2 px-3 small mt-2 mb-0">
+                                            <i class="bx bx-error-circle me-1"></i> {{ $duplicatePhoneWarning }}
+                                        </div>
+                                    @endif
                                 </div>
-                                @error('email') <span class="text-danger small">{{ $message }}</span> @enderror
-                            </div>
+
+                                {{-- Email Address --}}
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Email Address</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bx bx-envelope"></i></span>
+                                        <input class="form-control" type="email" wire:model="email" placeholder="customer@example.com">
+                                    </div>
+                                    @error('email') <span class="text-danger small">{{ $message }}</span> @enderror
+                                </div>
+                            @endif
 
                             {{-- Customer Category / Department (Wholesale, Retail, Both) --}}
                             <div class="col-12">
@@ -543,23 +546,25 @@
                                 @error('customer_type') <span class="text-danger small">{{ $message }}</span> @enderror
                             </div>
 
-                            {{-- City --}}
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">City</label>
-                                <select class="form-select" wire:model="city_id">
-                                    <option value="">Select City</option>
-                                    @foreach($this->cities as $city)
-                                        <option value="{{ $city->id }}">{{ $city->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                            @if(!$customerNameOnly)
+                                {{-- City --}}
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">City</label>
+                                    <select class="form-select" wire:model="city_id">
+                                        <option value="">Select City</option>
+                                        @foreach($this->cities as $city)
+                                            <option value="{{ $city->id }}">{{ $city->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
 
-                            {{-- Address --}}
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Address</label>
-                                <textarea class="form-control" rows="2" wire:model="address" placeholder="Physical Address"></textarea>
-                                @error('address') <span class="text-danger small">{{ $message }}</span> @enderror
-                            </div>
+                                {{-- Address --}}
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Address</label>
+                                    <textarea class="form-control" rows="2" wire:model="address" placeholder="Physical Address"></textarea>
+                                    @error('address') <span class="text-danger small">{{ $message }}</span> @enderror
+                                </div>
+                            @endif
 
                             {{-- Member Groups (Controlled by Permission) --}}
                             @if(userCanView("customer.changeorassigncustumertomembergroup"))

@@ -33,12 +33,18 @@ class Settings extends Valuestore
         'store.point_rate' => 'required|numeric|min:0',
         'store.point_rate_retail' => 'required|numeric|min:0',
         'store.rc_number' => 'nullable|string|max:100',
+        'store.customer_name_only' => 'nullable',
     ];
 
     public static $pagination = 10;
 
     public function store(){
         return json_decode(json_encode($this->all()));
+    }
+
+    public function isCustomerNameOnly(): bool
+    {
+        return filter_var($this->get('customer_name_only', false), FILTER_VALIDATE_BOOLEAN);
     }
 
     public static array $reports = [12,13,14,15,16,17,18,19];
