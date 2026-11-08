@@ -150,7 +150,7 @@
         </tfoot>
     </table>
 
-    <div class="text-center">  {{ $store->footer_notes }}</div>
+    <div class="text-center">  {!! $store->footer_notes !!}}</div>
     <br/>
     <div align="center">
 

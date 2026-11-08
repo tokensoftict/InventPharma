@@ -272,7 +272,7 @@
         </tbody>
     </table>
 
-    <div class="text-center">  {{ $store->footer_notes }}</div>
+    <div class="text-center">  {!! $store->footer_notes !!}}</div>
     <br/>
     <div align="center">
         <img src="data:image/png;base64,' . {{ DNS1D::getBarcodePNG((string)$invoice->invoice_number, 'C39',3,120) }} . '" alt="barcode"   />

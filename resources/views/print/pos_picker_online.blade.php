@@ -140,7 +140,7 @@
         </tbody>
     </table>
     <hr>
-    <div class="text-center">  {{ $store->footer_notes }}</div>
+    <div class="text-center">  {!! $store->footer_notes !!}}</div>
     <br/>
     <center><img src="data:image/png;base64,' . {{ DNS1D::getBarcodePNG((string)$invoice->invoice_number, 'C39',3,130) }} . '" alt="barcode"   /></center>
     <br/>
