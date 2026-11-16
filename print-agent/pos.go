@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -44,7 +43,6 @@ type serialPort interface {
 	io.ReadWriteCloser
 }
 
-var posMu sync.Mutex // only one terminal conversation at a time
 
 // POS response codes
 const (
@@ -61,6 +59,8 @@ type posResult struct {
 	Message       string                 `json:"message"`
 	AmountMatches *bool                  `json:"amount_matches,omitempty"`
 	Data          map[string]interface{} `json:"data,omitempty"`
+	QueueNumber   int                    `json:"queue_number,omitempty"`
+	WaitedSeconds int                    `json:"waited_seconds,omitempty"`
 }
 
 func statusFromCode(code string) string {
@@ -256,11 +256,12 @@ func handlePOSEcho(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	if !posMu.TryLock() {
-		jsonError(w, http.StatusConflict, "POS terminal is busy with another request")
+	t := posQ.enqueue("echo", "", "echo", 0)
+	if !posQ.wait(t, r.Context().Done()) {
+		jsonError(w, http.StatusRequestTimeout, "Left the POS queue")
 		return
 	}
-	defer posMu.Unlock()
+	defer posQ.release(t)
 
 	m, err := posExchange(map[string]interface{}{"type": "echo"}, 5*time.Second, false)
 	res := buildResult(m, err, "")
@@ -285,6 +286,7 @@ func handlePOSPurchase(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Amount  json.Number `json:"amount"`   // in kobo
 		OrderNo string      `json:"order_no"` // business order number, max 32 chars
+		Label   string      `json:"label"`    // optional text for the queue display (invoice no.)
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		jsonError(w, http.StatusBadRequest, "Invalid JSON body")
@@ -299,11 +301,26 @@ func handlePOSPurchase(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusBadRequest, "order_no is required and must be at most 32 characters")
 		return
 	}
-	if !posMu.TryLock() {
-		jsonError(w, http.StatusConflict, "POS terminal is busy with another request")
+	if posQ.hasOrder(body.OrderNo) {
+		jsonError(w, http.StatusConflict, "This order is already in the POS queue")
 		return
 	}
-	defer posMu.Unlock()
+	label := body.Label
+	if label == "" {
+		label = body.OrderNo
+	}
+	t := posQ.enqueue("purchase", body.OrderNo, label, kobo)
+	log.Printf("POS queue: ticket #%d (%s, %d kobo) queued", t.Number, body.OrderNo, kobo)
+	if !posQ.wait(t, r.Context().Done()) {
+		log.Printf("POS queue: ticket #%d (%s) left the queue before starting", t.Number, body.OrderNo)
+		jsonResponse(w, http.StatusOK, map[string]interface{}{
+			"success": false, "status": "cancelled", "queue_number": t.Number,
+			"message": "Removed from the POS queue before it reached the terminal; nothing was charged.",
+		})
+		return
+	}
+	defer posQ.release(t)
+	log.Printf("POS queue: ticket #%d (%s) is now active", t.Number, body.OrderNo)
 
 	amount := strconv.FormatInt(kobo, 10)
 	timeout := time.Duration(cfg.POS.TimeoutSeconds) * time.Second
@@ -312,7 +329,10 @@ func handlePOSPurchase(w http.ResponseWriter, r *http.Request) {
 		"type":    "purchase",
 		"orderNo": body.OrderNo,
 	}, timeout, true)
-	jsonResponse(w, http.StatusOK, buildResult(m, err, amount))
+	res := buildResult(m, err, amount)
+	res.QueueNumber = t.Number
+	res.WaitedSeconds = int(t.StartedAt.Sub(t.EnqueuedAt).Seconds())
+	jsonResponse(w, http.StatusOK, res)
 }
 
 func handlePOSInquiry(w http.ResponseWriter, r *http.Request) {
@@ -331,11 +351,12 @@ func handlePOSInquiry(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, http.StatusBadRequest, "order_no is required and must be at most 32 characters")
 		return
 	}
-	if !posMu.TryLock() {
-		jsonError(w, http.StatusConflict, "POS terminal is busy with another request")
+	t := posQ.enqueue("inquiry", body.OrderNo, "inquiry "+body.OrderNo, 0)
+	if !posQ.wait(t, r.Context().Done()) {
+		jsonError(w, http.StatusRequestTimeout, "Left the POS queue")
 		return
 	}
-	defer posMu.Unlock()
+	defer posQ.release(t)
 
 	m, err := posExchange(map[string]interface{}{
 		"type":    "Inquiry",

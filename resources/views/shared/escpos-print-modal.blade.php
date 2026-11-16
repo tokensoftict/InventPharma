@@ -117,5 +117,5 @@
 </div>
 
 {{-- ESC/POS Print Agent Scripts --}}
-<script src="{{ asset('js/escpos-print-agent.js') }}"></script>
+<script src="{{ asset('js/escpos-print-agent.js') }}?v={{ @filemtime(public_path('js/escpos-print-agent.js')) ?: time() }}"></script>
 <script src="{{ asset('js/thermal-print-modal.js') }}"></script>

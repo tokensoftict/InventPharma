@@ -17,7 +17,7 @@ import (
 	"time"
 )
 
-const version = "2.0.0"
+const version = "2.1.0"
 
 var (
 	cfg            *Config
@@ -68,6 +68,8 @@ func startHTTPServer() {
 	mux.HandleFunc("/pos/echo", corsMiddleware(authMiddleware(handlePOSEcho)))
 	mux.HandleFunc("/pos/purchase", corsMiddleware(authMiddleware(handlePOSPurchase)))
 	mux.HandleFunc("/pos/inquiry", corsMiddleware(authMiddleware(handlePOSInquiry)))
+	mux.HandleFunc("/pos/queue", corsMiddleware(authMiddleware(handlePOSQueue)))
+	mux.HandleFunc("/pos/queue/cancel", corsMiddleware(authMiddleware(handlePOSQueueCancel)))
 	mux.HandleFunc("/test-print", corsMiddleware(authMiddleware(handleTestPrint)))
 
 	addr := fmt.Sprintf("%s:%d", cfg.Host, cfg.Port)
@@ -145,6 +147,8 @@ func handleHealth(w http.ResponseWriter, r *http.Request) {
 			"/pos/echo",
 			"/pos/purchase",
 			"/pos/inquiry",
+			"/pos/queue",
+			"/pos/queue/cancel",
 		},
 	})
 }

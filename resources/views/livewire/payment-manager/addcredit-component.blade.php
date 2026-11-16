@@ -183,6 +183,7 @@
                                                                 </div>
                                                             @endif
                                                             <div id="opayStatus" class="mt-1" wire:ignore></div>
+<div id="opayQueue" class="mt-2 d-none" wire:ignore></div>
                                                         </div>
                                                     @endif
                                                 </td>
@@ -232,6 +233,7 @@
                                         </div>
                                     @endif
                                     <div id="opayStatus" class="mt-2" wire:ignore></div>
+<div id="opayQueue" class="mt-2 d-none" wire:ignore></div>
                                 </div>
                             @endif
 
@@ -301,13 +303,14 @@
 
             btn.disabled = true;
             if (inqBtn) inqBtn.disabled = true;
-            opayStatus('Waiting for customer to pay on the OPay terminal...', 'info', true);
+            opayStatus('Sending to the OPay terminal...', 'info', true);
+            opayQueueUI.start(agent, orderNo, opayStatus);
 
             // Persist attempt before waiting so orderNo is saved even if POS or browser times out
             @this.call('opayStartAttempt', orderNo, kobo);
 
             try {
-                const result = await agent.posPurchase(kobo, orderNo);
+                const result = await agent.posPurchase(kobo, orderNo, panel.dataset.opayInvoice || '');
                 if (result.success) {
                     opayStatus('Approved! Completing payment...', 'success', true);
                     await @this.call('opayApproved', Object.assign({order_no: orderNo}, result));
@@ -326,6 +329,8 @@
                 opayStatus('Connection/timeout error (' + e.message + '). Click "Re-confirm Last Payment on POS" to check if the payment went through.', 'warning', false);
                 btn.disabled = false;
                 if (inqBtn) inqBtn.disabled = false;
+            } finally {
+                opayQueueUI.stop();
             }
         }
 
