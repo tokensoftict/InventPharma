@@ -161,7 +161,7 @@ class EscPosPrintAgent {
      */
     // The terminal handles one transaction at a time; the agent queues the rest,
     // so the timeout must cover waiting in the queue + the customer's payment time.
-    posPurchase(amountKobo, orderNo, label = '', timeoutMs = 1800000) {
+    posPurchase(amountKobo, orderNo, label = '', timeoutMs = 10800000) {
         return this._posRequest('/pos/purchase', { amount: amountKobo, order_no: orderNo, label: label }, timeoutMs);
     }
 
@@ -203,10 +203,30 @@ class EscPosPrintAgent {
             left.appendChild(document.createTextNode((t.label || t.order_no || t.kind) + (t.amount_kobo ? ' · ' + fmt(t.amount_kobo) : '')));
             const right = document.createElement('small');
             right.className = 'text-muted';
-            right.textContent = note;
+            if (typeof note === 'string') right.textContent = note; else right.appendChild(note);
             li.appendChild(left);
             li.appendChild(right);
             return li;
+        };
+        const mmss = (sec) => {
+            sec = Math.max(0, Math.round(sec));
+            return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+        };
+        // Smooth 1s countdown between 2s polls: each timer span carries a deadline.
+        if (container._cdTimer) clearInterval(container._cdTimer);
+        container._cdTimer = setInterval(() => {
+            container.querySelectorAll('[data-deadline]').forEach((el) => {
+                const left = (parseInt(el.dataset.deadline, 10) - Date.now()) / 1000;
+                el.textContent = el.dataset.prefix + mmss(left) + (el.dataset.suffix || '');
+            });
+        }, 1000);
+        const timerNote = (prefix, seconds, suffix) => {
+            const span = document.createElement('span');
+            span.dataset.deadline = String(Date.now() + seconds * 1000);
+            span.dataset.prefix = prefix;
+            span.dataset.suffix = suffix || '';
+            span.textContent = prefix + mmss(seconds) + (suffix || '');
+            return span;
         };
         const render = (q) => {
             container.replaceChildren();
@@ -228,14 +248,18 @@ class EscPosPrintAgent {
             container.appendChild(head);
             if (q.active) {
                 const me = mine && q.active.order_no === mine;
-                container.appendChild(row('border-success bg-success-subtle' + (me ? ' fw-bold' : ''), 'active', q.active,
-                    (me ? 'YOU · ' : '') + 'ACTIVE on terminal · ' + (q.active.elapsed_seconds || 0) + 's'));
+                const note = document.createElement('span');
+                note.appendChild(document.createTextNode((me ? 'YOU · ' : '') + 'ACTIVE on terminal · '));
+                note.appendChild(timerNote('', q.active.remaining_seconds || 0, ' left'));
+                container.appendChild(row('border-success bg-success-subtle' + (me ? ' fw-bold' : ''), 'active', q.active, note));
             }
             (q.waiting || []).forEach((t) => {
                 const me = mine && t.order_no === mine;
                 const ahead = t.position - 1 + (q.active ? 1 : 0);
-                const r = row('border-warning' + (me ? ' bg-warning-subtle fw-bold' : ''), 'wait', t,
-                    (me ? 'YOU · ' : '') + 'waiting · ' + ahead + ' ahead');
+                const wnote = document.createElement('span');
+                wnote.appendChild(document.createTextNode((me ? 'YOU · ' : '') + 'waiting · ' + ahead + ' ahead · up to '));
+                wnote.appendChild(timerNote('', t.max_wait_seconds || 0));
+                const r = row('border-warning' + (me ? ' bg-warning-subtle fw-bold' : ''), 'wait', t, wnote);
                 if (me) {
                     const leave = document.createElement('button');
                     leave.type = 'button';
@@ -250,12 +274,12 @@ class EscPosPrintAgent {
         let stopped = false;
         const tick = async () => {
             if (stopped) return;
-            if (!container.isConnected) { stopped = true; if (window.opayQueueUI && window.opayQueueUI._stop) window.opayQueueUI._stop = null; return; }
+            if (!container.isConnected) { stopped = true; if (container._cdTimer) clearInterval(container._cdTimer); if (window.opayQueueUI && window.opayQueueUI._stop) window.opayQueueUI._stop = null; return; }
             try { render(await agent.posQueue()); } catch (e) { /* agent unreachable */ }
             if (!stopped) setTimeout(tick, 2000);
         };
         tick();
-        return () => { stopped = true; };
+        return () => { stopped = true; if (container._cdTimer) clearInterval(container._cdTimer); };
     }
 
     /**
@@ -277,10 +301,30 @@ class EscPosPrintAgent {
             left.appendChild(document.createTextNode((t.label || t.order_no || t.kind) + (t.amount_kobo ? ' · ' + fmt(t.amount_kobo) : '')));
             const right = document.createElement('small');
             right.className = 'text-muted';
-            right.textContent = note;
+            if (typeof note === 'string') right.textContent = note; else right.appendChild(note);
             li.appendChild(left);
             li.appendChild(right);
             return li;
+        };
+        const mmss = (sec) => {
+            sec = Math.max(0, Math.round(sec));
+            return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0');
+        };
+        // Smooth 1s countdown between 2s polls: each timer span carries a deadline.
+        if (container._cdTimer) clearInterval(container._cdTimer);
+        container._cdTimer = setInterval(() => {
+            container.querySelectorAll('[data-deadline]').forEach((el) => {
+                const left = (parseInt(el.dataset.deadline, 10) - Date.now()) / 1000;
+                el.textContent = el.dataset.prefix + mmss(left) + (el.dataset.suffix || '');
+            });
+        }, 1000);
+        const timerNote = (prefix, seconds, suffix) => {
+            const span = document.createElement('span');
+            span.dataset.deadline = String(Date.now() + seconds * 1000);
+            span.dataset.prefix = prefix;
+            span.dataset.suffix = suffix || '';
+            span.textContent = prefix + mmss(seconds) + (suffix || '');
+            return span;
         };
         const render = (q) => {
             container.replaceChildren();
@@ -293,8 +337,10 @@ class EscPosPrintAgent {
             container.appendChild(head);
             if (q.active) {
                 const me = mine && q.active.order_no === mine;
-                container.appendChild(row('border-success bg-success-subtle' + (me ? ' fw-bold' : ''), 'active', q.active,
-                    (me ? 'YOU · ' : '') + 'ACTIVE on terminal · ' + (q.active.elapsed_seconds || 0) + 's'));
+                const note = document.createElement('span');
+                note.appendChild(document.createTextNode((me ? 'YOU · ' : '') + 'ACTIVE on terminal · '));
+                note.appendChild(timerNote('', q.active.remaining_seconds || 0, ' left'));
+                container.appendChild(row('border-success bg-success-subtle' + (me ? ' fw-bold' : ''), 'active', q.active, note));
             }
             (q.waiting || []).forEach((t) => {
                 const me = mine && t.order_no === mine;
@@ -310,7 +356,7 @@ class EscPosPrintAgent {
             if (!stopped) setTimeout(tick, 2000);
         };
         tick();
-        return () => { stopped = true; };
+        return () => { stopped = true; if (container._cdTimer) clearInterval(container._cdTimer); };
     }
 
     /**

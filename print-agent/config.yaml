@@ -29,5 +29,5 @@ pos:
   data_bits: 8
   parity: none        # none | even | odd
   stop_bits: 1
-  timeout_seconds: 120
+  timeout_seconds: 1200
   append_newline: false

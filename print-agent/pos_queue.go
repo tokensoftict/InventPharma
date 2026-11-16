@@ -138,6 +138,29 @@ func (q *posQueue) hasOrder(orderNo string) bool {
 	return false
 }
 
+// maxDuration is the longest a ticket can hold the terminal before it times out.
+func (t *posTicket) maxDuration() time.Duration {
+	switch t.Kind {
+	case "inquiry":
+		return 15 * time.Second
+	case "echo":
+		return 5 * time.Second
+	}
+	secs := 120
+	if cfg != nil && cfg.POS.TimeoutSeconds > 0 {
+		secs = cfg.POS.TimeoutSeconds
+	}
+	return time.Duration(secs) * time.Second
+}
+
+func (t *posTicket) remainingSeconds() int {
+	left := t.maxDuration() - time.Since(t.StartedAt)
+	if left < 0 {
+		return 0
+	}
+	return int(left.Seconds())
+}
+
 func ticketView(t *posTicket, position int) map[string]interface{} {
 	v := map[string]interface{}{
 		"queue_number":    t.Number,
@@ -153,6 +176,8 @@ func ticketView(t *posTicket, position int) map[string]interface{} {
 	if !t.StartedAt.IsZero() {
 		v["started_at"] = t.StartedAt.Format(time.RFC3339)
 		v["elapsed_seconds"] = int(time.Since(t.StartedAt).Seconds())
+		v["timeout_seconds"] = int(t.maxDuration().Seconds())
+		v["remaining_seconds"] = t.remainingSeconds()
 	}
 	return v
 }
@@ -161,8 +186,17 @@ func (q *posQueue) snapshot() map[string]interface{} {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	waiting := make([]map[string]interface{}, 0, len(q.waiting))
+	// Upper bound on the wait: the active ticket's remaining time plus the
+	// full timeout of every ticket queued ahead.
+	ahead := 0
+	if q.active != nil {
+		ahead = q.active.remainingSeconds()
+	}
 	for i, w := range q.waiting {
-		waiting = append(waiting, ticketView(w, i+1))
+		v := ticketView(w, i+1)
+		v["max_wait_seconds"] = ahead
+		waiting = append(waiting, v)
+		ahead += int(w.maxDuration().Seconds())
 	}
 	var active interface{}
 	if q.active != nil {
