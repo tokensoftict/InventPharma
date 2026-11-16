@@ -167,7 +167,7 @@
                             @php $customerNameOnly = app(\App\Classes\Settings::class)->isCustomerNameOnly(); @endphp
                             <div class="mb-3">
                                 <label>Search For Customer :</label>
-                                <input class="form-control input-sm" id="customer-search-text" x-model="searchCustomerString"  x-on:keyup.debounce="searchCustomer(this.value)"  placeholder="{{ $customerNameOnly ? 'Search for customer by firstname or lastname' : 'Search for customer by phone number, name or email address' }}">
+                                <input class="form-control input-sm" id="customer-search-text" x-model="searchCustomerString"  x-on:input.debounce.400ms="searchCustomer()"  placeholder="{{ $customerNameOnly ? 'Search for customer by firstname or lastname' : 'Search for customer by phone number, name or email address' }}">
 
                                 @if(userCanView('customer.create'))
                                     <a href="#" wire:click="newCustomer" class="text-success" style="display: block;text-align: center">Add New Customer</a>
@@ -193,7 +193,7 @@
                                                 <div class="np-ib np-text-container">
                                                     <div x-text="(customer.firstname)+ ' '+(customer.lastname)"></div>
                                                     <div class="np-result-description">
-                                                        Phone Number : <span x-html="customer.phone_number"></span>
+                                                        Phone Number : <span x-text="customer.phone_number"></span>
                                                         &nbsp; &nbsp;
                                                         Company Name : <span x-text="customer.company_name"></span>
                                                         &nbsp; &nbsp;
@@ -716,13 +716,29 @@
             return formatMoney(amount);
         },
             async searchCustomer(){
-                if (this.searchCustomerString !== "" && this.searchCustomerString.length >= 2) {
-                    this.searchCustomers = await (await fetch('{{ route('findcustomer') }}?query=' + this.searchCustomerString
-                    )).
-                    json();
-                }
-                else{
+                const term = (this.searchCustomerString || "").trim();
+                // cancel any in-flight search so slow, stale responses can't overwrite newer ones
+                if (this._custAbort) { this._custAbort.abort(); this._custAbort = null; }
+                if (term.length < 2) {
                     this.searchCustomers = [];
+                    return;
+                }
+                const controller = new AbortController();
+                this._custAbort = controller;
+                try {
+                    const resp = await fetch('{{ route('findcustomer') }}?query=' + encodeURIComponent(term), {
+                        signal: controller.signal,
+                        headers: {'Accept': 'application/json'}
+                    });
+                    const data = await resp.json();
+                    if (this._custAbort === controller) {
+                        this.searchCustomers = Array.isArray(data) ? data.slice(0, 15) : [];
+                        this._custAbort = null;
+                    }
+                } catch (e) {
+                    if (e.name !== 'AbortError') {
+                        this.searchCustomers = [];
+                    }
                 }
             },
             selectCus(customer) {
