@@ -39,6 +39,48 @@ class InvoiceDataTable extends ExportDataTableComponent
 
     }
 
+    /**
+     * Smart customer search: every word typed must match the customer's first name,
+     * last name, phone number or email (in any order), so "john doe", "doe john",
+     * "john", or a phone number written as 0803..., +234803... or 0803 123 4567 all work.
+     * Must be used inside the datatable's grouped search (adds an OR condition).
+     */
+    public static function applyCustomerSearch($query, string $term)
+    {
+        $term = trim(preg_replace('/\s+/', ' ', $term));
+        if ($term === '') {
+            return $query;
+        }
+
+        $escape = fn(string $v) => addcslashes($v, '\\%_');
+        // A phone number typed with spaces/dashes (e.g. "+234 803 123 4567") stays one token
+        $tokens = preg_match('/^[\d\s\-\+\(\)]+$/', $term) && strlen(preg_replace('/\D+/', '', $term)) >= 4
+            ? [$term]
+            : array_values(array_filter(explode(' ', $term), fn($t) => $t !== ''));
+
+        return $query->orWhereHas('customer', function ($customer) use ($tokens, $term, $escape) {
+            foreach ($tokens as $token) {
+                $like = '%' . $escape($token) . '%';
+                $digits = preg_replace('/\D+/', '', $token);
+
+                $customer->where(function ($w) use ($like, $digits, $token) {
+                    $w->where('customers.firstname', 'like', $like)
+                        ->orWhere('customers.lastname', 'like', $like)
+                        ->orWhere('customers.email', 'like', $like)
+                        ->orWhere('customers.phone_number', 'like', $like);
+
+                    // phone numbers: ignore formatting and country code / leading zero differences
+                    if (strlen($digits) >= 4) {
+                        $local = ltrim(preg_replace('/^234/', '', $digits), '0');
+                        if (strlen($local) >= 4) {
+                            $w->orWhere('customers.phone_number', 'like', '%' . $local . '%');
+                        }
+                    }
+                });
+            }
+        });
+    }
+
     public static function  mountColumn(InvoiceDataTable $invoiceDataTable) : array
     {
         if($invoiceDataTable->isWaitingList) {
@@ -46,7 +88,7 @@ class InvoiceDataTable extends ExportDataTableComponent
                 Column::make("Customer", "customer.firstname")
                     ->format(fn($value, $row, Column $column)=> $row->firstname." ".$row->lastname)
                     ->sortable()
-                    ->searchable(),
+                    ->searchable(fn($query, $term) => self::applyCustomerSearch($query, $term)),
                 Column::make("Update Status", "invoice.in_department")
                     ->format(function($value, $row, Column $column) {
                         return waitingListCustomerUpdateButton($row);
@@ -77,7 +119,7 @@ class InvoiceDataTable extends ExportDataTableComponent
                 Column::make("Customer", "customer.firstname")
                     ->format(fn($value, $row, Column $column)=> $row->firstname." ".$row->lastname)
                     ->sortable()
-                    ->searchable(),
+                    ->searchable(fn($query, $term) => self::applyCustomerSearch($query, $term)),
 
                 Column::make("Waiting Status", "waitingCustomer.status")
                     ->format(function($value, $row, Column $column) {
