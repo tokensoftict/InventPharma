@@ -176,6 +176,57 @@ function paymentmethodsOnly($only = [])
     });
 }
 
+function stock_for_stock_payment_method_id(): ?int
+{
+    $targets = ['STOCK FOR STOCK', 'STOCK-FOR-STOCK', 'STOCK_FOR_STOCK'];
+
+    if (\Illuminate\Support\Facades\Schema::hasTable('paymentmethods')) {
+        $method = paymentmethods(false)->first(function ($item) use ($targets) {
+            return in_array(strtoupper(trim((string) $item->name)), $targets, true);
+        });
+
+        if ($method) {
+            return (int) $method->id;
+        }
+
+        $dbMethod = \App\Models\Paymentmethod::query()->get()->first(function ($item) use ($targets) {
+            return in_array(strtoupper(trim((string) $item->name)), $targets, true);
+        });
+
+        if ($dbMethod) {
+            Cache::forget('paymentmethods');
+            return (int) $dbMethod->id;
+        }
+    }
+
+    return null;
+}
+
+function is_stock_for_stock_payment_method($paymentMethod): bool
+{
+    if (is_null($paymentMethod) || $paymentMethod === '') {
+        return false;
+    }
+
+    $targets = ['STOCK FOR STOCK', 'STOCK-FOR-STOCK', 'STOCK_FOR_STOCK'];
+
+    if (is_object($paymentMethod) && isset($paymentMethod->name)) {
+        return in_array(strtoupper(trim((string) $paymentMethod->name)), $targets, true);
+    }
+
+    if (!is_numeric($paymentMethod)) {
+        return in_array(strtoupper(trim((string) $paymentMethod)), $targets, true);
+    }
+
+    $sfsId = stock_for_stock_payment_method_id();
+    return $sfsId !== null && (int) $paymentMethod === $sfsId;
+}
+
+function stock_exchange_payment_reference(): string
+{
+    return 'SFS-' . date('YmdHis') . '-' . strtoupper(Str::random(6));
+}
+
 function manufacturers($active = false)
 {
     $manus =  Cache::remember('manufacturers', 86400, function(){
@@ -713,30 +764,37 @@ function status($status){
         ? \App\Models\Status::find($status)
         : \App\Models\Status::where('name', $status)->first();
 
+    if (!$dbStatus && !is_numeric($status)) {
+        if ($status === 'Unpaid') {
+            $dbStatus = \App\Models\Status::where('name', 'Draft')->first();
+        } elseif ($status === 'Draft') {
+            $dbStatus = \App\Models\Status::where('name', 'Unpaid')->first();
+        }
+    }
+
     return $dbStatus?->id ?? (is_numeric($status) ? (int)$status : null);
 }
 
 function status_name($status){
 
-    /*
-    if(is_array($status))
-       return  \App\Models\Status::whereIn('name',$status)->pluck('id');
-    else
-        return \App\Models\Status::where('name',$status)->first()->id;
-    */
     if(is_numeric($status))
-
         $st = statuses()->filter(function ($item) use($status){
             return $item->id == $status;
         });
     else
-
         $st = statuses()->filter(function ($item) use($status){
             return $item->name == $status;
         });
 
+    if ($st && $st->isNotEmpty() && $st->first()) {
+        return $st->first()->name;
+    }
 
-    return $st->first()->name;
+    $dbStatus = is_numeric($status)
+        ? \App\Models\Status::find($status)
+        : \App\Models\Status::where('name', $status)->first();
+
+    return $dbStatus?->name ?? (string) $status;
 }
 
 function showStatus($status)
@@ -1222,6 +1280,9 @@ function numberTowords($num)
 
 
 function logActivity($invoice_id, $invoice_number, $activities){
+    if (!\Illuminate\Support\Facades\Schema::hasTable('invoiceactivitylogs')) {
+        return;
+    }
 
     \App\Models\Invoiceactivitylog::create([
         'invoice_id'=>$invoice_id,

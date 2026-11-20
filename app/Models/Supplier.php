@@ -57,6 +57,10 @@ class Supplier extends Model
 
     public function getCreditBalanceAttribute(){
         return $this->supplier_credit_payment_histories->filter(function($item){
+            if ($item->isReversed()) {
+                return false;
+            }
+
             if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Pending') {
                 return false;
             }
@@ -71,6 +75,15 @@ class Supplier extends Model
 
             return true;
         })->sum('amount');
+    }
+
+    public function stockExchangeInvoices()
+    {
+        return $this->hasMany(Invoice::class, 'supplier_id')
+            ->where(function ($query) {
+                $query->where('is_stock_exchange', true)
+                      ->orWhere('invoice_type', 'stock_exchange');
+            });
     }
 
     public function payment()

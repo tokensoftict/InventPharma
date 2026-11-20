@@ -21,7 +21,8 @@ class PaymentMethodSeeder extends Seeder
             ['name'=>"CREDIT","status"=>1],
             ['name'=>"DEPOSIT","status"=>0],
             ['name'=>"SPLIT-PAYMENTS","status"=>1],
-            ['name'=>"ONLINE-PAYMENT","status"=>1]
+            ['name'=>"ONLINE-PAYMENT","status"=>1],
+            ['name'=>"Stock for Stock","status"=>1]
         ];
 
         DB::table('paymentmethods')->insert($payment_method);

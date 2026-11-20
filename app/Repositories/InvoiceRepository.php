@@ -33,7 +33,10 @@ class InvoiceRepository
 
             return [
                 'invoice_number' => $invoice->invoice_number,
-                'customer_id' => $invoice->customer->toArray(),
+                'customer_id' => $invoice->customer ? $invoice->customer->toArray() : ['firstname' => ''],
+                'is_stock_exchange' => (bool) ($invoice->is_stock_exchange ?? false),
+                'invoice_type' => $invoice->invoice_type ?? 'normal',
+                'supplier_id' => $invoice->supplier_id ?? null,
                 'payment_id' => $invoice->payment_id,
                 'department' => $invoice->department,
                 'in_department' => $invoice->in_department,
@@ -44,6 +47,7 @@ class InvoiceRepository
                 'status_id' => $invoice->status_id,
                 'sub_total' => $invoice->sub_total,
                 'total_amount_paid' => $invoice->total_amount_paid,
+                'exchange_amount_utilised' => $invoice->exchange_amount_utilised ?? 0,
                 'total_profit' => $invoice->total_profit,
                 'total_cost' => $invoice->total_cost,
                 'vat' => $invoice->vat,
@@ -75,6 +79,9 @@ class InvoiceRepository
             return [
                 'invoice_number' => $component->invoice_number,
                 'customer_id' => ['firstname'=>""],
+                'is_stock_exchange' => false,
+                'invoice_type' => 'normal',
+                'supplier_id' => null,
                 'department' => NULL,
                 'in_department' => department_by_id(auth()->user()->department_id)->quantity_column,
                 'discount_amount' => 0,
@@ -85,6 +92,7 @@ class InvoiceRepository
                 'status_id' => status('Draft'),
                 'sub_total' => 0,
                 'total_amount_paid' => 0,
+                'exchange_amount_utilised' => 0,
                 'total_profit' => 0,
                 'total_cost' => 0,
                 'vat' => 0,
@@ -227,11 +235,31 @@ class InvoiceRepository
 
         Arr::forget($invoiceData, ['invoiceitems']);
 
+        $isStockExchange = !empty($invoiceData['is_stock_exchange']) || ($invoiceData['invoice_type'] ?? '') === 'stock_exchange';
+        if ($isStockExchange) {
+            if (in_array($invoiceData['department'] ?? '', ['retail', 'retail_store'], true)
+                || in_array($invoiceData['in_department'] ?? '', ['retail', 'retail_store'], true)) {
+                return ['department' => 'Stock Exchange Invoices are only permitted for wholesales, not retail.'];
+            }
+            if (empty($invoiceData['supplier_id'])) {
+                return ['supplier_id' => 'Please select a supplier for a Stock Exchange Invoice.'];
+            }
+            $invoiceData['is_stock_exchange'] = true;
+            $invoiceData['invoice_type'] = 'stock_exchange';
+            if (empty($invoiceData['customer_id']) || is_array($invoiceData['customer_id'])) {
+                $invoiceData['customer_id'] = null;
+            }
+            if (empty($invoiceData['status_id']) || (int) $invoiceData['status_id'] === (int) status('Draft')) {
+                $invoiceData['status_id'] = status('Unpaid') ?? status('Draft');
+            }
+        }
+
         $validationService = new InvoiceValidationService();
         $validation = $validationService->validateInvoice(
             $items,
             $invoiceData['department'],
-            $invoiceData['customer_id'] ?? null
+            $invoiceData['customer_id'] ?? null,
+            !$isStockExchange
         );
 
         if ($validation['status'] === false) {
@@ -280,9 +308,9 @@ class InvoiceRepository
         Stock::removeSaleableBatches($invoice, $removeQuantity, array_unique($columns));
 
 
-        logActivity($invoice->id, $invoice->invoice_number,'Invoice was generated status :'.$invoice->status->name);
+        logActivity($invoice->id, $invoice->invoice_number,'Invoice was generated status :'.status_name($invoice->status_id));
 
-        if($invoice->customer_id !== 1) { // customer ledger for walking customer
+        if($invoice->customer_id && $invoice->customer_id !== 1 && !$invoice->isStockExchange()) { // customer ledger for walking customer
 
             dispatch(new AddLogToCustomerLedger([
                 'payment_id' => NULL,
@@ -294,7 +322,7 @@ class InvoiceRepository
             ]));
         }
 
-        logActivity($invoice->id, $invoice->invoice_number, "Invoice was created".$invoice->status->name);
+        logActivity($invoice->id, $invoice->invoice_number, "Invoice was created".status_name($invoice->status_id));
 
         if(config('app.sync_with_online')== 1) {
             dispatch(new PushStockUpdateToServer(array_column($invoice->invoiceitems->toArray(), 'stock_id')));
@@ -324,6 +352,10 @@ class InvoiceRepository
 
     public function updateInvoice(Invoice $invoice ,array $invoiceData) : Invoice|array
     {
+        if ($invoice->hasActiveExchangeAllocations()) {
+            return ['invoice' => 'Cannot modify an invoice with active stock exchange allocations. Reverse the allocations first.'];
+        }
+
         $items = json_decode($invoiceData['invoiceitems'],true);
 
         //set the cost price of items that does not have cost price to zero
@@ -460,9 +492,9 @@ class InvoiceRepository
 
         Stock::removeSaleableBatches($invoice, $removeQuantity, array_unique( $columns));
 
-        logActivity($invoice->id, $invoice->invoice_number, "Invoice was updated".$invoice->status->name);
+        logActivity($invoice->id, $invoice->invoice_number, "Invoice was updated".status_name($invoice->status_id));
 
-        if($invoice->customer_id !== 1) { // customer ledger for walking customer
+        if($invoice->customer_id && $invoice->customer_id !== 1 && !$invoice->isStockExchange()) { // customer ledger for walking customer
 
             dispatch(new AddLogToCustomerLedger([
                 'payment_id' => NULL,

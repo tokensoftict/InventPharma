@@ -43,8 +43,15 @@ class SupplierCreditPaymentHistory extends Model
 		'user_id' => 'int',
 		'supplier_id' => 'int',
 		'purchase_id' => 'int',
+        'invoice_id' => 'int',
 		'paymentmethod_id' => 'int',
+        'reference' => 'string',
 		'amount' => 'float',
+        'status' => 'string',
+        'reversed_at' => 'datetime',
+        'reversed_by' => 'int',
+        'reversal_reason' => 'string',
+        'idempotency_key' => 'string',
 		'payment_date' => 'datetime',
         'payment_info' => 'json'
 	];
@@ -54,9 +61,16 @@ class SupplierCreditPaymentHistory extends Model
 		'supplier_id',
 		'type',
 		'purchase_id',
+        'invoice_id',
 		'paymentmethod_id',
+        'reference',
 		'payment_info',
 		'amount',
+        'status',
+        'reversed_at',
+        'reversed_by',
+        'reversal_reason',
+        'idempotency_key',
         'remark',
 		'payment_date'
 	];
@@ -71,6 +85,11 @@ class SupplierCreditPaymentHistory extends Model
 		return $this->belongsTo(Purchase::class);
 	}
 
+    public function invoice()
+    {
+        return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
 	public function supplier()
 	{
 		return $this->belongsTo(Supplier::class);
@@ -80,4 +99,23 @@ class SupplierCreditPaymentHistory extends Model
 	{
 		return $this->belongsTo(User::class);
 	}
+
+    public function reversedByUser()
+    {
+        return $this->belongsTo(User::class, 'reversed_by');
+    }
+
+    public function isStockForStock(): bool
+    {
+        return !is_null($this->invoice_id)
+            || is_stock_for_stock_payment_method($this->paymentmethod_id)
+            || ($this->relationLoaded('paymentmethod') && is_stock_for_stock_payment_method($this->paymentmethod));
+    }
+
+    public function isReversed(): bool
+    {
+        return $this->status === 'Reversed'
+            || !is_null($this->reversed_at)
+            || (isset($this->payment_info['status']) && $this->payment_info['status'] === 'Reversed');
+    }
 }

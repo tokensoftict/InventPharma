@@ -75,7 +75,9 @@ class InvoicePolicy
 
         if($invoice->onliner_order_id !== NULL) return false;
 
-        if(in_array($invoice->status_id, [
+        if ($invoice->hasActiveExchangeAllocations()) return false;
+
+        if(in_array($invoice->status_id, array_filter([
             status('Dispatched'),
             status('Complete'),
             status('Paid'),
@@ -83,7 +85,9 @@ class InvoicePolicy
             status('Discount'),
             status('Waiting-For-Credit-Approval'),
             status('Waiting-For-Cheque-Approval'),
-        ])) return false;
+            status('Partially Exchanged'),
+            status('Exchanged'),
+        ]))) return false;
 
         return true;
     }
@@ -120,14 +124,18 @@ class InvoicePolicy
     {
         if(!userCanView('invoiceandsales.destroy')) return false;
 
-        if(in_array($invoice->status_id, [
+        if ($invoice->hasActiveExchangeAllocations()) return false;
+
+        if(in_array($invoice->status_id, array_filter([
             status('Dispatched'),
             status('Complete'),
             status('Paid'),
             status('Deleted'),
             status('Waiting-For-Credit-Approval'),
             status('Waiting-For-Cheque-Approval'),
-        ])) return false;
+            status('Partially Exchanged'),
+            status('Exchanged'),
+        ]))) return false;
 
         return true;
 
@@ -142,6 +150,8 @@ class InvoicePolicy
      */
     public function pay(User $user, Invoice $invoice) : bool
     {
+        if ($invoice->isStockExchange()) return false;
+
         if(!userCanView('payment.createInvoicePayment') && !userCanView('payment.create')) return false;
 
         if($invoice->onliner_order_id !== NULL){ //if it is an online invoice

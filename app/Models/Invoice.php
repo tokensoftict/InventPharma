@@ -81,6 +81,9 @@ class Invoice extends Model
 
 	protected $casts = [
 		'customer_id' => 'int',
+        'is_stock_exchange' => 'bool',
+        'invoice_type' => 'string',
+        'supplier_id' => 'int',
         'prescriber_id' => 'int',
 		'payment_id' => 'int',
 		'discount_amount' => 'float',
@@ -88,6 +91,7 @@ class Invoice extends Model
 		'status_id' => 'int',
 		'sub_total' => 'float',
 		'total_amount_paid' => 'float',
+        'exchange_amount_utilised' => 'float',
 		'total_profit' => 'float',
 		'total_cost' => 'float',
 		'vat' => 'float',
@@ -118,6 +122,9 @@ class Invoice extends Model
 	protected $fillable = [
 		'invoice_number',
 		'customer_id',
+        'is_stock_exchange',
+        'invoice_type',
+        'supplier_id',
 		'payment_id',
 		'department',
 		'in_department',
@@ -127,6 +134,7 @@ class Invoice extends Model
 		'status_id',
 		'sub_total',
 		'total_amount_paid',
+        'exchange_amount_utilised',
 		'total_profit',
 		'total_cost',
 		'vat',
@@ -156,6 +164,25 @@ class Invoice extends Model
         'membership_discount',
         'membership_discount_value'
 	];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Invoice $invoice) {
+            if ($invoice->is_stock_exchange || $invoice->invoice_type === 'stock_exchange') {
+                $invoice->is_stock_exchange = true;
+                $invoice->invoice_type = 'stock_exchange';
+            } else {
+                $invoice->is_stock_exchange = false;
+                $invoice->invoice_type = $invoice->invoice_type ?: 'normal';
+            }
+        });
+
+        static::deleting(function (Invoice $invoice) {
+            if ($invoice->hasActiveExchangeAllocations()) {
+                throw new \DomainException('Cannot delete an invoice with active stock exchange allocations. Reverse the allocations first.');
+            }
+        });
+    }
 
     public function payment()
     {
@@ -261,6 +288,209 @@ class Invoice extends Model
     public function waitingCustomer()
     {
         return $this->hasOne(WaitingCustomer::class, );
+    }
+
+    public function supplier() : BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id');
+    }
+
+    public function stockExchangeAllocations()
+    {
+        return $this->hasMany(SupplierCreditPaymentHistory::class, 'invoice_id')
+            ->where('type', 'PAYMENT');
+    }
+
+    public function activeStockExchangeAllocations()
+    {
+        return $this->hasMany(SupplierCreditPaymentHistory::class, 'invoice_id')
+            ->where('type', 'PAYMENT')
+            ->where(function ($query) {
+                $query->whereNull('status')->orWhere('status', '!=', 'Reversed');
+            })
+            ->whereNull('reversed_at');
+    }
+
+    public function isStockExchange(): bool
+    {
+        return (bool) $this->is_stock_exchange || $this->invoice_type === 'stock_exchange';
+    }
+
+    public function isCancelledOrReversed(): bool
+    {
+        $invalidStatusIds = array_values(array_filter([
+            status('Cancelled'),
+            status('Deleted'),
+            status('Declined'),
+        ]));
+
+        if (!empty($invalidStatusIds) && in_array((int) $this->status_id, $invalidStatusIds, true)) {
+            return true;
+        }
+
+        if (!is_null($this->voided_by) || !is_null($this->date_voided)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function calculateOriginalTotal(): float
+    {
+        $subTotal = (float) ($this->sub_total ?? 0);
+        $discount = (float) ($this->discount_amount ?? 0);
+        $membershipDiscount = (float) ($this->membership_discount ?? 0);
+
+        return max(0.0, round($subTotal - ($discount + $membershipDiscount), 5));
+    }
+
+    public function getOriginalInvoiceTotalAttribute(): float
+    {
+        return $this->calculateOriginalTotal();
+    }
+
+    public function calculateTotalExchangeUtilised(): float
+    {
+        if (!$this->exists) {
+            return round((float) ($this->exchange_amount_utilised ?? 0), 5);
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('supplier_credit_payment_histories')
+            && \Illuminate\Support\Facades\Schema::hasColumn('supplier_credit_payment_histories', 'invoice_id')) {
+            $allocations = $this->stockExchangeAllocations()->get();
+
+            $activeTotal = $allocations->filter(function ($item) {
+                if ($item->status === 'Reversed' || !is_null($item->reversed_at)) {
+                    return false;
+                }
+                if (isset($item->payment_info['status']) && in_array($item->payment_info['status'], ['Reversed', 'Declined'], true)) {
+                    return false;
+                }
+                return true;
+            })->sum('amount');
+
+            return max(0.0, round((float) $activeTotal, 5));
+        }
+
+        return max(0.0, round((float) ($this->exchange_amount_utilised ?? 0), 5));
+    }
+
+    public function getTotalExchangeUtilisedAttribute(): float
+    {
+        return $this->calculateTotalExchangeUtilised();
+    }
+
+    public function calculateRemainingExchangeBalance(): float
+    {
+        return max(0.0, round($this->calculateOriginalTotal() - $this->calculateTotalExchangeUtilised(), 5));
+    }
+
+    public function getRemainingExchangeBalanceAttribute(): float
+    {
+        return $this->calculateRemainingExchangeBalance();
+    }
+
+    public function hasActiveExchangeAllocations(): bool
+    {
+        return round($this->calculateTotalExchangeUtilised(), 2) > 0;
+    }
+
+    public function isEligibleForStockExchange(?int $supplierId = null): bool
+    {
+        if (!$this->isStockExchange()) {
+            return false;
+        }
+
+        if ($this->isCancelledOrReversed()) {
+            return false;
+        }
+
+        $exchangedStatusId = status('Exchanged');
+        if ($exchangedStatusId !== null && (int) $this->status_id === (int) $exchangedStatusId) {
+            return false;
+        }
+
+        if (is_null($this->supplier_id)) {
+            return false;
+        }
+
+        if ($supplierId !== null && (int) $this->supplier_id !== (int) $supplierId) {
+            return false;
+        }
+
+        if (round($this->calculateRemainingExchangeBalance(), 2) <= 0) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function recalculateExchangeStatus(): self
+    {
+        if (!$this->isStockExchange()) {
+            return $this;
+        }
+
+        $originalTotal = $this->calculateOriginalTotal();
+        $utilised = $this->calculateTotalExchangeUtilised();
+        $remaining = max(0.0, round($originalTotal - $utilised, 5));
+
+        $this->exchange_amount_utilised = $utilised;
+        $this->total_amount_paid = $utilised;
+
+        if (round($utilised, 2) <= 0) {
+            $unpaidStatusId = status('Unpaid') ?? status('Draft');
+            if ($unpaidStatusId !== null) {
+                $this->status_id = $unpaidStatusId;
+            }
+        } elseif (round($remaining, 2) > 0) {
+            $partiallyExchangedStatusId = status('Partially Exchanged');
+            if ($partiallyExchangedStatusId !== null) {
+                $this->status_id = $partiallyExchangedStatusId;
+            }
+        } else {
+            $exchangedStatusId = status('Exchanged');
+            if ($exchangedStatusId !== null) {
+                $this->status_id = $exchangedStatusId;
+            }
+        }
+
+        $this->save();
+
+        return $this;
+    }
+
+    public function scopeEligibleForStockExchange($query, ?int $supplierId = null, ?string $search = null)
+    {
+        $invalidStatusIds = array_values(array_filter([
+            status('Cancelled'),
+            status('Deleted'),
+            status('Declined'),
+            status('Exchanged'),
+        ]));
+
+        $query->where(function ($q) {
+            $q->where('is_stock_exchange', true)
+              ->orWhere('invoice_type', 'stock_exchange');
+        })
+        ->whereNotNull('supplier_id')
+        ->whereNull('voided_by')
+        ->whereNull('date_voided');
+
+        if (!empty($invalidStatusIds)) {
+            $query->whereNotIn('status_id', $invalidStatusIds);
+        }
+
+        if ($supplierId !== null) {
+            $query->where('supplier_id', $supplierId);
+        }
+
+        if ($search !== null && trim($search) !== '') {
+            $term = trim($search);
+            $query->where('invoice_number', 'like', '%' . $term . '%');
+        }
+
+        return $query;
     }
 
     public function getSyncData(): array

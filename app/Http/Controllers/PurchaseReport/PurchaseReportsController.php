@@ -260,6 +260,10 @@ class PurchaseReportsController extends Controller
             ->where('payment_date', '<', $data['filters']['filters']['between.return_date'][0])
             ->get()
             ->filter(function($item){
+                if($item->isReversed()) {
+                    return false;
+                }
+
                 if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Pending') {
                     return false;
                 }
@@ -280,6 +284,10 @@ class PurchaseReportsController extends Controller
             ->where('supplier_id', $data['filters']['filters']['supplier_id'])
             ->whereBetween('payment_date', $data['filters']['filters']['between.return_date'])
             ->get()->filter(function($item){
+                if($item->isReversed()) {
+                    return false;
+                }
+
                 if($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Pending') {
                     return false;
                 }

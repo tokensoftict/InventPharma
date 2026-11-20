@@ -54,18 +54,84 @@
                         <tr>
                             <th>Payment Method</th>
                             <td>
-                                {{ $payment->paymentmethod->name ?? 'N/A' }}
-                                @if($payment->paymentmethod_id === 8)
-                                    @php
-                                        $status = $payment->payment_info['status'] ?? 'Pending';
-                                    @endphp
-                                    <span
-                                            class="badge badge-soft-{{ $status === 'Approved' ? 'success' : ($status === 'Declined' ? 'danger' : 'warning') }} ms-1">
-                                            {{ $status }}
-                                        </span>
+                                @if($payment->isStockForStock())
+                                    <span class="badge bg-info text-dark">Stock for Stock</span>
+                                    @if($payment->isReversed())
+                                        <span class="badge bg-danger ms-1">Reversed</span>
+                                    @else
+                                        <span class="badge bg-success ms-1">Active</span>
+                                    @endif
+                                @else
+                                    {{ $payment->paymentmethod->name ?? 'N/A' }}
+                                    @if($payment->paymentmethod_id === 8)
+                                        @php
+                                            $status = $payment->payment_info['status'] ?? 'Pending';
+                                        @endphp
+                                        <span
+                                                class="badge badge-soft-{{ $status === 'Approved' ? 'success' : ($status === 'Declined' ? 'danger' : 'warning') }} ms-1">
+                                                {{ $status }}
+                                            </span>
+                                    @endif
                                 @endif
                             </td>
                         </tr>
+                        @if($payment->purchase_id)
+                            <tr>
+                                <th>Related Purchase Order</th>
+                                <td>
+                                    <a href="{{ route('purchase.show', $payment->purchase_id) }}" class="fw-bold text-primary">
+                                        Purchase Order #{{ $payment->purchase_id }}
+                                    </a>
+                                </td>
+                            </tr>
+                        @endif
+                        @if($payment->isStockForStock())
+                            <tr>
+                                <th>Related Stock Exchange Invoice</th>
+                                <td>
+                                    @if($payment->invoice_id && $payment->invoice)
+                                        <a href="{{ route('invoiceandsales.view', $payment->invoice_id) }}" class="fw-bold text-primary">
+                                            Invoice #{{ $payment->invoice->invoice_number }}
+                                        </a>
+                                        <span class="ms-2">({!! showStatus($payment->invoice->status_id) !!})</span>
+                                    @elseif(!empty($payment->payment_info['invoice_number']))
+                                        Invoice #{{ $payment->payment_info['invoice_number'] }}
+                                    @else
+                                        N/A
+                                    @endif
+                                </td>
+                            </tr>
+                            @if($payment->invoice)
+                                <tr>
+                                    <th>Invoice Exchange Summary</th>
+                                    <td>
+                                        Original: <strong>₦{{ money($payment->invoice->original_invoice_total) }}</strong> |
+                                        Utilised: <strong>₦{{ money($payment->invoice->total_exchange_utilised) }}</strong> |
+                                        Remaining Balance: <strong>₦{{ money($payment->invoice->remaining_exchange_balance) }}</strong>
+                                    </td>
+                                </tr>
+                            @endif
+                        @endif
+                        @if($payment->reference || !empty($payment->payment_info['reference']))
+                            <tr>
+                                <th>Reference</th>
+                                <td>{{ $payment->reference ?? $payment->payment_info['reference'] }}</td>
+                            </tr>
+                        @endif
+                        @if($payment->isReversed())
+                            <tr>
+                                <th>Reversal Information</th>
+                                <td class="text-danger">
+                                    Reversed by {{ $payment->reversedByUser->name ?? 'User' }}
+                                    @if($payment->reversed_at)
+                                        on {{ eng_str_date($payment->reversed_at) }}
+                                    @endif
+                                    @if($payment->reversal_reason)
+                                        — Reason: {{ $payment->reversal_reason }}
+                                    @endif
+                                </td>
+                            </tr>
+                        @endif
                         @if($payment->paymentmethod_id === 8)
                             <tr>
                                 <th>Date of Issued</th>
@@ -111,6 +177,21 @@
                             </div>
                         @endif
 
+                    @endif
+
+                    @if($payment->isStockForStock() && !$payment->isReversed())
+                        <div class="mt-4 p-3 bg-light rounded text-center border">
+                            <h6 class="mb-2 text-dark"><i class="bx bx-undo me-1"></i> Stock Exchange Allocation Reversal</h6>
+                            <p class="small text-muted mb-3">
+                                Reversing this allocation will restore <strong>₦{{ money($payment->amount) }}</strong> to the stock exchange invoice's available balance and the Purchase Order's outstanding balance without modifying inventory quantities.
+                            </p>
+                            <button type="button"
+                                    wire:click="reverseAllocation"
+                                    class="btn btn-danger"
+                                    onclick="confirm('Are you sure you want to reverse this stock exchange payment allocation?') || event.stopImmediatePropagation()">
+                                <i class="fa fa-undo me-1"></i> Reverse Stock Exchange Allocation
+                            </button>
+                        </div>
                     @endif
                 </div>
             </div>

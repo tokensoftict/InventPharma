@@ -62,6 +62,8 @@ class SupplierPaymentPolicy
 
         if($supplierCreditPaymentHistory->type === "CREDIT") return false;
 
+        if($supplierCreditPaymentHistory->isStockForStock() || $supplierCreditPaymentHistory->isReversed()) return false;
+
         return true;
     }
 
@@ -78,6 +80,19 @@ class SupplierPaymentPolicy
         if(!userCanView('supplier.payment.destroy')) return false;
 
         if($supplierCreditPaymentHistory->type === "CREDIT") return false;
+
+        if($supplierCreditPaymentHistory->isReversed()) return false;
+
+        return true;
+    }
+
+    public function reverse(User $user, SupplierCreditPaymentHistory $supplierCreditPaymentHistory)
+    {
+        if(!userCanView('supplier.payment.destroy') && !userCanView('supplier.payment.edit') && !userCanView('supplier.payment.create')) return false;
+
+        if($supplierCreditPaymentHistory->type === "CREDIT") return false;
+
+        if($supplierCreditPaymentHistory->isReversed()) return false;
 
         return true;
     }

@@ -174,15 +174,15 @@
                                 @endif
                             </div>
 
-{{--                            <div class="mb-3">--}}
-{{--                                <label>Select Prescriber:</label>--}}
-{{--                                <select class="form-control" x-model="prescriber_id" x-init="select2" id="select2">--}}
-{{--                                    <option value="">-Select One-</option>--}}
-{{--                                    @foreach($prescribers as $prescriber)--}}
-{{--                                        <option value="{{ $prescriber['id'] }}">{{ $prescriber['name'] }}</option>--}}
-{{--                                    @endforeach--}}
-{{--                                </select>--}}
-{{--                            </div>--}}
+                            {{--                            <div class="mb-3">--}}
+                            {{--                                <label>Select Prescriber:</label>--}}
+                            {{--                                <select class="form-control" x-model="prescriber_id" x-init="select2" id="select2">--}}
+                            {{--                                    <option value="">-Select One-</option>--}}
+                            {{--                                    @foreach($prescribers as $prescriber)--}}
+                            {{--                                        <option value="{{ $prescriber['id'] }}">{{ $prescriber['name'] }}</option>--}}
+                            {{--                                    @endforeach--}}
+                            {{--                                </select>--}}
+                            {{--                            </div>--}}
 
 
                             <template x-if="(searchCustomers.length > 0)">
@@ -235,6 +235,31 @@
                         <br/>
 
                         <h4>Invoice Property</h4>
+
+                        {{-- Stock exchange designation: wholesales only, and only for users granted this permission --}}
+                        @if(userCanView('invoiceandsales.createStockExchangeInvoice') && $this->d !== 'retail' && $this->d !== 'retail_store' && $this->department != "4")
+                            <br/>
+                            <div class="mb-3">
+                                <label class="fw-semibold">Invoice Designation</label>
+                                <select class="form-select" x-model="invoice_type" x-on:change="is_stock_exchange = (invoice_type === 'stock_exchange'); if (is_stock_exchange) { initSupplierSelect2(); } else { supplier_id = ''; $('#stock_exchange_supplier_select').val('').trigger('change.select2'); }">
+                                    <option value="normal">Normal Sales Invoice</option>
+                                    <option value="stock_exchange">Stock Exchange Invoice (Stock for Stock)</option>
+                                </select>
+                            </div>
+
+                            <div x-show="invoice_type === 'stock_exchange'" x-cloak class="mb-3 p-2 border border-info rounded bg-info-subtle" x-init="initSupplierSelect2()">
+                                <label class="fw-semibold text-dark">Stock Exchange Supplier <span class="text-danger">*</span></label>
+                                <div wire:ignore>
+                                    <select id="stock_exchange_supplier_select" class="form-control select2" style="width: 100%;">
+                                        <option value="">-- Search &amp; Select Supplier --</option>
+                                        @foreach($this->suppliers as $sup)
+                                            <option value="{{ $sup->id }}">{{ $sup->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <small class="text-muted d-block mt-1">Products on this invoice will be issued to the selected supplier and available for Stock-for-Stock Purchase Order settlement.</small>
+                            </div>
+                        @endif
 
                         @if(userCanView('invoiceandsales.editInvoiceDate'))
                             <div class="mb-3">
@@ -490,99 +515,102 @@
             return {
                 isLoading: false,
                 invoiceitems : @this.get('invoiceData.invoiceitems') ? JSON.parse( @this.get('invoiceData.invoiceitems')) : [],
-            searchString : "",
-            searchproduct : [],
-            searchCustomers : [],
-            errors : {},
+                searchString : "",
+                searchproduct : [],
+                searchCustomers : [],
+                errors : {},
             {{--prescriber_id : @this.get('invoiceData.prescriber_id') ? @this.get('invoiceData.prescriber_id') : null,--}}
-            customer_id : @this.get('invoiceData.customer_id') ? @this.get('invoiceData.customer_id') : {firstname : ""},
-            discount_type : @this.get('invoiceData.discount_type') ? @this.get('invoiceData.discount_type') : 'None',
-            discount_value : @this.get('invoiceData.discount_value') ? @this.get('invoiceData.discount_value') : 0,
-            discount_amount : @this.get('invoiceData.discount_amount') ? @this.get('invoiceData.discount_amount') : 0,
-            membership_discount_value : @this.get('invoiceData.membership_discount_value') ? @this.get('invoiceData.membership_discount_value') : 0,
-            membership_discount : @this.get('invoiceData.membership_discount') ? @this.get('invoiceData.membership_discount') : 0,
-            membership_label : '',
-            subTotal : '0.00',
-            netTotal :  '0.00',
-            quantity : [],
-            department : @this.get('d') ? @this.get('d') : "",
-            searchCustomerString : "",
-            selectedProduct : {},
+                customer_id : @this.get('invoiceData.customer_id') ? @this.get('invoiceData.customer_id') : {firstname : ""},
+            is_stock_exchange : @this.get('invoiceData.is_stock_exchange') ? true : false,
+                invoice_type : @this.get('invoiceData.invoice_type') ? @this.get('invoiceData.invoice_type') : 'normal',
+                supplier_id : @this.get('invoiceData.supplier_id') ? @this.get('invoiceData.supplier_id') : '',
+                discount_type : @this.get('invoiceData.discount_type') ? @this.get('invoiceData.discount_type') : 'None',
+                discount_value : @this.get('invoiceData.discount_value') ? @this.get('invoiceData.discount_value') : 0,
+                discount_amount : @this.get('invoiceData.discount_amount') ? @this.get('invoiceData.discount_amount') : 0,
+                membership_discount_value : @this.get('invoiceData.membership_discount_value') ? @this.get('invoiceData.membership_discount_value') : 0,
+                membership_discount : @this.get('invoiceData.membership_discount') ? @this.get('invoiceData.membership_discount') : 0,
+                membership_label : '',
+                subTotal : '0.00',
+                netTotal :  '0.00',
+                quantity : [],
+                department : @this.get('d') ? @this.get('d') : "",
+                searchCustomerString : "",
+                selectedProduct : {},
             selectProduct(product){
-            this.selectedProduct = product;
-            this.selling_price = product.selling_price;
-            this.addItem();
-        },
+                this.selectedProduct = product;
+                this.selling_price = product.selling_price;
+                this.addItem();
+            },
             addItem() {
-            if ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0) {
-                error("Stock already exists");
-                return;
-            }
+                if ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0) {
+                    error("Stock already exists");
+                    return;
+                }
 
-            if(this.selectedProduct['quantity'] === 0 || this.selectedProduct['quantity'] === "0")
-            {
-                error(this.selectedProduct.name+' is out of stock, quantity remain is 0');
-                @this.logOutofStockProduct( this.selectedProduct.id)
-                return;
-            }
+                if(this.selectedProduct['quantity'] === 0 || this.selectedProduct['quantity'] === "0")
+                {
+                    error(this.selectedProduct.name+' is out of stock, quantity remain is 0');
+                    @this.logOutofStockProduct( this.selectedProduct.id)
+                    return;
+                }
 
-            this.searchproduct = [];
-            this.searchString = "";
+                this.searchproduct = [];
+                this.searchString = "";
 
-            let selling_price = (this.selectedProduct.promo_selling_price && this.selectedProduct.promo_selling_price > 0) ? this.selectedProduct.promo_selling_price : this.selectedProduct.selling_price;
-            selling_price = parseFloat(selling_price);
+                let selling_price = (this.selectedProduct.promo_selling_price && this.selectedProduct.promo_selling_price > 0) ? this.selectedProduct.promo_selling_price : this.selectedProduct.selling_price;
+                selling_price = parseFloat(selling_price);
 
-            //check if the selected product has option and if the user has not selected any option
-            if(this.selectedProduct.hasOptions && this.selectedProduct.selectedOptions === undefined) {
-                @this.triggerProductOptionModal(this.selectedProduct);
-                return;
-            }
+                //check if the selected product has option and if the user has not selected any option
+                if(this.selectedProduct.hasOptions && this.selectedProduct.selectedOptions === undefined) {
+                    @this.triggerProductOptionModal(this.selectedProduct);
+                    return;
+                }
 
-            this.invoiceitems.push({
-                stock_id : this.selectedProduct.id,
-                quantity : 1,
-                box : this.selectedProduct.box,
-                carton : this.selectedProduct.carton,
-                av_qty : this.selectedProduct.quantity,
-                customer_id : @this.get('invoiceData.customer_id') ?  @this.get('invoiceData.customer_id') :  {firstname : ""},
+                this.invoiceitems.push({
+                    stock_id : this.selectedProduct.id,
+                    quantity : 1,
+                    box : this.selectedProduct.box,
+                    carton : this.selectedProduct.carton,
+                    av_qty : this.selectedProduct.quantity,
+                    customer_id : @this.get('invoiceData.customer_id') ?  @this.get('invoiceData.customer_id') :  {firstname : ""},
                 name : this.selectedProduct.name,
-                added_by : {{ auth()->user()->id }},
-                discount_added_by : null,
-                cost_price : this.selectedProduct.cost_price,
-                selling_price : (selling_price + this.getProductOptionsTotalAmount(this.selectedProduct.selectedOptions)),
-                profit : this.selectedProduct.selling_price - this.selectedProduct.cost_price,
-                discount_value : 0,
-                discount_amount : 0,
-                discount_type : 'Fixed',
-                custom_price : this.selectedProduct.custom_prices ?? [],
-                default_selling_price : selling_price,
-                selectedOptions : this.selectedProduct.selectedOptions ?? [],
-                dependent_products : this.selectedProduct.dependent_products ?? [],
-                isDependent: false,
-                parent_stock_id: null
+                    added_by : {{ auth()->user()->id }},
+                    discount_added_by : null,
+                    cost_price : this.selectedProduct.cost_price,
+                    selling_price : (selling_price + this.getProductOptionsTotalAmount(this.selectedProduct.selectedOptions)),
+                    profit : this.selectedProduct.selling_price - this.selectedProduct.cost_price,
+                    discount_value : 0,
+                    discount_amount : 0,
+                    discount_type : 'Fixed',
+                    custom_price : this.selectedProduct.custom_prices ?? [],
+                    default_selling_price : selling_price,
+                    selectedOptions : this.selectedProduct.selectedOptions ?? [],
+                    dependent_products : this.selectedProduct.dependent_products ?? [],
+                    isDependent: false,
+                    parent_stock_id: null
             });
 
-            this.applyDependentProducts();
-            this.totalInvoice();
+                this.applyDependentProducts();
+                this.totalInvoice();
             },
             getPriceRange(quantity, defaultSellingPrice, customPrices, product) {
 
-            for (const priceRule of (customPrices ?? [])) {
-                const min = parseInt(priceRule.min_qty);
-                const max = parseInt(priceRule.max_qty);
-                @if($this->d == "retail")
-                if (quantity >= min && quantity < max) {
-                    return parseFloat(priceRule.price);
+                for (const priceRule of (customPrices ?? [])) {
+                    const min = parseInt(priceRule.min_qty);
+                    const max = parseInt(priceRule.max_qty);
+                    @if($this->d == "retail")
+                    if (quantity >= min && quantity < max) {
+                        return parseFloat(priceRule.price);
+                    }
+                    @else
+                    if ((quantity/priceRule.carton) >= min && (quantity / priceRule.carton) < max) {
+                        return parseFloat(priceRule.price);
+                    }
+                    @endif
                 }
-                @else
-                if ((quantity/priceRule.carton) >= min && (quantity / priceRule.carton) < max) {
-                    return parseFloat(priceRule.price);
-                }
-                @endif
-            }
 
-            return parseFloat(defaultSellingPrice);
-        },
+                return parseFloat(defaultSellingPrice);
+            },
             incrementQuantity(index){
                 let qty =  parseInt(this.invoiceitems[index]['quantity']) + 1;
                 if(qty <= this.invoiceitems[index]['av_qty'])
@@ -647,6 +675,38 @@
             {
                 $('#select2').select2();
             },
+            initSupplierSelect2()
+            {
+                let obj = this;
+                const setup = () => {
+                    if (typeof window.jQuery === 'undefined' || typeof window.jQuery.fn.select2 !== 'function') {
+                        setTimeout(setup, 100);
+                        return;
+                    }
+                    const $el = window.jQuery('#stock_exchange_supplier_select');
+                    if (!$el.length) {
+                        return;
+                    }
+                    if ($el.hasClass('select2-hidden-accessible')) {
+                        $el.select2('destroy');
+                    }
+                    $el.select2({
+                        placeholder: '-- Search & Select Supplier --',
+                        allowClear: true,
+                        width: '100%'
+                    });
+                    if (obj.supplier_id) {
+                        $el.val(obj.supplier_id).trigger('change.select2');
+                    }
+                    $el.off('change.sfs').on('change.sfs', function () {
+                        obj.supplier_id = window.jQuery(this).val() || '';
+                    });
+                };
+
+                this.$nextTick(() => {
+                    setup();
+                });
+            },
             resolveMembershipLabel() {
                 if (this.department === 'retail' && this.customer_id && this.customer_id.firstname !== "" && this.membership_discount_value > 0) {
                     let group = this.customer_id.retail_member_group;
@@ -680,15 +740,15 @@
                 return true;
             },
             async searchProduct() {
-            if (this.searchString !== "" && this.searchString.length > 3) {
-                this.searchproduct = await (await fetch('{{ route('findstock') }}?query=' + this.searchString+"&column="+this.department
-                )).
-                json();
-            }else
-            {
-                this.searchproduct = [];
-            }
-        },
+                if (this.searchString !== "" && this.searchString.length > 3) {
+                    this.searchproduct = await (await fetch('{{ route('findstock') }}?query=' + this.searchString+"&column="+this.department
+                    )).
+                    json();
+                }else
+                {
+                    this.searchproduct = [];
+                }
+            },
             newCustomerEvent(){
 
                 let myModal = "";
@@ -710,11 +770,14 @@
                 });
                 window.addEventListener('departmentChange', (event) => {
                     this.department = event.detail[0].department;
+                    if (this.invoice_type === 'stock_exchange') {
+                        this.initSupplierSelect2();
+                    }
                 });
             },
             money(amount){
-            return formatMoney(amount);
-        },
+                return formatMoney(amount);
+            },
             async searchCustomer(){
                 const term = (this.searchCustomerString || "").trim();
                 // cancel any in-flight search so slow, stale responses can't overwrite newer ones
@@ -763,210 +826,221 @@
                 this.searchCustomers = [];
             },
             generateInvoice(status_id) {
-            const hasZero = this.invoiceitems.some(item => item.quantity <= 0);
-            if(hasZero) {
-                error("One or more items in your cart have a quantity of zero or less. Please review your input and try again")
-                return ;
-            }
-            @php
-                if( $this->department != "4") {
-            @endphp
-            if(this.customer_id.firstname === "") {
-                error("You have not select a customer for this invoice,  please select a customer by searching!...")
-                return ;
-            }
-
-            @php
+                const hasZero = this.invoiceitems.some(item => item.quantity <= 0);
+                if(hasZero) {
+                    error("One or more items in your cart have a quantity of zero or less. Please review your input and try again")
+                    return ;
                 }
-            @endphp
-
-            if(this.invoiceitems.length === 0)
-            {
-                error("Invoice items list is empty, please add at least one product to generate invoice")
-                return ;
-            }
-            @php
-                if( $this->department != "4") {
-            @endphp
-            @this.set('invoiceData.customer_id',this.customer_id.id, true);
-            @php
-                }else{
-            @endphp
-            if(this.customer_id.firstname !== "")
-            {
-                @this.set('invoiceData.customer_id',this.customer_id.id, true);
-            }else{
-                @this.set('invoiceData.customer_id',"1", true);
-            }
-
-            @php
-                }
-            @endphp
-
-            @this.set('invoiceData.status_id', status_id, true);
-            @this.set('invoiceData.invoiceitems', JSON.stringify(this.invoiceitems), true);
-            @this.set('invoiceData.discount_type', this.discount_type, true);
-            @this.set('invoiceData.discount_value', this.discount_value, true);
-            @this.set('invoiceData.discount_amount', this.discount_amount, true);
-            @this.set('invoiceData.membership_discount_value', this.membership_discount_value, true);
-            @this.set('invoiceData.membership_discount', this.membership_discount, true);
-
-            this.errors = {};
-            let obj = this;
-            @this.generateInvoice().then(function(resp){
-
-                if(resp.status !== true)
-                {
-                    obj.errors = resp.errors;
-
-                }else {
-                    setTimeout(() => {
-                        window.location.href = '{{ route('invoiceandsales.create') }}';
-                    }, 1000);
-                }
-
-            });
-
-        },
-            initDatePicker() {
-            flatpickr(".datepicker-basic", {  });
-            var e = document.querySelectorAll("[data-trigger]");
-            for (i = 0; i < e.length; ++i) {
-                var a = e[i];
-                new Choices(a, { placeholderValue: "This is a placeholder set in the config", searchPlaceholderValue: "This is a search placeholder" });
-            }
-        },
-            async requestProductWithBarcode(barcode) {
-            if (this.isLoading) return;
-            this.isLoading = true;
-            try {
-                const product = await (await fetch('{{ route('findStockByBarcode') }}?barcode=' + barcode+"&column="+this.department
-                )).json();
-                this.searchString = "";
-                if(product.hasOwnProperty('id') &&  ((this.invoiceitems.filter(e => e.stock_id === product.id)).length === 0)) {
-                    this.selectedProduct = product
-                    this.addItem();
-                }  else if(product.hasOwnProperty('id') && ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0)) {
-                    const index = this.invoiceitems.findIndex(item => item.stock_id === product.id);
-                    if(index > -1) {
-                        this.incrementQuantity(index);
+                @php $canStockExchange = userCanView('invoiceandsales.createStockExchangeInvoice') && $this->d !== 'retail' && $this->d !== 'retail_store' && $this->department != "4"; @endphp
+                const isStockExchange = {{ $canStockExchange ? 'true' : 'false' }} && (this.invoice_type === 'stock_exchange' || this.is_stock_exchange === true);
+                if (isStockExchange) {
+                    if (!this.supplier_id || this.supplier_id === "") {
+                        error("Please select a Supplier for this Stock Exchange Invoice.");
+                        return;
                     }
                 } else {
-                    console.log("product not found");
-                }
-            } catch (err) {
-                console.error(err);
-            } finally {
-                this.isLoading = false;
-            }
-        },
-            async parseCustomerQrCode(barcode) {
-            if (this.isLoading) return;
-            this.isLoading = true;
-            var obj = this;
-
-            @this.parseCustomerFromQrCode(barcode).then(function (response){
-                obj.isLoading = false;
-                if(response.status === true) {
-                    obj.customer_id = response.customer;
-                    if (response.membership_discount > 0) {
-                        obj.membership_discount_value = response.membership_discount;
-                        obj.membership_label = response.membership_label;
-                        success("Membership discount of " + response.membership_discount + "% has been applied!");
-                    } else {
-                        obj.membership_discount_value = 0;
-                        obj.membership_label = '';
+                    @php
+                        if( $this->department != "4") {
+                    @endphp
+                    if(this.customer_id.firstname === "") {
+                        error("You have not select a customer for this invoice,  please select a customer by searching!...")
+                        return ;
                     }
-                    obj.totalInvoice();
-                    obj.searchCustomerString = "";
-                    obj.searchCustomers = [];
-                }else {
-                    if(response.message.length > 0) {
-                        error(response.message);
-                    }
-                }
-            }).catch(function(err){
-                obj.isLoading = false;
-                console.error(err);
-            });
-        },
-            getInputFromBarcode() {
-            var obj = this;
-            $(document).ready(function(){
-                $(document).scannerDetection({
-                    timeBeforeScanTest: 200, // wait for the next character for upto 200ms
-                    endChar: [13], // be sure the scan is complete if key 13 (enter) is detected
-                    avgTimeByChar: 40, // it's not a barcode if a character takes longer than 40ms// turn off scanner detection if an input has focus
-                    startChar: [16], // Prefix character for the cabled scanner (OPL6845R)
-                    ignoreIfFocusOn : ['customer-search-text', 'searchText'],
-                    onComplete: function(barcode){
-                        if (obj.isLoading) return;
-                        barcode = barcode.trim();
-                        if(/^\d+$/.test(barcode) && barcode.length < 50) {
-                            obj.requestProductWithBarcode(barcode);
-                        } else {
-                            obj.parseCustomerQrCode(barcode);
+                    @php
                         }
+                    @endphp
+                }
 
-                        const input = document.getElementById('searchText');
-                        $(input).val("")
+                if(this.invoiceitems.length === 0)
+                {
+                    error("Invoice items list is empty, please add at least one product to generate invoice")
+                    return ;
+                }
+                @php
+                    if( $this->department != "4") {
+                @endphp
+                @this.set('invoiceData.customer_id', this.customer_id.id ?? null, true);
+                @php
+                    }else{
+                @endphp
+                if(this.customer_id.firstname !== "")
+                {
+                    @this.set('invoiceData.customer_id',this.customer_id.id, true);
+                }else{
+                    @this.set('invoiceData.customer_id', isStockExchange ? null : "1", true);
+                }
 
+                @php
+                    }
+                @endphp
+
+                @this.set('invoiceData.is_stock_exchange', isStockExchange, true);
+                @this.set('invoiceData.invoice_type', isStockExchange ? 'stock_exchange' : 'normal', true);
+                @this.set('invoiceData.supplier_id', isStockExchange ? this.supplier_id : null, true);
+                @this.set('invoiceData.status_id', status_id, true);
+                @this.set('invoiceData.invoiceitems', JSON.stringify(this.invoiceitems), true);
+                @this.set('invoiceData.discount_type', this.discount_type, true);
+                @this.set('invoiceData.discount_value', this.discount_value, true);
+                @this.set('invoiceData.discount_amount', this.discount_amount, true);
+                @this.set('invoiceData.membership_discount_value', this.membership_discount_value, true);
+                @this.set('invoiceData.membership_discount', this.membership_discount, true);
+
+                this.errors = {};
+                let obj = this;
+                @this.generateInvoice().then(function(resp){
+
+                    if(resp.status !== true)
+                    {
+                        obj.errors = resp.errors;
+
+                    }else {
+                        setTimeout(() => {
+                            window.location.href = '{{ route('invoiceandsales.create') }}';
+                        }, 1000);
+                    }
+
+                });
+
+            },
+            initDatePicker() {
+                flatpickr(".datepicker-basic", {  });
+                var e = document.querySelectorAll("[data-trigger]");
+                for (i = 0; i < e.length; ++i) {
+                    var a = e[i];
+                    new Choices(a, { placeholderValue: "This is a placeholder set in the config", searchPlaceholderValue: "This is a search placeholder" });
+                }
+            },
+            async requestProductWithBarcode(barcode) {
+                if (this.isLoading) return;
+                this.isLoading = true;
+                try {
+                    const product = await (await fetch('{{ route('findStockByBarcode') }}?barcode=' + barcode+"&column="+this.department
+                    )).json();
+                    this.searchString = "";
+                    if(product.hasOwnProperty('id') &&  ((this.invoiceitems.filter(e => e.stock_id === product.id)).length === 0)) {
+                        this.selectedProduct = product
+                        this.addItem();
+                    }  else if(product.hasOwnProperty('id') && ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0)) {
+                        const index = this.invoiceitems.findIndex(item => item.stock_id === product.id);
+                        if(index > -1) {
+                            this.incrementQuantity(index);
+                        }
+                    } else {
+                        console.log("product not found");
+                    }
+                } catch (err) {
+                    console.error(err);
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+            async parseCustomerQrCode(barcode) {
+                if (this.isLoading) return;
+                this.isLoading = true;
+                var obj = this;
+
+                @this.parseCustomerFromQrCode(barcode).then(function (response){
+                    obj.isLoading = false;
+                    if(response.status === true) {
+                        obj.customer_id = response.customer;
+                        if (response.membership_discount > 0) {
+                            obj.membership_discount_value = response.membership_discount;
+                            obj.membership_label = response.membership_label;
+                            success("Membership discount of " + response.membership_discount + "% has been applied!");
+                        } else {
+                            obj.membership_discount_value = 0;
+                            obj.membership_label = '';
+                        }
+                        obj.totalInvoice();
                         obj.searchCustomerString = "";
                         obj.searchCustomers = [];
-                    }, // main callback function
-                    scanButtonKeyCode: 116, // the hardware scan button acts as key 116 (F5)
-                    scanButtonLongPressThreshold: 5, // assume a long press if 5 or more events come in sequence
-                    onScanButtonLongPressed: function(){
-
-                    }, // callback for long pressing the scan button
-                    onError: function(string){}
+                    }else {
+                        if(response.message.length > 0) {
+                            error(response.message);
+                        }
+                    }
+                }).catch(function(err){
+                    obj.isLoading = false;
+                    console.error(err);
                 });
-            });
-        },
-            logProductNotExist() {
-            const input = document.getElementById('searchText');
-            let currentObj = this;
-            input.addEventListener('keydown', function(event) {
-                const cleanBarCode = $(input).val().trim();
-                if (event.key === 'Enter' && (/^\d+$/.test(cleanBarCode) === false && $(input).val().length < 100) && currentObj.searchproduct.length === 0) {
-                    @this.logProductNotExist($(input).val()).then(() => {
-                        success($(input).val()+" has been saved successfully!")
+            },
+            getInputFromBarcode() {
+                var obj = this;
+                $(document).ready(function(){
+                    $(document).scannerDetection({
+                        timeBeforeScanTest: 200, // wait for the next character for upto 200ms
+                        endChar: [13], // be sure the scan is complete if key 13 (enter) is detected
+                        avgTimeByChar: 40, // it's not a barcode if a character takes longer than 40ms// turn off scanner detection if an input has focus
+                        startChar: [16], // Prefix character for the cabled scanner (OPL6845R)
+                        ignoreIfFocusOn : ['customer-search-text', 'searchText'],
+                        onComplete: function(barcode){
+                            if (obj.isLoading) return;
+                            barcode = barcode.trim();
+                            if(/^\d+$/.test(barcode) && barcode.length < 50) {
+                                obj.requestProductWithBarcode(barcode);
+                            } else {
+                                obj.parseCustomerQrCode(barcode);
+                            }
+
+                            const input = document.getElementById('searchText');
+                            $(input).val("")
+
+                            obj.searchCustomerString = "";
+                            obj.searchCustomers = [];
+                        }, // main callback function
+                        scanButtonKeyCode: 116, // the hardware scan button acts as key 116 (F5)
+                        scanButtonLongPressThreshold: 5, // assume a long press if 5 or more events come in sequence
+                        onScanButtonLongPressed: function(){
+
+                        }, // callback for long pressing the scan button
+                        onError: function(string){}
                     });
-                }
-            });
-        },
+                });
+            },
+            logProductNotExist() {
+                const input = document.getElementById('searchText');
+                let currentObj = this;
+                input.addEventListener('keydown', function(event) {
+                    const cleanBarCode = $(input).val().trim();
+                    if (event.key === 'Enter' && (/^\d+$/.test(cleanBarCode) === false && $(input).val().length < 100) && currentObj.searchproduct.length === 0) {
+                        @this.logProductNotExist($(input).val()).then(() => {
+                            success($(input).val()+" has been saved successfully!")
+                        });
+                    }
+                });
+            },
             handleProductOptionModal() {
-            let obj = this;
-            if(productOptionModal == "") {
-                productOptionModal = new bootstrap.Modal(document.getElementById("productOptionsModal"), {});
-            }
-
-
-            window.addEventListener('openProductOptionModal', (e) => {
-                productOptionModal.show();
-            });
-
-            window.addEventListener('closeProductOptionModal', (e) => {
-                obj.selectedProduct = e.detail[0]['selectedProduct'];
-                obj.addItem();
-                productOptionModal.hide();
-            });
-        },
-            renderSelectedOptions(selectedOptions) {
-            if (!Array.isArray(selectedOptions) || selectedOptions.length === 0) {
-                return '';
-            }
-
-            let html = '<div class="small text-muted mt-1">';
-
-            selectedOptions.forEach(option => {
-                let priceText = '';
-
-                if (option.amount && option.amount !== 0) {
-                    priceText = ` ${option.sign} NGN ${this.money(option.amount)}`;
+                let obj = this;
+                if(productOptionModal == "") {
+                    productOptionModal = new bootstrap.Modal(document.getElementById("productOptionsModal"), {});
                 }
 
-                html += `
+
+                window.addEventListener('openProductOptionModal', (e) => {
+                    productOptionModal.show();
+                });
+
+                window.addEventListener('closeProductOptionModal', (e) => {
+                    obj.selectedProduct = e.detail[0]['selectedProduct'];
+                    obj.addItem();
+                    productOptionModal.hide();
+                });
+            },
+            renderSelectedOptions(selectedOptions) {
+                if (!Array.isArray(selectedOptions) || selectedOptions.length === 0) {
+                    return '';
+                }
+
+                let html = '<div class="small text-muted mt-1">';
+
+                selectedOptions.forEach(option => {
+                    let priceText = '';
+
+                    if (option.amount && option.amount !== 0) {
+                        priceText = ` ${option.sign} NGN ${this.money(option.amount)}`;
+                    }
+
+                    html += `
             <span class="me-2">
                 ${option.option_name}:
                 <span class="badge bg-primary">
@@ -974,26 +1048,26 @@
                 </span>
             </span>
         `;
-            });
+                });
 
-            html += '</div>';
-            return html;
-        },
+                html += '</div>';
+                return html;
+            },
             getProductOptionsTotalAmount(selectedOptions) {
-            if (!Array.isArray(selectedOptions)) {
-                return 0;
-            }
-
-            return selectedOptions.reduce((total, option) => {
-                let amount = parseFloat(option.amount) || 0;
-
-                if (option.sign === '-') {
-                    amount = -amount;
+                if (!Array.isArray(selectedOptions)) {
+                    return 0;
                 }
 
-                return total + amount;
-            }, 0);
-        },
+                return selectedOptions.reduce((total, option) => {
+                    let amount = parseFloat(option.amount) || 0;
+
+                    if (option.sign === '-') {
+                        amount = -amount;
+                    }
+
+                    return total + amount;
+                }, 0);
+            },
             applyDependentProducts() {
                 const parents = this.invoiceitems.filter(i => !i.isDependent);
 
@@ -1042,7 +1116,7 @@
 
                     customer_id : @this.get('invoiceData.customer_id') ?  @this.get('invoiceData.customer_id') :  {firstname : ""},
 
-                    name: dep.name + " (Dependent)",
+                name: dep.name + " (Dependent)",
                     added_by: this.userId, // pass from blade or alpine init
                     discount_added_by: null,
 
@@ -1063,7 +1137,7 @@
                     // 🔑 dependency flags
                     isDependent: true,
                     parent_stock_id: parentItem.stock_id
-                };
+            };
             }
 
 

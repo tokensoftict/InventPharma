@@ -52,6 +52,37 @@ class SupplierPaymentDetailComponent extends Component
         $this->payment = $this->payment->fresh();
     }
 
+    public function reverseAllocation(string $reason = 'Reversed from payment details')
+    {
+        try {
+            $this->payment = app(\App\Services\StockForStockPaymentService::class)
+                ->reverseAllocation($this->payment, $reason);
+
+            $this->alert(
+                "success",
+                "Stock Exchange Reversal",
+                [
+                    'position' => 'center',
+                    'timer' => 6000,
+                    'toast' => false,
+                    'text' => 'Stock exchange payment allocation reversed successfully!',
+                ]
+            );
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $firstError = collect($e->errors())->flatten()->first() ?? 'Unable to reverse allocation.';
+            $this->alert(
+                "error",
+                "Stock Exchange Reversal",
+                [
+                    'position' => 'center',
+                    'timer' => 6000,
+                    'toast' => false,
+                    'text' => $firstError,
+                ]
+            );
+        }
+    }
+
     public function render()
     {
         return view('livewire.purchase-order.supplier.payment.supplier-payment-detail-component');

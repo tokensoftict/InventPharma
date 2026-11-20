@@ -39,6 +39,7 @@ class InvoiceFormComponent extends Component
     public array $prescribers = [];
     public $cities;
     public $memberGroups;
+    public $suppliers = [];
     private InvoiceRepository $invoiceRepository;
     public string $firstname = "";
     public string $lastname = "";
@@ -62,6 +63,7 @@ class InvoiceFormComponent extends Component
         $this->prescribers = Prescriber::query()->select('id', 'name')->where('status', 1)->get()->toArray();
         $this->cities = City::all();
         $this->memberGroups = MemberGroup::all();
+        $this->suppliers = suppliers(true);
     }
 
     private function initDepartment()
@@ -262,6 +264,31 @@ class InvoiceFormComponent extends Component
         } else {
             $this->invoiceData['in_department'] = (department_by_id(auth()->user()->department_id)->quantity_column ?? 'wholesales');
         }
+        // Server-side enforcement: stock exchange invoices are wholesales-only and permission-gated
+        $wantsStockExchange = !empty($this->invoiceData['is_stock_exchange']) || ($this->invoiceData['invoice_type'] ?? '') === 'stock_exchange';
+        if ($wantsStockExchange && !isset($this->invoice->id)) {
+            $isRetail = in_array($this->invoiceData['in_department'] ?? '', ['retail', 'retail_store'], true)
+                || in_array($this->d, ['retail', 'retail_store'], true)
+                || $this->department == "4";
+
+            if ($isRetail || !userCanView('invoiceandsales.createStockExchangeInvoice')) {
+                $this->alert("error", "Stock Exchange Invoice", [
+                    'position' => 'center',
+                    'timer' => 4000,
+                    'toast' => false,
+                    'text' => $isRetail
+                        ? "Stock exchange invoices can only be created for the wholesales department."
+                        : "You do not have permission to create stock exchange invoices.",
+                ]);
+
+                return ['errors' => ['stock_exchange' => 'Stock exchange invoice not permitted.'], 'status' => false];
+            }
+        } elseif (!isset($this->invoice->id)) {
+            $this->invoiceData['is_stock_exchange'] = false;
+            $this->invoiceData['invoice_type'] = 'normal';
+            $this->invoiceData['supplier_id'] = null;
+        }
+
         if (!isset($this->invoice->id)) {
             //$this->invoiceData['invoice_number'] = time();
 
@@ -305,7 +332,7 @@ class InvoiceFormComponent extends Component
         );
 
 
-        if ($this->department == "4") {
+        if ($this->department == "4" && !$response->isStockExchange()) {
             return redirect()->route('payment.createInvoicePayment', ['invoice_number' => $response->invoice_number]);
         } else {
             return redirect()->route('invoiceandsales.view', $response->id);

@@ -1,5 +1,6 @@
 @php
-    function renderSelectedOptions($selectedOptions = []): string
+    if (!function_exists('renderSelectedOptions')) {
+        function renderSelectedOptions($selectedOptions = []): string
         {
             if (empty($selectedOptions)) {
                 return '';
@@ -34,6 +35,7 @@
 
             return $html;
         }
+    }
 @endphp
 <div>
     <div class="row  border-bottom">
@@ -272,16 +274,158 @@
         <div class="col-8">
 
             <div class="row mt-3">
-                <div class="col-6">
-                    <address class="pt-1">
-                        <strong>CUSTOMER:</strong><br>
-                        <span class="d-block pb-1 pt-1"> Name :  <strong>{{ $this->invoice->customer->firstname ?? "" }} {{ $this->invoice->customer->lastname ?? "" }}</strong></span>
-                        <span class="d-block pb-1"> Phone Number: <strong>{{ $this->invoice->customer->phone_number ?? "" }}</strong></span>
-                        <span class="d-block pb-1"> Address : <strong>{{ $this->invoice->customer->address ?? "" }}</strong></span>
-                    </address>
-                </div>
+                @if($this->invoice->isStockExchange())
+                    <div class="col-6">
+                        <address class="pt-1">
+                            <strong>STOCK EXCHANGE SUPPLIER:</strong>
+                            <span class="badge bg-info text-dark ms-2">Stock Exchange Invoice</span><br>
+                            <span class="d-block pb-1 pt-1"> Supplier : <strong>{{ $this->invoice->supplier->name ?? "N/A" }}</strong></span>
+                            <span class="d-block pb-1"> Phone Number: <strong>{{ $this->invoice->supplier->phonenumber ?? "N/A" }}</strong></span>
+                            <span class="d-block pb-1"> Address : <strong>{{ $this->invoice->supplier->address ?? "N/A" }}</strong></span>
+                        </address>
+                    </div>
+                @endif
+                @if($this->invoice->customer)
+                    <div class="col-6">
+                        <address class="pt-1">
+                            <strong>CUSTOMER:</strong><br>
+                            <span class="d-block pb-1 pt-1"> Name :  <strong>{{ $this->invoice->customer->firstname ?? "" }} {{ $this->invoice->customer->lastname ?? "" }}</strong></span>
+                            <span class="d-block pb-1"> Phone Number: <strong>{{ $this->invoice->customer->phone_number ?? "" }}</strong></span>
+                            <span class="d-block pb-1"> Address : <strong>{{ $this->invoice->customer->address ?? "" }}</strong></span>
+                        </address>
+                    </div>
+                @endif
 
             </div>
+
+            @if($this->invoice->isStockExchange())
+                @php
+                    $originalValue = $this->invoice->original_invoice_total;
+                    $utilisedValue = $this->invoice->total_exchange_utilised;
+                    $remainingBalance = $this->invoice->remaining_exchange_balance;
+                    $exchangeAllocations = $this->invoice->stockExchangeAllocations()->with(['purchase', 'user', 'reversedByUser'])->orderBy('id', 'DESC')->get();
+                @endphp
+                <div class="card border-info mt-3 mb-3">
+                    <div class="card-header bg-info-subtle d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-dark">
+                            <i class="bx bx-transfer-alt me-1"></i> Stock-for-Stock Exchange Summary
+                        </h5>
+                        <div>
+                            {!! showStatus($this->invoice->status_id) !!}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @if((int) $this->invoice->status_id === (int) status('Exchanged') || round($remainingBalance, 2) <= 0 && round($utilisedValue, 2) > 0)
+                            <div class="alert alert-success py-2 mb-3">
+                                <i class="bx bx-check-circle me-1"></i>
+                                <strong>Fully Exchanged:</strong> The entire invoice value of <strong>₦{{ money($originalValue) }}</strong> has been utilised against Purchase Order payments.
+                            </div>
+                        @elseif((int) $this->invoice->status_id === (int) status('Partially Exchanged') || (round($utilisedValue, 2) > 0 && round($remainingBalance, 2) > 0))
+                            <div class="alert alert-info py-2 mb-3">
+                                <i class="bx bx-info-circle me-1"></i>
+                                <strong>Partially Exchanged:</strong> <strong>₦{{ money($utilisedValue) }}</strong> has been applied to Purchase Order(s). An available balance of <strong>₦{{ money($remainingBalance) }}</strong> remains for future Purchase Order settlements.
+                            </div>
+                        @else
+                            <div class="alert alert-warning py-2 mb-3">
+                                <i class="bx bx-time-five me-1"></i>
+                                <strong>Unpaid (Available for Stock Exchange):</strong> No exchange value has been applied to a Purchase Order yet. Full balance of <strong>₦{{ money($originalValue) }}</strong> is available.
+                            </div>
+                        @endif
+
+                        <div class="row text-center mb-3">
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded bg-light">
+                                    <div class="text-muted small text-uppercase">Original Invoice Value</div>
+                                    <h4 class="mb-0 text-dark">₦{{ money($originalValue) }}</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded bg-light">
+                                    <div class="text-muted small text-uppercase">Total Exchange Value Utilised</div>
+                                    <h4 class="mb-0 text-primary">₦{{ money($utilisedValue) }}</h4>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="p-3 border rounded bg-light">
+                                    <div class="text-muted small text-uppercase">Remaining Exchange Balance</div>
+                                    <h4 class="mb-0 {{ round($remainingBalance, 2) > 0 ? 'text-success' : 'text-muted' }}">₦{{ money($remainingBalance) }}</h4>
+                                </div>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold mt-3 mb-2">Stock Exchange Supplier Payment History</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Supplier Payment</th>
+                                        <th>Reference</th>
+                                        <th class="text-end">Amount Applied</th>
+                                        <th>Payment Date</th>
+                                        <th>Recorded By</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($exchangeAllocations as $alloc)
+                                        <tr class="{{ $alloc->isReversed() ? 'table-secondary text-muted' : '' }}">
+                                            <td>{{ $loop->iteration }}</td>
+                                            <td>
+                                                <a href="{{ route('supplier.payment.show', $alloc->id) }}" class="fw-bold text-primary">
+                                                    Payment #{{ $alloc->id }}
+                                                </a>
+                                                @if($alloc->purchase_id)
+                                                    <span class="text-muted small ms-1">
+                                                        (<a href="{{ route('purchase.show', $alloc->purchase_id) }}">PO #{{ $alloc->purchase_id }}</a>)
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $alloc->reference ?? ($alloc->payment_info['reference'] ?? 'N/A') }}</td>
+                                            <td class="text-end fw-semibold">₦{{ money($alloc->amount) }}</td>
+                                            <td>{{ eng_str_date($alloc->payment_date) }}</td>
+                                            <td>{{ $alloc->user->name ?? 'N/A' }}</td>
+                                            <td>
+                                                @if($alloc->isReversed())
+                                                    <span class="badge bg-danger">Reversed</span>
+                                                    <small class="d-block text-muted">
+                                                        By {{ $alloc->reversedByUser->name ?? 'User' }}
+                                                        @if($alloc->reversed_at)
+                                                            on {{ eng_str_date($alloc->reversed_at) }}
+                                                        @endif
+                                                    </small>
+                                                @else
+                                                    <span class="badge bg-success">Active</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-end">
+                                                @if(!$alloc->isReversed())
+                                                    <button type="button"
+                                                            class="btn btn-outline-danger btn-sm"
+                                                            onclick="confirm('Are you sure you want to reverse this stock exchange supplier payment? This will restore ₦{{ money($alloc->amount) }} to the invoice balance and supplier balance.') || event.stopImmediatePropagation()"
+                                                            wire:click="reverseExchangeAllocation({{ $alloc->id }})"
+                                                            wire:loading.attr="disabled">
+                                                        <i class="fa fa-undo me-1"></i> Reverse
+                                                    </button>
+                                                @else
+                                                    <span class="text-muted small">Reversed</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="8" class="text-center text-muted py-3">
+                                                No stock exchange supplier payments have been applied from this invoice yet.
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            @endif
             <div class="row mt-3">
                 <div class="col-12">
                     <hr/>

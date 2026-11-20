@@ -365,6 +365,7 @@ Route::middleware(['auth', 'app.active'])->group(function () {
                     Route::get('{supplierCreditPaymentHistory}', ['as' => 'show', 'uses' => 'SupplierPaymentController@show', 'custom_label' => 'View Supplier Payment']);
                     Route::get('{supplierCreditPaymentHistory}/edit', ['as' => 'edit', 'uses' => 'SupplierPaymentController@edit']);
                     Route::delete('{supplierCreditPaymentHistory}', ['as' => 'destroy', 'uses' => 'SupplierPaymentController@destroy']);
+                    Route::post('{supplierCreditPaymentHistory}/reverse', ['as' => 'reverse', 'uses' => 'SupplierPaymentController@reverse', 'custom_label' => 'Reverse Supplier Payment Allocation']);
 
                     Route::get('approve_supplier_cheque_payment', ['as' => 'approve_supplier_cheque_payment', 'uses' => 'SupplierPaymentController@approve_supplier_cheque_payment', 'custom_label' => 'Approve Supplier Cheque Payment']);
                     Route::get('decline_supplier_cheque_payment', ['as' => 'decline_supplier_cheque_payment', 'uses' => 'SupplierPaymentController@decline_supplier_cheque_payment', 'custom_label' => 'Decline Supplier Cheque Payment']);
@@ -388,6 +389,7 @@ Route::middleware(['auth', 'app.active'])->group(function () {
                 Route::match(['get', 'post'], 'waiting-for-cheque-approval', ['as' => 'waiting-for-cheque-approval', 'uses' => 'InvoiceController@waiting_for_cheque_approval', 'visible' => true, 'custom_label' => 'Waiting Cheque Approval Invoice']);
                 Route::match(['get', 'post'], 'dispatched', ['as' => 'dispatched', 'uses' => 'InvoiceController@dispatched', 'visible' => true, 'custom_label' => 'Completed Invoice']);
                 Route::get('editInvoiceDate', ['as' => 'editInvoiceDate', 'uses' => 'InvoiceController@editInvoiceDate', 'custom_label' => 'Edit Invoice Date']);
+                Route::get('createStockExchangeInvoice', ['as' => 'createStockExchangeInvoice', 'uses' => 'InvoiceController@createStockExchangeInvoice', 'custom_label' => 'Create Stock Exchange Invoice (Wholesales Only)']);
                 Route::get('deleted', ['as' => 'deleted', 'uses' => 'InvoiceController@deleted', 'visible' => true, 'custom_label' => 'Deleted Invoice']);
                 Route::get('{invoice}/pos_print', ['as' => 'pos_print', 'uses' => 'InvoiceController@print_pos', 'custom_label' => 'Print Thermal']);
                 Route::get('{invoice}/escpos_print', ['as' => 'escpos_print', 'uses' => 'InvoiceController@print', 'custom_label' => 'Print ESC/POS Thermal']);

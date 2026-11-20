@@ -160,4 +160,35 @@ class ShowInvoiceComponent extends Component
         );
     }
 
+    public function reverseExchangeAllocation(int $allocationId, string $reason = 'Reversed from invoice details')
+    {
+        try {
+            app(\App\Services\StockForStockPaymentService::class)->reverseAllocation($allocationId, $reason);
+            $this->invoice = $this->invoice->fresh(['status', 'supplier', 'stockExchangeAllocations.purchase', 'stockExchangeAllocations.user', 'stockExchangeAllocations.reversedByUser', 'invoiceactivitylogs']);
+
+            $this->alert(
+                "success",
+                "Stock Exchange Reversal",
+                [
+                    'position' => 'center',
+                    'timer' => 3000,
+                    'toast' => false,
+                    'text' => "Stock exchange allocation has been reversed and exchange balance restored.",
+                ]
+            );
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $firstError = collect($e->errors())->flatten()->first() ?? 'Unable to reverse allocation.';
+            $this->alert(
+                "error",
+                "Stock Exchange Reversal",
+                [
+                    'position' => 'center',
+                    'timer' => 4000,
+                    'toast' => false,
+                    'text' => $firstError,
+                ]
+            );
+        }
+    }
+
 }

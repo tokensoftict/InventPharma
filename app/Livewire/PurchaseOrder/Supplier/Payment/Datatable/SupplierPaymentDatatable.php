@@ -20,7 +20,7 @@ class SupplierPaymentDatatable extends ExportDataTableComponent
     public function builder(): Builder
     {
         return SupplierCreditPaymentHistory::query()->select('*')
-            ->with(['user', 'paymentmethod', 'purchase', 'supplier'])
+            ->with(['user', 'paymentmethod', 'purchase', 'supplier', 'invoice'])
             ->filterdata($this->filters)
 
             ->orderBy('id', 'DESC');
@@ -39,6 +39,21 @@ class SupplierPaymentDatatable extends ExportDataTableComponent
                 ->sortable(),
             Column::make("Payment Method", "paymentmethod_id")
                 ->format(function($value, $row, Column $column){
+                    if ($row->isStockForStock()) {
+                        $invoiceLink = $row->invoice_id && $row->invoice
+                            ? '<a href="' . route('invoiceandsales.view', $row->invoice_id) . '" class="text-primary fw-bold">Invoice #' . $row->invoice->invoice_number . '</a>'
+                            : (!empty($row->payment_info['invoice_number']) ? 'Invoice #' . $row->payment_info['invoice_number'] : '');
+                        $poLink = $row->purchase_id
+                            ? '<a href="' . route('purchase.show', $row->purchase_id) . '" class="text-dark fw-semibold">PO #' . $row->purchase_id . '</a>'
+                            : '';
+                        $statusBadge = $row->isReversed()
+                            ? '<span class="badge badge-soft-danger ms-1">Reversed</span>'
+                            : '<span class="badge badge-soft-success ms-1">Active</span>';
+
+                        $details = implode(' | ', array_filter([$invoiceLink, $poLink]));
+                        return '<strong>Stock for Stock</strong>' . ($details ? ' (' . $details . ')' : '') . ' ' . $statusBadge;
+                    }
+
                     if($row->paymentmethod_id === 8)
                     {
                         $chequeDate = $row->payment_info['cheque_date'] ?? '';
@@ -52,7 +67,15 @@ class SupplierPaymentDatatable extends ExportDataTableComponent
                         return $row->paymentmethod->name . " (Cheque: " . $chequeDate . ", Value Date: " . $valueDate . ", ".($status === 'Approved' ? "Approved Date : $approvedDate" : ($status === 'Declined' ? "Declined Date : $declineDate" : "")).") " . $statusBadge;
                     }
 
-                    return $row->paymentmethod->name ?? "";
+                    $methodName = $row->paymentmethod->name ?? "";
+                    if ($row->purchase_id) {
+                        $methodName .= ' (<a href="' . route('purchase.show', $row->purchase_id) . '">PO #' . $row->purchase_id . '</a>)';
+                    }
+                    if ($row->isReversed()) {
+                        $methodName .= ' <span class="badge badge-soft-danger ms-1">Reversed</span>';
+                    }
+
+                    return $methodName;
                 })
                 ->html()
                 ->sortable(),
@@ -98,16 +121,24 @@ class SupplierPaymentDatatable extends ExportDataTableComponent
 
     public function delete(SupplierCreditPaymentHistory $supplierCreditPaymentHistory)
     {
-        if($supplierCreditPaymentHistory) $supplierCreditPaymentHistory->delete();
+        if($supplierCreditPaymentHistory) {
+            if ($supplierCreditPaymentHistory->isStockForStock()) {
+                if (!$supplierCreditPaymentHistory->isReversed()) {
+                    app(\App\Services\StockForStockPaymentService::class)->reverseAllocation($supplierCreditPaymentHistory, 'Reversed from payment list');
+                }
+            } else {
+                $supplierCreditPaymentHistory->delete();
+            }
+        }
 
         $this->alert(
             "success",
-            "Expenses",
+            "Supplier Payment",
             [
                 'position' => 'center',
                 'timer' => 6000,
                 'toast' => false,
-                'text' =>  "Payment has been deleted successfully!.",
+                'text' =>  "Payment has been reversed/deleted successfully!.",
             ]
         );
 

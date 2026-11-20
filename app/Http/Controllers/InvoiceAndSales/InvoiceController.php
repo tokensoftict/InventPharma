@@ -445,6 +445,9 @@ class InvoiceController extends Controller
 
     public function destroy(Invoice $invoice)
     {
+        if ($invoice->hasActiveExchangeAllocations()) {
+            return redirect()->back()->with('error', 'Cannot delete an invoice with active stock exchange allocations. Reverse the allocations first.');
+        }
 
         InvoiceRepository::returnStock($invoice);
 
@@ -479,6 +482,12 @@ class InvoiceController extends Controller
 
 
     public function editInvoiceDate()
+    {
+
+    }
+
+    // Permission-only route: grants the right to designate an invoice as a Stock Exchange Invoice
+    public function createStockExchangeInvoice()
     {
 
     }

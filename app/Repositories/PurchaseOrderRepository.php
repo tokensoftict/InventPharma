@@ -237,9 +237,17 @@ class PurchaseOrderRepository
 
     public function totalPo(Purchase $purchase)
     {
-        return $purchase->purchaseitems->sum(function($item){
-            return $item->qty * $item->cost_price;
-        });
+        return $purchase->calculateTotalAmount();
+    }
+
+    public function totalPaid(Purchase $purchase): float
+    {
+        return $purchase->calculateTotalPaid();
+    }
+
+    public function outstandingBalance(Purchase $purchase): float
+    {
+        return $purchase->calculateOutstandingBalance();
     }
 
 
@@ -267,30 +275,81 @@ class PurchaseOrderRepository
 
     public static function createSupplierPaymentHistory(array $data)
     {
-        SupplierCreditPaymentHistory::create([
-            'user_id' => \auth()->id(),
+        $service = app(\App\Services\StockForStockPaymentService::class);
+
+        if (is_stock_for_stock_payment_method($data['paymentmethod_id'] ?? null) || !empty($data['invoice_id'])) {
+            return $service->applyStockForStockPayment($data);
+        }
+
+        if (!empty($data['purchase_id'])) {
+            return $service->recordPurchaseOrderPayment($data);
+        }
+
+        return SupplierCreditPaymentHistory::create([
+            'user_id' => $data['user_id'] ?? \auth()->id(),
             'supplier_id' => $data['supplier_id'],
             'type' => 'PAYMENT',
+            'purchase_id' => $data['purchase_id'] ?? null,
+            'invoice_id' => null,
             'paymentmethod_id' => $data['paymentmethod_id'],
-            'amount' => Str::replace(",","",$data['amount']),
+            'reference' => $data['reference'] ?? null,
+            'amount' => Str::replace(",","",(string) $data['amount']),
+            'status' => 'Active',
             'payment_date' => $data['payment_date'],
-            'payment_info' => $data['payment_info'],
-            'remark' => $data['remark']
+            'payment_info' => $data['payment_info'] ?? ['status' => 'Approved'],
+            'remark' => $data['remark'] ?? null,
         ]);
     }
 
 
     public static function updateSupplierPaymentHistory($id ,array $data)
     {
+        $payment = SupplierCreditPaymentHistory::findOrFail($id);
+
+        if ($payment->isStockForStock()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'payment' => 'Stock for Stock allocations cannot be edited directly. Reverse the allocation and create a new one instead.',
+            ]);
+        }
+
         SupplierCreditPaymentHistory::where('id', $id)->update([
             'user_id' => \auth()->id(),
             'supplier_id' => $data['supplier_id'],
             'type' => 'PAYMENT',
             'paymentmethod_id' => $data['paymentmethod_id'],
-            'amount' => Str::replace(",","",$data['amount']),
+            'amount' => Str::replace(",","",(string) $data['amount']),
             'payment_info' => $data['payment_info'],
             'remark' => $data['remark']
         ]);
+    }
+
+    public static function applyStockForStockPayment(array $data): SupplierCreditPaymentHistory
+    {
+        return app(\App\Services\StockForStockPaymentService::class)->applyStockForStockPayment($data);
+    }
+
+    public static function recordPurchaseOrderPayment(array $data): SupplierCreditPaymentHistory
+    {
+        return app(\App\Services\StockForStockPaymentService::class)->recordPurchaseOrderPayment($data);
+    }
+
+    public static function recordCombinedPurchaseOrderPayments(
+        int|Purchase $purchase,
+        array $paymentLines,
+        ?string $paymentDate = null,
+        ?int $userId = null
+    ) {
+        return app(\App\Services\StockForStockPaymentService::class)
+            ->recordCombinedPurchaseOrderPayments($purchase, $paymentLines, $paymentDate, $userId);
+    }
+
+    public static function reversePaymentAllocation(
+        int|SupplierCreditPaymentHistory $allocation,
+        ?string $reason = null,
+        ?int $userId = null
+    ): SupplierCreditPaymentHistory {
+        return app(\App\Services\StockForStockPaymentService::class)
+            ->reverseAllocation($allocation, $reason, $userId);
     }
 
 }

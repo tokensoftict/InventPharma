@@ -71,8 +71,26 @@ class SupplierPaymentController extends Controller
 
     public function destroy(SupplierCreditPaymentHistory $supplierCreditPaymentHistory){
 
-        if($supplierCreditPaymentHistory) $supplierCreditPaymentHistory->delete();
+        if($supplierCreditPaymentHistory) {
+            if ($supplierCreditPaymentHistory->isStockForStock()) {
+                if (!$supplierCreditPaymentHistory->isReversed()) {
+                    app(\App\Services\StockForStockPaymentService::class)->reverseAllocation($supplierCreditPaymentHistory, 'Reversed via delete action');
+                }
+            } else {
+                $supplierCreditPaymentHistory->delete();
+            }
+        }
 
-        return redirect()->route('purchase.sup')->with('success', 'Payment has been deleted successfully');
+        return redirect()->route('supplier.payment.index')->with('success', 'Payment has been reversed/deleted successfully');
+    }
+
+    public function reverse(Request $request, SupplierCreditPaymentHistory $supplierCreditPaymentHistory)
+    {
+        app(\App\Services\StockForStockPaymentService::class)->reverseAllocation(
+            $supplierCreditPaymentHistory,
+            $request->input('reason', 'Reversed by user')
+        );
+
+        return redirect()->back()->with('success', 'Stock exchange payment allocation has been reversed successfully.');
     }
 }

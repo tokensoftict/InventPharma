@@ -93,6 +93,148 @@ class Purchase extends Model
         return $this->hasMany(Purchaseitem::class);
     }
 
+    public function paymentHistories()
+    {
+        return $this->hasMany(SupplierCreditPaymentHistory::class, 'purchase_id');
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(SupplierCreditPaymentHistory::class, 'purchase_id')
+            ->where('type', 'PAYMENT');
+    }
+
+    public function activePayments()
+    {
+        return $this->hasMany(SupplierCreditPaymentHistory::class, 'purchase_id')
+            ->where('type', 'PAYMENT')
+            ->where(function ($query) {
+                $query->whereNull('status')->orWhere('status', '!=', 'Reversed');
+            })
+            ->whereNull('reversed_at');
+    }
+
+    public function stockExchangeAllocations()
+    {
+        return $this->hasMany(SupplierCreditPaymentHistory::class, 'purchase_id')
+            ->where('type', 'PAYMENT')
+            ->whereNotNull('invoice_id');
+    }
+
+    public function calculateTotalAmount(): float
+    {
+        if (!$this->exists) {
+            return 0.0;
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('purchaseitems')) {
+            $itemsTotal = (float) $this->purchaseitems()
+                ->selectRaw('COALESCE(SUM(qty * COALESCE(cost_price, 0)), 0) as total')
+                ->value('total');
+
+            if ($itemsTotal > 0) {
+                return round($itemsTotal, 5);
+            }
+        }
+
+        if (\Illuminate\Support\Facades\Schema::hasTable('supplier_credit_payment_histories')) {
+            $creditRecordTotal = (float) $this->paymentHistories()
+                ->where('type', 'CREDIT')
+                ->selectRaw('COALESCE(SUM(ABS(amount)), 0) as total')
+                ->value('total');
+
+            return round($creditRecordTotal, 5);
+        }
+
+        return 0.0;
+    }
+
+    public function getTotalAmountAttribute(): float
+    {
+        return $this->calculateTotalAmount();
+    }
+
+    public function calculateTotalPaid(): float
+    {
+        if (!$this->exists || !\Illuminate\Support\Facades\Schema::hasTable('supplier_credit_payment_histories')) {
+            return 0.0;
+        }
+
+        $payments = $this->payments()->get();
+
+        $activeTotal = $payments->filter(function ($item) {
+            if ($item->status === 'Reversed' || !is_null($item->reversed_at)) {
+                return false;
+            }
+            if (isset($item->payment_info['status']) && in_array($item->payment_info['status'], ['Declined', 'Reversed'], true)) {
+                return false;
+            }
+            return true;
+        })->sum('amount');
+
+        return max(0.0, round((float) $activeTotal, 5));
+    }
+
+    public function getTotalPaidAttribute(): float
+    {
+        return $this->calculateTotalPaid();
+    }
+
+    public function calculateOutstandingBalance(): float
+    {
+        return max(0.0, round($this->calculateTotalAmount() - $this->calculateTotalPaid(), 5));
+    }
+
+    public function getOutstandingBalanceAttribute(): float
+    {
+        return $this->calculateOutstandingBalance();
+    }
+
+    public function getPaymentStatusAttribute(): string
+    {
+        $total = $this->calculateTotalAmount();
+        $paid = $this->calculateTotalPaid();
+
+        if (round($paid, 2) <= 0) {
+            return 'Unpaid';
+        }
+
+        if (round($total - $paid, 2) > 0) {
+            return 'Partially Paid';
+        }
+
+        return 'Paid';
+    }
+
+    public function isEligibleForPayment(): bool
+    {
+        if (!$this->exists || is_null($this->supplier_id)) {
+            return false;
+        }
+
+        $ineligibleStatuses = array_values(array_filter([
+            status('Cancelled'),
+            status('Deleted'),
+            status('Declined'),
+            status('Pre-Draft'),
+            status('Draft'),
+        ]));
+
+        if (!is_null($this->status_id) && in_array((int) $this->status_id, $ineligibleStatuses, true)) {
+            return false;
+        }
+
+        if (round($this->calculateTotalAmount(), 2) <= 0) {
+            return false;
+        }
+
+        if (round($this->calculateOutstandingBalance(), 2) <= 0) {
+            return false;
+        }
+
+        return true;
+    }
+
 
     public function newonlinePush()
     {

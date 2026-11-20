@@ -14,7 +14,7 @@ class InvoiceObserver
      */
     public function updated(Invoice $invoice): void
     {
-        if($invoice->customer_id === 1) return;
+        if (empty($invoice->customer_id) || $invoice->customer_id === 1 || $invoice->isStockExchange() || !$invoice->customer) return;
 
         if (in_array($invoice->status_id, [status("Paid"), status("Complete"), status("Dispatched")])) {
             if($invoice->scan_user_id !== NULL) {
@@ -54,7 +54,7 @@ class InvoiceObserver
 
     public function deleted(Invoice $invoice): void
     {
-        if($invoice->customer_id === 1) return;
+        if (empty($invoice->customer_id) || $invoice->customer_id === 1 || $invoice->isStockExchange() || !$invoice->customer) return;
 
          $loyaltyPointService = app(LoyaltyService::class);
          $loyaltyPointService->deletePoint($invoice->customer, $invoice);

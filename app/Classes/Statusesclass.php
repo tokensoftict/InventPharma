@@ -88,6 +88,18 @@ class Statusesclass
             'name'=>'Packed-Waiting-For-Payment',
             'label'=>'primary'
         ],
+        [
+            'name'=>'Unpaid',
+            'label'=>'warning'
+        ],
+        [
+            'name'=>'Partially Exchanged',
+            'label'=>'info'
+        ],
+        [
+            'name'=>'Exchanged',
+            'label'=>'success'
+        ],
     ];
 
 
