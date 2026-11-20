@@ -35,7 +35,7 @@ return new class extends Migration
 
             if (!$exists) {
                 DB::table('paymentmethods')->insert([
-                    'name' => 'Stock for Stock',
+                    'name' => 'STOCK FOR STOCK',
                     'status' => 1,
                 ]);
             }
