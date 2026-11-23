@@ -25,7 +25,8 @@ class ProductBincard extends ExportDataTableComponent
         "APP//RETURN"=>"RETURN",
         "APP//DEPARTMENT"=>"DEPARTMENT",
         "APP//BRANCH"=>"BRANCH",
-        "APP//BATCH_UPDATE"=>"BATCH UPDATE"
+        "APP//BATCH_UPDATE"=>"BATCH UPDATE",
+        "APP//PURCHASE-RETURN" => "PURCHASE RETURN",
     ];
 
 

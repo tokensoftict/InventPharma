@@ -10,6 +10,7 @@ use App\Services\StockForStockPaymentService;
 use App\Traits\LivewireAlert;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
@@ -22,6 +23,7 @@ class SupplierPaymentComponent extends Component
 
     public $paymentMethods;
     public $suppliers;
+    public $banks;
 
     public $payment_data = [];
 
@@ -41,10 +43,21 @@ class SupplierPaymentComponent extends Component
             1, 2, 3, 8, $sfsId, 'Stock for Stock', 'STOCK FOR STOCK',
         ])));
         $this->suppliers = suppliers(true);
+        $this->banks = Schema::hasTable('banks') ? banks()->filter(fn ($b) => !isset($b->status) || (int) $b->status === 1)->values() : collect();
     }
 
     public function mount()
     {
+        $defaultPaymentInfo = [
+            'cheque_date' => null,
+            'date_of_issued' => null,
+            'status' => null,
+            'bank_name' => null,
+            'account_number' => null,
+            'account_name' => null,
+            'cash_received_by' => null,
+        ];
+
         $fields = [
             'user_id' => auth()->id(),
             'supplier_id' => request('supplier_id') ?: null,
@@ -53,7 +66,7 @@ class SupplierPaymentComponent extends Component
             'invoice_id' => request('invoice_id') ?: null,
             'paymentmethod_id' => null,
             'reference' => null,
-            'payment_info' => ['cheque_date' => null, 'date_of_issued' => null, 'status' => null],
+            'payment_info' => $defaultPaymentInfo,
             'amount' => null,
             'remark' => null,
             'payment_date' => todaysDate(),
@@ -67,7 +80,7 @@ class SupplierPaymentComponent extends Component
                 Arr::only($this->supplierCreditPaymentHistory->toArray(), array_keys($fields))
             );
             $this->payment_data['payment_info'] = array_merge(
-                ['cheque_date' => null, 'date_of_issued' => null, 'status' => null],
+                $defaultPaymentInfo,
                 $this->payment_data['payment_info'] ?? []
             );
         } else {
@@ -85,6 +98,17 @@ class SupplierPaymentComponent extends Component
     {
         if (!$this->isStockForStockSelected()) {
             $this->payment_data['invoice_id'] = null;
+        }
+        if (!$this->isTransferSelected()) {
+            $this->payment_data['payment_info']['bank_name'] = null;
+            $this->payment_data['payment_info']['account_number'] = null;
+            $this->payment_data['payment_info']['account_name'] = null;
+        }
+        if (!$this->isCashSelected()) {
+            $this->payment_data['payment_info']['cash_received_by'] = null;
+        }
+        if ((string) $value !== '8') {
+            $this->payment_data['payment_info']['cheque_date'] = null;
         }
         $this->showConfirmation = false;
     }
@@ -113,6 +137,36 @@ class SupplierPaymentComponent extends Component
     public function isStockForStockSelected(): bool
     {
         return is_stock_for_stock_payment_method($this->payment_data['paymentmethod_id'] ?? null);
+    }
+
+    protected function selectedPaymentMethodName(): string
+    {
+        $id = $this->payment_data['paymentmethod_id'] ?? null;
+        if (empty($id) || !$this->paymentMethods) {
+            return '';
+        }
+
+        $method = collect($this->paymentMethods)->first(fn ($m) => (string) $m->id === (string) $id);
+
+        return strtolower(trim((string) ($method->name ?? '')));
+    }
+
+    public function isTransferSelected(): bool
+    {
+        $name = $this->selectedPaymentMethodName();
+
+        return $name !== ''
+            ? str_contains($name, 'transfer')
+            : (string) ($this->payment_data['paymentmethod_id'] ?? '') === '3';
+    }
+
+    public function isCashSelected(): bool
+    {
+        $name = $this->selectedPaymentMethodName();
+
+        return $name !== ''
+            ? $name === 'cash'
+            : (string) ($this->payment_data['paymentmethod_id'] ?? '') === '1';
     }
 
     public function getEligibleStockExchangeInvoicesProperty()
@@ -207,12 +261,26 @@ class SupplierPaymentComponent extends Component
             $rules['payment_data.payment_info.cheque_date'] = 'bail|required';
         }
 
+        if ($this->isTransferSelected()) {
+            $rules['payment_data.payment_info.bank_name'] = 'bail|required|string|max:255';
+            $rules['payment_data.payment_info.account_number'] = 'bail|required|string|max:50';
+            $rules['payment_data.payment_info.account_name'] = 'bail|required|string|max:255';
+        }
+
+        if ($this->isCashSelected()) {
+            $rules['payment_data.payment_info.cash_received_by'] = 'bail|required|string|max:255';
+        }
+
         if ($this->isStockForStockSelected()) {
             $rules['payment_data.invoice_id'] = 'bail|required';
         }
 
         $this->validate($rules, [
             'payment_data.invoice_id.required' => 'Please select an eligible Stock Exchange Invoice.',
+            'payment_data.payment_info.bank_name.required' => 'Please select a Bank Name.',
+            'payment_data.payment_info.account_number.required' => 'Please enter the Account Number.',
+            'payment_data.payment_info.account_name.required' => 'Please enter the Account Name.',
+            'payment_data.payment_info.cash_received_by.required' => 'Please enter who received the cash.',
         ]);
     }
 
@@ -223,6 +291,8 @@ class SupplierPaymentComponent extends Component
             'selectedInvoiceSummary' => $this->selectedInvoiceSummary,
             'selectedSupplierSummary' => $this->selectedSupplierSummary,
             'isStockForStock' => $this->isStockForStockSelected(),
+            'isTransfer' => $this->isTransferSelected(),
+            'isCash' => $this->isCashSelected(),
         ]);
     }
 

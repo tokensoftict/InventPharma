@@ -142,6 +142,46 @@
                 @error('payment_data.amount') <span class="text-danger d-block">{{ $message }}</span> @enderror
             </div>
 
+            @if($isTransfer)
+                <div id="transfer_details" class="card border-secondary mb-3">
+                    <div class="card-header bg-light py-2">
+                        <h6 class="mb-0 text-dark"><i class="bx bx-bank me-1"></i> Transfer Details</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label>Bank Name <span class="text-danger">*</span></label>
+                            <select class="form-select" wire:model="payment_data.payment_info.bank_name">
+                                <option value="">Select Bank</option>
+                                @foreach($banks as $bank)
+                                    <option value="{{ $bank->name }}">{{ $bank->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('payment_data.payment_info.bank_name') <span class="text-danger d-block">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label>Account Number <span class="text-danger">*</span></label>
+                            <input type="text" wire:model="payment_data.payment_info.account_number" placeholder="Enter Account Number" class="form-control">
+                            @error('payment_data.payment_info.account_number') <span class="text-danger d-block">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="mb-0">
+                            <label>Account Name <span class="text-danger">*</span></label>
+                            <input type="text" wire:model="payment_data.payment_info.account_name" placeholder="Enter Account Name" class="form-control">
+                            @error('payment_data.payment_info.account_name') <span class="text-danger d-block">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if($isCash)
+                <div id="cash_details" class="mb-3">
+                    <label>Cash Received By <span class="text-danger">*</span></label>
+                    <input type="text" wire:model="payment_data.payment_info.cash_received_by" placeholder="Enter name of person who received the cash" class="form-control">
+                    @error('payment_data.payment_info.cash_received_by') <span class="text-danger d-block">{{ $message }}</span> @enderror
+                </div>
+            @endif
+
             @if(isset($this->payment_data['paymentmethod_id']) and (string) $this->payment_data['paymentmethod_id'] === "8")
                 <div id="cheque_details">
                     <div class="mb-3">

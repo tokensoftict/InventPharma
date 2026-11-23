@@ -452,6 +452,9 @@ function getUserMenu()
                 </a><ul>';
             }
             if ($menu->visibility) $userMenus .= '<li><a class="'.($menu->route === \Route::currentRouteName() ? 'active' : '').'" href="' . route($menu->route) . '">' . $menu->name . '</a></li>';
+            if ($menu->route === 'purchase.create' && \Route::has('purchase.v2.create')) {
+                $userMenus .= '<li><a class="'.(\Route::currentRouteName() === 'purchase.v2.create' ? 'active' : '').'" href="' . route('purchase.v2.create') . '">Create Purchase Order (Beta)</a></li>';
+            }
             $lastModule = $menu->module_id;
         }
 

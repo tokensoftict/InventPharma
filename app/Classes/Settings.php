@@ -47,7 +47,7 @@ class Settings extends Valuestore
         return filter_var($this->get('customer_name_only', false), FILTER_VALIDATE_BOOLEAN);
     }
 
-    public static array $reports = [12,13,14,15,16,17,18,19];
+    public static array $reports = [13,14,15,16,17,18,19,20];
 
     public  static array $perPageAccepted = [50, 100, 200, 500, 1000, 1500, 2000, 2500, 3000, 3500, 4000, 4500, 5000, 5000, 6000, 6500, 0];
 

@@ -132,6 +132,26 @@
                                 </td>
                             </tr>
                         @endif
+                        @if(!empty($payment->payment_info['bank_name']) || !empty($payment->payment_info['account_number']) || !empty($payment->payment_info['account_name']))
+                            <tr>
+                                <th>Bank Name</th>
+                                <td>{{ $payment->payment_info['bank_name'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Account Number</th>
+                                <td>{{ $payment->payment_info['account_number'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Account Name</th>
+                                <td>{{ $payment->payment_info['account_name'] ?? 'N/A' }}</td>
+                            </tr>
+                        @endif
+                        @if(!empty($payment->payment_info['cash_received_by']))
+                            <tr>
+                                <th>Cash Received By</th>
+                                <td>{{ $payment->payment_info['cash_received_by'] }}</td>
+                            </tr>
+                        @endif
                         @if($payment->paymentmethod_id === 8)
                             <tr>
                                 <th>Date of Issued</th>

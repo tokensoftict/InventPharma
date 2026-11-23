@@ -44,6 +44,7 @@ class SupplierCreditPaymentHistory extends Model
 		'supplier_id' => 'int',
 		'purchase_id' => 'int',
         'invoice_id' => 'int',
+        'purchase_return_id' => 'int',
 		'paymentmethod_id' => 'int',
         'reference' => 'string',
 		'amount' => 'float',
@@ -62,6 +63,7 @@ class SupplierCreditPaymentHistory extends Model
 		'type',
 		'purchase_id',
         'invoice_id',
+        'purchase_return_id',
 		'paymentmethod_id',
         'reference',
 		'payment_info',
@@ -88,6 +90,11 @@ class SupplierCreditPaymentHistory extends Model
     public function invoice()
     {
         return $this->belongsTo(Invoice::class, 'invoice_id');
+    }
+
+    public function purchaseReturn()
+    {
+        return $this->belongsTo(PurchaseReturn::class, 'purchase_return_id');
     }
 
 	public function supplier()

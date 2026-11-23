@@ -66,6 +66,7 @@ class PurchaseOrderItemDatatable extends ExportDataTableComponent
                        }
                        if(auth()->user()->can('edit',$row->purchase)){
                        $html .= '<a href="' . route('purchase.edit', $row->purchase_id) . '" class="dropdown-item">Edit Purchase</a></li>';
+                       $html .= '<a href="' . route('purchase.v2.edit', $row->purchase_id) . '" class="dropdown-item">Edit Purchase (Beta)</a></li>';
                        }
 
                        $html .= '</ul>';

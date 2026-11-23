@@ -307,6 +307,222 @@ class PurchaseReportsController extends Controller
 
     }
 
+    /**
+     * Filter predicate shared with balance_sheet: excludes reversed entries and
+     * Pending / Declined / post-dated cheques.
+     */
+    private function isEffectiveSupplierLedgerEntry(SupplierCreditPaymentHistory $item): bool
+    {
+        if ($item->isReversed()) {
+            return false;
+        }
+
+        if ($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Pending') {
+            return false;
+        }
+
+        if ($item->paymentmethod_id === 8 && isset($item->payment_info['status']) && $item->payment_info['status'] === 'Declined') {
+            return false;
+        }
+
+        if ($item->paymentmethod_id === 8 && isset($item->payment_info['going_out_date']) && (new Carbon($item->payment_info['going_out_date']) > now()->format('Y-m-d'))) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Supplier Account Statement — combines Purchase Orders (Supplies), Purchase Returns,
+     * and Supplier Payments into a unified chronological statement inherited from Balance Sheet.
+     */
+    public function supplier_account_statement(Request $request)
+    {
+        abort_unless(
+            userCanView('reports.purchase.balance_sheet') || userCanView('reports.purchase.supplier_account_statement'),
+            403
+        );
+
+        $defaultSupplierId = suppliers(true)->first()->id ?? 1;
+        $range = monthlyDateRange();
+
+        $from = $range[0];
+        $to = $range[1];
+        $supplierId = $defaultSupplierId;
+
+        if ($request->get('filter')) {
+            $filterInput = $request->get('filter');
+            $from = $filterInput['from'] ?? ($filterInput[0] ?? $from);
+            $to = $filterInput['to'] ?? ($filterInput[1] ?? $to);
+            $supplierId = $filterInput['supplier_id'] ?? $supplierId;
+        }
+
+        $data = [
+            'title' => 'Supplier Account Statement',
+            'subtitle' => 'Combined statement of Purchase Orders, Supplier Payments, and Purchase Returns',
+            'filters' => [
+                'from' => $from,
+                'to' => $to,
+                'supplier_id' => $supplierId,
+                'filters' => [
+                    'between.payment_date' => [$from, $to],
+                    'supplier_id' => $supplierId,
+                ],
+            ],
+        ];
+
+        $opening = (float) SupplierCreditPaymentHistory::query()
+            ->where('supplier_id', $supplierId)
+            ->where('payment_date', '<', $from)
+            ->get()
+            ->filter(fn (SupplierCreditPaymentHistory $item) => $this->isEffectiveSupplierLedgerEntry($item))
+            ->sum('amount');
+
+        $histories = SupplierCreditPaymentHistory::query()
+            ->with(['paymentmethod', 'purchase', 'purchaseReturn', 'invoice', 'supplier', 'user'])
+            ->where('supplier_id', $supplierId)
+            ->whereBetween('payment_date', [$from, $to])
+            ->orderBy('payment_date', 'ASC')
+            ->orderBy('id', 'ASC')
+            ->get()
+            ->filter(fn (SupplierCreditPaymentHistory $item) => $this->isEffectiveSupplierLedgerEntry($item))
+            ->values();
+
+        $runningBalance = $opening;
+        $totalSupplied = 0.0;
+        $totalPayments = 0.0;
+        $totalReturns = 0.0;
+
+        $statementRows = $histories->map(function (SupplierCreditPaymentHistory $history) use (
+            &$runningBalance,
+            &$totalSupplied,
+            &$totalPayments,
+            &$totalReturns
+        ) {
+            $amount = (float) $history->amount;
+            $runningBalance = round($runningBalance + $amount, 5);
+            $info = is_array($history->payment_info) ? $history->payment_info : [];
+
+            $isReturn = strtoupper((string) $history->type) === 'RETURN' || !is_null($history->purchase_return_id);
+            $isSupply = !$isReturn && ($amount < 0 || strtoupper((string) $history->type) === 'CREDIT');
+            $isPayment = !$isReturn && !$isSupply;
+
+            $suppliedTotal = null;
+            $paymentAmount = null;
+            $returnWorth = null;
+            $paymentMethod = '—';
+            $descriptionParts = [];
+            $linkUrl = null;
+            $accountBank = '—';
+            $cashReceiver = '—';
+
+            if ($isSupply) {
+                $suppliedTotal = abs($amount);
+                $totalSupplied += $suppliedTotal;
+                $paymentMethod = 'Supply / Credit';
+                if ($history->purchase_id) {
+                    $descriptionParts[] = 'Purchase Order #' . $history->purchase_id;
+                    if (userCanView('purchase.show')) {
+                        $linkUrl = route('purchase.show', $history->purchase_id);
+                    }
+                } else {
+                    $descriptionParts[] = 'Stock Supply';
+                }
+            } elseif ($isReturn) {
+                $returnWorth = abs($amount);
+                $totalReturns += $returnWorth;
+                $paymentMethod = 'Purchase Return';
+                if ($history->purchase_return_id) {
+                    $descriptionParts[] = 'Purchase Return #PRT-' . $history->purchase_return_id;
+                    if (userCanView('purchasereturn.show')) {
+                        $linkUrl = route('purchasereturn.show', $history->purchase_return_id);
+                    }
+                } elseif (!empty($history->reference)) {
+                    $descriptionParts[] = 'Purchase Return ' . $history->reference;
+                } else {
+                    $descriptionParts[] = 'Purchase Return';
+                }
+            } else {
+                $paymentAmount = $amount;
+                $totalPayments += $paymentAmount;
+                $paymentMethod = $history->isStockForStock()
+                    ? 'Stock for Stock'
+                    : ($history->paymentmethod->name ?? 'Payment');
+
+                if ($history->isStockForStock()) {
+                    $invNo = $history->invoice->invoice_number ?? ($info['invoice_number'] ?? null);
+                    $descriptionParts[] = $invNo ? 'Stock Exchange Invoice #' . $invNo : 'Stock for Stock Payment';
+                } elseif ($history->purchase_id) {
+                    $descriptionParts[] = 'Payment for PO #' . $history->purchase_id;
+                } elseif ($history->paymentmethod_id === 8 && !empty($info['cheque_date'])) {
+                    $descriptionParts[] = 'Cheque (Due: ' . $info['cheque_date'] . ')';
+                } else {
+                    $descriptionParts[] = 'Supplier Payment';
+                }
+
+                if (!empty($history->reference)) {
+                    $descriptionParts[] = 'Ref: ' . $history->reference;
+                }
+
+                // Transfer Account Name (Bank Name) + Account Number
+                $accName = trim((string) ($info['account_name'] ?? ''));
+                $bankName = trim((string) ($info['bank_name'] ?? ''));
+                $accNumber = trim((string) ($info['account_number'] ?? ''));
+
+                if ($accName !== '' || $bankName !== '' || $accNumber !== '') {
+                    $label = $accName !== '' ? $accName : '';
+                    if ($bankName !== '') {
+                        $label = $label !== '' ? "{$label} ({$bankName})" : $bankName;
+                    }
+                    if ($accNumber !== '') {
+                        $label = $label !== '' ? "{$label} — {$accNumber}" : $accNumber;
+                    }
+                    $accountBank = $label;
+                }
+
+                // Cash Receiver
+                $receiver = trim((string) ($info['cash_received_by'] ?? ''));
+                if ($receiver !== '') {
+                    $cashReceiver = $receiver;
+                }
+            }
+
+            $remark = trim((string) ($history->remark ?? ''));
+            if ($remark !== '') {
+                // Avoid duplicating e.g. "Purchase Return #12" if already in description
+                $joinedSoFar = implode(' | ', $descriptionParts);
+                if (!str_contains(strtolower($joinedSoFar), strtolower($remark))) {
+                    $descriptionParts[] = $remark;
+                }
+            }
+
+            return [
+                'id' => $history->id,
+                'kind' => $isReturn ? 'return' : ($isSupply ? 'supply' : 'payment'),
+                'supplied_total' => $suppliedTotal,
+                'payment_amount' => $paymentAmount,
+                'payment_method' => $paymentMethod,
+                'payment_date' => $history->payment_date,
+                'description' => implode(' — ', array_filter($descriptionParts)),
+                'link_url' => $linkUrl,
+                'account_bank' => $accountBank,
+                'cash_receiver' => $cashReceiver,
+                'return_worth' => $returnWorth,
+                'balance' => $runningBalance,
+            ];
+        });
+
+        $data['supplier'] = \App\Models\Supplier::find($supplierId);
+        $data['opening'] = $opening;
+        $data['rows'] = $statementRows;
+        $data['totalSupplied'] = round($totalSupplied, 5);
+        $data['totalPayments'] = round($totalPayments, 5);
+        $data['totalReturns'] = round($totalReturns, 5);
+        $data['closingBalance'] = round($runningBalance, 5);
+
+        return view('reports.purchases.supplier.account_statement', $data);
+    }
+
     public function supplier_ranking(Request $request)
     {
         $items = [

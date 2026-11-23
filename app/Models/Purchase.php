@@ -129,8 +129,9 @@ class Purchase extends Model
 
         if (\Illuminate\Support\Facades\Schema::hasTable('purchaseitems')) {
             $itemsTotal = (float) $this->purchaseitems()
-                ->selectRaw('COALESCE(SUM(qty * COALESCE(cost_price, 0)), 0) as total')
-                ->value('total');
+                ->toBase()
+                ->selectRaw('COALESCE(SUM(qty * COALESCE(cost_price, 0)), 0) as items_total')
+                ->value('items_total');
 
             if ($itemsTotal > 0) {
                 return round($itemsTotal, 5);
@@ -139,9 +140,10 @@ class Purchase extends Model
 
         if (\Illuminate\Support\Facades\Schema::hasTable('supplier_credit_payment_histories')) {
             $creditRecordTotal = (float) $this->paymentHistories()
+                ->toBase()
                 ->where('type', 'CREDIT')
-                ->selectRaw('COALESCE(SUM(ABS(amount)), 0) as total')
-                ->value('total');
+                ->selectRaw('COALESCE(SUM(ABS(amount)), 0) as credit_total')
+                ->value('credit_total');
 
             return round($creditRecordTotal, 5);
         }

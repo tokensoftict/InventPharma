@@ -42,6 +42,34 @@ Route::middleware(['auth', 'app.active'])->group(function () {
         Route::get('/supplier_sales_analysis_table', ['as' => 'supplier_sales_analysis_table', 'uses' => 'AjaxController@supplier_sales_analysis_table']);
     });
 
+    // Purchase Order V2 (Beta) — inherits access from v1 purchase.* permissions without modifying v1
+    Route::prefix('purchase/v2')->namespace('PurchaseOrder')->as('purchase.v2.')->group(function () {
+        Route::get('create', ['as' => 'create', 'uses' => 'PurchaseOrderV2Controller@create']);
+        Route::get('pre_draft', ['as' => 'pre_draft', 'uses' => 'PurchaseOrderV2Controller@pre_draft']);
+        Route::get('{purchase}/edit', ['as' => 'edit', 'uses' => 'PurchaseOrderV2Controller@edit']);
+        Route::get('api/search-products', ['as' => 'search', 'uses' => 'PurchaseOrderV2Controller@searchProducts']);
+        Route::get('api/supplier-low-stock', ['as' => 'low_stock', 'uses' => 'PurchaseOrderV2Controller@supplierLowStock']);
+        Route::get('api/supplier-recent-pos', ['as' => 'recent_pos', 'uses' => 'PurchaseOrderV2Controller@supplierRecentPos']);
+        Route::get('api/clone-po/{purchase}', ['as' => 'clone_po', 'uses' => 'PurchaseOrderV2Controller@clonePo']);
+    });
+
+    // Compact Purchase Return printout & fast-entry APIs — inherit access from purchasereturn.*
+    Route::get('purchase-returns/return/{purchaseReturn}/print', [
+        'as' => 'purchasereturn.print',
+        'uses' => 'PurchaseReturns\PurchaseReturnController@print',
+    ]);
+    Route::prefix('purchase-returns/api')->namespace('PurchaseReturns')->as('purchasereturn.api.')->group(function () {
+        Route::get('search-products', ['as' => 'search', 'uses' => 'PurchaseReturnController@searchProducts']);
+        Route::get('supplier-pos', ['as' => 'supplier_pos', 'uses' => 'PurchaseReturnController@supplierPos']);
+        Route::get('load-po/{purchase}', ['as' => 'load_po', 'uses' => 'PurchaseReturnController@loadPoItems']);
+    });
+
+    // Compact Purchase Order printout — inherits access from purchase.show
+    Route::get('purchase/purchase/{purchase}/print', [
+        'as' => 'purchase.print',
+        'uses' => 'PurchaseOrder\PurchaseOrderV2Controller@print',
+    ]);
+
 
     Route::middleware(['permit.task'])->group(function () {
         Route::prefix('accesscontrol')->namespace('AccessControl')->group(function () {
@@ -376,6 +404,27 @@ Route::middleware(['auth', 'app.active'])->group(function () {
             });
         });
 
+        Route::prefix('purchase-returns')->namespace('PurchaseReturns')->group(function () {
+
+            Route::prefix('return')->as('purchasereturn.')->group(function () {
+
+                Route::get('', ['as' => 'index', 'uses' => 'PurchaseReturnController@index', 'visible' => true, 'custom_label' => 'Draft Returns List']);
+
+                Route::get('/completed', ['as' => 'approved', 'uses' => 'PurchaseReturnController@completed', 'visible' => true, 'custom_label' => 'Completed Returns List']);
+
+                Route::match(['get', 'post'], 'create', ['as' => 'create', 'uses' => 'PurchaseReturnController@create', 'visible' => true, 'custom_label' => 'Create New Purchase Return']);
+
+                Route::match(['get', 'post'], '{purchaseReturn}/edit', ['as' => 'edit', 'uses' => 'PurchaseReturnController@edit', 'custom_label' => 'Edit Purchase Return']);
+
+                Route::get('{purchaseReturn}/show', ['as' => 'show', 'uses' => 'PurchaseReturnController@show', 'custom_label' => 'Show Purchase Return Information']);
+
+                Route::get('{purchaseReturn}/destroy', ['as' => 'destroy', 'uses' => 'PurchaseReturnController@destroy', 'custom_label' => 'Delete Purchase Return']);
+
+                Route::get('{purchaseReturn}/complete', ['as' => 'complete', 'uses' => 'PurchaseReturnController@complete', 'custom_label' => 'Complete Purchase Return']);
+
+            });
+        });
+
         Route::prefix('invoiceandsales')->namespace('InvoiceAndSales')->group(function () {
             Route::prefix('invoice')->as('invoiceandsales.')->group(function () {
                 Route::get('create', ['as' => 'create', 'uses' => 'InvoiceController@create', 'custom_label' => 'New Invoice', 'visible' => true]);
@@ -500,6 +549,7 @@ Route::middleware(['auth', 'app.active'])->group(function () {
                 Route::match(['get', 'post'], 'supplier_credit', ['as' => 'supplier_credit', 'uses' => 'PurchaseReportsController@supplier_credit', 'custom_label' => 'Supplier Credit Report']);
 
                 Route::match(['get', 'post'], 'balance_sheet', ['as' => 'balance_sheet', 'uses' => 'PurchaseReportsController@balance_sheet', 'custom_label' => 'Supplier Balance Sheet']);
+                Route::match(['get', 'post'], 'supplier_account_statement', ['as' => 'supplier_account_statement', 'uses' => 'PurchaseReportsController@supplier_account_statement', 'custom_label' => 'Supplier Account Statement']);
                 Route::match(['get', 'post'], 'supplier_ranking', ['as' => 'supplier_ranking', 'uses' => 'PurchaseReportsController@supplier_ranking', 'custom_label' => 'Supplier Ranking Report']);
                 Route::match(['get', 'post'], 'supplier_sales_analysis', ['as' => 'supplier_sales_analysis', 'uses' => 'PurchaseReportsController@supplier_sales_analysis', 'custom_label' => 'Supplier Sales Analysis']);
                 Route::match(['get', 'post'], 'cheque_schedule', ['as' => 'cheque_schedule', 'uses' => 'PurchaseReportsController@cheque_schedule', 'custom_label' => 'Supplier Payment Cheque Schedule']);

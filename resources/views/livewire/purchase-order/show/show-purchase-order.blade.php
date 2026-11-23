@@ -8,6 +8,7 @@
 
             @if(auth()->user()->can('update', $this->purchase))
                 <a class="btn btn-success btn-sm" href="{{ route('purchase.edit', $this->purchase->id) }}"><i class="fa fa-pencil"></i> Edit Purchase</a>
+                <a class="btn btn-outline-success btn-sm" href="{{ route('purchase.v2.edit', $this->purchase->id) }}"><i class="fa fa-bolt"></i> Edit (Beta)</a>
             @endif
 
             @if(auth()->user()->can('complete',$this->purchase))
@@ -34,7 +35,9 @@
                 </button>
             @endif
 
-            <a href="#" onclick="return open_print_window(this);" class="btn btn-info btn-sm"><i class="fa fa-print"></i> Print</a>
+            <a href="{{ route('purchase.print', $this->purchase->id) }}"
+               onclick="window.open(this.href, 'PrintPurchaseOrder', 'width=900,height=680'); return false;"
+               class="btn btn-info btn-sm"><i class="fa fa-print"></i> Print</a>
 
         </div>
     </div>
@@ -115,6 +118,7 @@
                 @endforeach
                 </tbody>
                 <tfoot>
+                @php($poTotal = (new \App\Repositories\PurchaseOrderRepository())->totalPo($this->purchase))
                 <tr>
                     <th></th>
                     <th></th>
@@ -128,7 +132,7 @@
                     <th></th>
                     <th></th>
                     <th class="text-end">Sub Total</th>
-                    <th class="text-end">{{ number_format((new \App\Repositories\PurchaseOrderRepository())->totalPo($this->purchase),2) }}</th>
+                    <th class="text-end">{{ number_format($poTotal, 2) }}</th>
                 </tr>
                 <tr>
                     <th></th>
@@ -143,7 +147,7 @@
                     <th></th>
                     <th></th>
                     <th class="text-end">Total</th>
-                    <th class="text-end">{{ number_format((new \App\Repositories\PurchaseOrderRepository())->totalPo($this->purchase),2) }}</th>
+                    <th class="text-end">{{ number_format($poTotal, 2) }}</th>
                 </tr>
                 </tfoot>
             </table>
