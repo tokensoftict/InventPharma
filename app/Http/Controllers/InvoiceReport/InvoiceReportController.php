@@ -195,10 +195,10 @@ class InvoiceReportController extends Controller
             'title' => 'Return Invoice Report By Date',
             'subtitle' => 'View Return Invoice Report By Date Range',
             'filters' => [
-                'from' =>todaysDate(),
-                'to'=>todaysDate(),
+                'from' => todaysDate(),
+                'to' => todaysDate(),
                 'filters' => [
-                    'between.invoice_date' => [todaysDate(),todaysDate()],
+                    'between.date_voided' => [todaysDate(), todaysDate()],
                     'is_not_null.void_reason' => "",
                 ]
             ]
@@ -206,7 +206,7 @@ class InvoiceReportController extends Controller
         if($request->get('filter'))
         {
             $data['filters'] = $request->get('filter');
-            $data['filters']['filters']['between.invoice_date'] = Arr::only(array_values( $request->get('filter')), [0,1]);
+            $data['filters']['filters']['between.date_voided'] = Arr::only(array_values($request->get('filter')), [0,1]);
             $data['filters']['filters']['is_not_null.void_reason'] = "";
         }
         return view('reports.invoice.return', $data);

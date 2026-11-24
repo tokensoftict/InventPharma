@@ -335,6 +335,8 @@ class InvoiceController extends Controller
 
     public function return(Invoice $invoice)
     {
+        abort_unless(auth()->user()->can('return', $invoice), 403);
+
         $data = [];
 
         $data['title'] = 'Return ';
@@ -348,12 +350,14 @@ class InvoiceController extends Controller
         begining of logic
         */
         if(!is_null($invoice->onliner_order_id)) {
-            \Cache::remember("ReturnedOnlineOrder",83400, function () use ($invoice){
-                $existing = \Cache::get("ReturnedOnlineOrder");
-                if(!$existing) $existing = [];
+            $existing = \Cache::get("ReturnedOnlineOrder", []);
+            if (!is_array($existing)) {
+                $existing = [];
+            }
+            if (!in_array($invoice->id, $existing, true)) {
                 $existing[] = $invoice->id;
-                return $existing;
-            });
+                \Cache::put("ReturnedOnlineOrder", $existing, 83400);
+            }
         }
 
         return view('invoiceandsales.form', $data);

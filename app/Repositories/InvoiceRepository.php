@@ -450,11 +450,11 @@ class InvoiceRepository
 
             $invoice->retail_printed = "0";
 
-            if( $invoice->date_voided === NULL) {
-                $invoice->date_voided = todaysDate();
-            }
+            $invoice->date_voided = todaysDate();
+            $invoice->void_time = Carbon::now();
+            $invoice->voided_by = auth()->id();
 
-            $invoice->void_reason = $invoice->void_reason === NULL ? 1 :( $invoice->void_reason +1);
+            $invoice->void_reason = $invoice->void_reason === NULL ? 1 : ($invoice->void_reason + 1);
 
             $invoice->update();
 

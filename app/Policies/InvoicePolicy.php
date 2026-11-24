@@ -104,6 +104,8 @@ class InvoicePolicy
     {
         if(!userCanView("invoiceandsales.return")) return false;
 
+        if ($invoice->hasActiveExchangeAllocations()) return false;
+
         if(!in_array($invoice->status_id, [
             status('Dispatched'),
             status('Paid'),
