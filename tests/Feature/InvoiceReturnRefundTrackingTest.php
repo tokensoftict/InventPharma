@@ -774,6 +774,69 @@ class InvoiceReturnRefundTrackingTest extends TestCase
         $this->assertEquals(45000.0, $ret->refund_amount);
     }
 
+    public function test_return_preserves_item_level_discounts_on_invoiceitems_and_calculates_exact_difference(): void
+    {
+        Bus::fake();
+        $this->actingAs($this->cashierA);
+
+        // Invoice with 5 units of stockA (selling_price = 10,000, item discount_amount = 500/unit => net 9,500/unit => 47,500)
+        // and 2 units of stockB (selling_price = 3,000, item discount_amount = 200/unit => net 2,800/unit => 5,600)
+        // Original sub_total = 47,500 + 5,600 = 53,100
+        $invoice = $this->createPaidInvoice('INV-RET-ITEM-DISC', 5, 2);
+        $invoice->invoiceitems()->where('stock_id', $this->stockA->id)->update([
+            'discount_type' => 'Fixed',
+            'discount_value' => 500,
+            'discount_amount' => 500,
+            'discount_added_by' => $this->cashierA->id,
+            'profit' => 1500,
+        ]);
+        $invoice->invoiceitems()->where('stock_id', $this->stockB->id)->update([
+            'discount_type' => 'Fixed',
+            'discount_value' => 200,
+            'discount_amount' => 200,
+            'discount_added_by' => $this->cashierA->id,
+            'profit' => 800,
+        ]);
+        $invoice->update(['sub_total' => 53100, 'total_amount_paid' => 53100]);
+        $invoice = $invoice->fresh(['invoiceitems', 'invoiceitembatches']);
+
+        // Customer returns 2 units of stockA (3 remaining * 9,500 = 28,500; 2 units of stockB * 2,800 = 5,600 => new total = 34,100)
+        // Return difference = 2 * 9,500 = 19,000
+        $updated = (new InvoiceRepository())->updateInvoice($invoice, [
+            'department' => 'wholesales',
+            'in_department' => 'wholesales',
+            'customer_id' => $this->customer->id,
+            'status_id' => status('Paid'),
+            'discount_type' => 'None',
+            'discount_value' => 0,
+            'discount_amount' => 0,
+            'invoiceitems' => json_encode([
+                ['stock_id' => $this->stockA->id, 'name' => $this->stockA->name, 'quantity' => 3, 'selling_price' => 10000, 'cost_price' => 8000, 'discount_type' => 'Fixed', 'discount_value' => 500, 'discount_amount' => 500],
+                ['stock_id' => $this->stockB->id, 'name' => $this->stockB->name, 'quantity' => 2, 'selling_price' => 3000, 'cost_price' => 2000, 'discount_type' => 'Fixed', 'discount_value' => 200, 'discount_amount' => 200],
+            ]),
+            'return_info' => [
+                'return_reason' => InvoiceReturn::REASON_CUSTOMER_RETURNED,
+                'will_refund' => 'yes',
+                'paymentmethod_id' => 1,
+                'idempotency_key' => 'idem-item-disc-001',
+            ],
+        ]);
+
+        $this->assertInstanceOf(Invoice::class, $updated);
+        $this->assertEquals(34100.0, (float) $updated->sub_total);
+        $this->assertEquals(34100.0, (float) $updated->total_amount_paid);
+
+        $updatedItemA = $updated->invoiceitems()->where('stock_id', $this->stockA->id)->firstOrFail();
+        $this->assertEquals(500.0, (float) $updatedItemA->discount_amount);
+        $this->assertEquals(1500.0, (float) $updatedItemA->profit);
+
+        $ret = InvoiceReturn::where('invoice_id', $invoice->id)->firstOrFail();
+        $this->assertEquals(53100.0, $ret->original_invoice_amount);
+        $this->assertEquals(34100.0, $ret->current_invoice_amount);
+        $this->assertEquals(19000.0, $ret->return_difference);
+        $this->assertEquals(19000.0, $ret->refund_amount);
+    }
+
     public function test_cash_transfer_and_no_refund_persistence_idempotency_and_reconciliation_queries(): void
     {
         Bus::fake();

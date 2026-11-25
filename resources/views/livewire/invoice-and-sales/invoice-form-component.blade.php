@@ -124,8 +124,8 @@
                                         <td class="text-center" x-text="item.box"></td>
                                         <td class="text-center" x-text="item.carton"></td>
                                         <td class="text-center" x-text="item.av_qty"></td>
-                                        <td class="text-center" x-text="money(item.selling_price)"></td>
-                                        <td class="text-end" x-text="money(item.selling_price * item.quantity)"></td>
+                                        <td class="text-center" x-text="money((parseFloat(item.selling_price) || 0) - (parseFloat(item.discount_amount) || 0))"></td>
+                                        <td class="text-end" x-text="money(((parseFloat(item.selling_price) || 0) - (parseFloat(item.discount_amount) || 0)) * (parseFloat(item.quantity) || 0))"></td>
                                         <td class="text-end">
                                             <!-- Only show delete button for parent products -->
                                             <template x-if="!item.isDependent">
@@ -1029,7 +1029,8 @@
             // whenever any item quantity/price changes (plus, minus, typing or delete)
             computeSubTotal() {
                 return (this.invoiceitems || []).reduce((result, item) => {
-                    return result + ((parseFloat(item.selling_price) || 0) * (parseFloat(item.quantity) || 0));
+                    const unitNetPrice = (parseFloat(item.selling_price) || 0) - (parseFloat(item.discount_amount) || 0);
+                    return result + (unitNetPrice * (parseFloat(item.quantity) || 0));
                 }, 0);
             },
             computeDiscounts(sub) {
@@ -1071,9 +1072,7 @@
             },
             totalInvoice()
             {
-                let sub_total = this.invoiceitems.length > 0 ? this.invoiceitems.reduce((result, item) => {
-                    return result + (item.selling_price * item.quantity);
-                }, 0) : 0;
+                let sub_total = this.computeSubTotal();
 
                 const d = this.computeDiscounts(sub_total);
                 this.discount_amount = d.discount;

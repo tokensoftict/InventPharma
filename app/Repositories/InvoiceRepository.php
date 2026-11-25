@@ -200,7 +200,9 @@ class InvoiceRepository
         $items = collect($items);
 
         $invoiceData['sub_total'] = $items->sum(function($item){
-            return $item['quantity'] * $item['selling_price'];
+            $sellingPrice = (float) ($item['selling_price'] ?? 0);
+            $itemDiscount = (float) ($item['discount_amount'] ?? 0);
+            return ((int) ($item['quantity'] ?? 0)) * ($sellingPrice - $itemDiscount);
         });
 
         $invoiceData['discount_amount'] = 0;
@@ -548,12 +550,18 @@ class InvoiceRepository
 
             if ($isReturnOperation) {
                 // On an invoice return, ignore custom_price / tier repricing and lock each item's selling_price
-                // to the exact selling_price originally recorded on the invoice.
+                // and item-level discount to the exact values originally recorded on the invoice.
                 foreach ($results['results'] as $stockId => &$resEntry) {
                     if ($originalItemsByStock->has((int) $stockId)) {
-                        $origSellingPrice = (float) $originalItemsByStock->get((int) $stockId)->selling_price;
+                        $origItem = $originalItemsByStock->get((int) $stockId);
+                        $origSellingPrice = (float) $origItem->selling_price;
+                        $origItemDiscount = (float) ($origItem->discount_amount ?? 0);
                         $resEntry['item']['selling_price'] = $origSellingPrice;
-                        $resEntry['item']['profit'] = $origSellingPrice - (float) ($resEntry['item']['cost_price'] ?? 0);
+                        $resEntry['item']['discount_type'] = $origItem->discount_type;
+                        $resEntry['item']['discount_value'] = (float) ($origItem->discount_value ?? 0);
+                        $resEntry['item']['discount_amount'] = $origItemDiscount;
+                        $resEntry['item']['discount_added_by'] = $origItem->discount_added_by;
+                        $resEntry['item']['profit'] = ($origSellingPrice - $origItemDiscount) - (float) ($resEntry['item']['cost_price'] ?? 0);
                     }
                 }
                 unset($resEntry);
@@ -839,7 +847,7 @@ class InvoiceRepository
             $columns = [];
 
             $invoiceItems->each(function($item, $key) use(&$invoice, $results, &$removeQuantity, &$columns){
-                Arr::forget($item, ['name','box','carton','av_qty','total_incentives','original_quantity','max_return_qty']);
+                Arr::forget($item, ['name','box','carton','av_qty','total_incentives','original_quantity','max_return_qty','original_selling_price']);
                 Arr::set($item,'customer_id', $invoice->customer_id);
                 Arr::set($item,'department', $invoice->department);
                 $invoiceItemBatches = [];
