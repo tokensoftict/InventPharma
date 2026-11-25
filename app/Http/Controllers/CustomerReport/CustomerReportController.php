@@ -8,9 +8,11 @@ use App\Models\Customer;
 use App\Models\CustomerLedger;
 use App\Models\Department;
 use App\Models\Invoice;
+use App\Models\InvoiceReturn;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CustomerReportController extends Controller
 {
@@ -39,10 +41,39 @@ class CustomerReportController extends Controller
             $data['filters']['filters']['customer_id'] = $data['filters']['customer_id'];
         }
 
-        $data['opening'] = CreditPaymentLog::where('customer_id',  $data['filters']['filters']['customer_id'])->where('payment_date','<',  $data['filters']['filters']['between.return_date'][0])->sum('amount');
+        $customerId = (int) $data['filters']['filters']['customer_id'];
+        $dateRange = $data['filters']['filters']['between.return_date'];
 
-        $data['histories'] = CreditPaymentLog::where('customer_id', $data['filters']['filters']['customer_id'])->whereBetween('payment_date',  $data['filters']['filters']['between.return_date'])->get();
+        $data['opening'] = Creditpaymentlog::where('customer_id', $customerId)
+            ->where('payment_date', '<', $dateRange[0])
+            ->where(function ($q) {
+                $q->whereNull('invoicelog_type')
+                  ->orWhere('invoicelog_type', '!=', InvoiceReturn::class);
+            })
+            ->sum('amount');
 
+        $histories = Creditpaymentlog::with([
+            'paymentmethod',
+            'payment.paymentmethoditems.paymentmethod',
+            'invoicelog',
+        ])
+            ->where('customer_id', $customerId)
+            ->whereBetween('payment_date', $dateRange)
+            ->where(function ($q) {
+                $q->whereNull('invoicelog_type')
+                  ->orWhere('invoicelog_type', '!=', InvoiceReturn::class);
+            })
+            ->orderBy('payment_date', 'ASC')
+            ->orderBy('id', 'ASC')
+            ->get();
+
+        if (Schema::hasTable('invoice_returns')) {
+            $histories->loadMorph('invoicelog', [
+                Invoice::class => ['invoiceReturns.paymentmethod'],
+            ]);
+        }
+
+        $data['histories'] = $histories;
 
         return view('reports.customer.balance_sheet', $data);
 

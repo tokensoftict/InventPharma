@@ -11,40 +11,65 @@
         <div class="col-sm-8">
             <div class="card">
                 <div class="card-body" style="position: relative;">
-                    <div class="mb-3">
-                        <label for="ac-demo">Search For Product or Scan Bar Code</label>
-                        <input id="searchText" type="text" x-model="searchString" x-on:keyup.debounce="searchProduct(this.value)" placeholder="Product Barcode, Product Name..." class="form-control form-control-lg">
+                    @if($this->isReturn)
+                        <div class="alert alert-warning mb-0 py-2">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                <div>
+                                    <i class="fa fa-undo me-1"></i>
+                                    <strong>Return Invoice Mode:</strong> Reduce item quantities or remove returned items. Adding new stock or increasing quantities is disabled.
+                                </div>
+                            </div>
+                            <div class="row g-2 mt-2 pt-2 border-top border-warning-subtle text-dark">
+                                <div class="col-sm-4">
+                                    <small class="text-muted d-block">Original Invoice Amount</small>
+                                    <strong class="fs-6">₦<span x-text="money(originalInvoiceRaw)"></span></strong>
+                                </div>
+                                <div class="col-sm-4">
+                                    <small class="text-muted d-block">Current Invoice Amount (After Return)</small>
+                                    <strong class="fs-6 text-primary">₦<span x-text="money(computeNet())"></span></strong>
+                                </div>
+                                <div class="col-sm-4">
+                                    <small class="text-muted d-block">Return Difference (Returned Value)</small>
+                                    <strong class="fs-6 text-danger">₦<span x-text="money(computeReturnDifference())"></span></strong>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="mb-3">
+                            <label for="ac-demo">Search For Product or Scan Bar Code</label>
+                            <input id="searchText" type="text" x-model="searchString" x-on:keyup.debounce="searchProduct(this.value)" placeholder="Product Barcode, Product Name..." class="form-control form-control-lg">
 
-                    </div>
-                    <template x-if="(searchproduct.length > 0)" >
-                        <div  class="np-result-container">
-                            <template x-for="product in searchproduct">
-                                <div  x-on:click="selectProduct(product)">
-                                    <div class="np-result-item">
-                                        <div class="np-ib np-text-container">
-                                            <div x-text="product.name"></div>
-                                            <div class="np-result-description">
-                                                <span class="font-size-13" style="font-weight: bolder"  >Price : <span class="text-danger"  :class="{'font-size-13':product.promo_selling_price > 0, 'slashed':product.promo_selling_price > 0}" x-html="money(product.selling_price)"></span></span>
-                                                &nbsp; <span x-show="(product.promo_selling_price != null && product.promo_selling_price > 0)" style="font-weight: bolder" class="text-primary font-size-13"> <span  x-show="(product.promo_selling_price != null)" x-html="money(product.promo_selling_price)"></span></span>
-                                                &nbsp; &nbsp;
-                                                Quantity : <span x-text="product.quantity"></span>
-                                                &nbsp; &nbsp;
-                                                Box : <span x-text="product.box"></span>
-                                                &nbsp; &nbsp;
-                                                Carton : <span x-text="product.carton"></span>
-                                                @if($this->d == "retail")
+                        </div>
+                        <template x-if="(searchproduct.length > 0)" >
+                            <div  class="np-result-container">
+                                <template x-for="product in searchproduct">
+                                    <div  x-on:click="selectProduct(product)">
+                                        <div class="np-result-item">
+                                            <div class="np-ib np-text-container">
+                                                <div x-text="product.name"></div>
+                                                <div class="np-result-description">
+                                                    <span class="font-size-13" style="font-weight: bolder"  >Price : <span class="text-danger"  :class="{'font-size-13':product.promo_selling_price > 0, 'slashed':product.promo_selling_price > 0}" x-html="money(product.selling_price)"></span></span>
+                                                    &nbsp; <span x-show="(product.promo_selling_price != null && product.promo_selling_price > 0)" style="font-weight: bolder" class="text-primary font-size-13"> <span  x-show="(product.promo_selling_price != null)" x-html="money(product.promo_selling_price)"></span></span>
                                                     &nbsp; &nbsp;
-                                                    SuperMarket Store : <span x-text="product.retail_store"></span>
-                                                @endif
-                                                &nbsp; &nbsp;
-                                                <span x-show="(product.custom_prices.length > 0)" class="font-size-13" style="font-weight: bolder"  >Bundle Price : <span class="text-danger font-size-13"  x-html="money(product.custom_prices[0].price)+'&nbsp; = '+product.custom_prices[0].min_qty+' Quantity'"></span></span>
+                                                    Quantity : <span x-text="product.quantity"></span>
+                                                    &nbsp; &nbsp;
+                                                    Box : <span x-text="product.box"></span>
+                                                    &nbsp; &nbsp;
+                                                    Carton : <span x-text="product.carton"></span>
+                                                    @if($this->d == "retail")
+                                                        &nbsp; &nbsp;
+                                                        SuperMarket Store : <span x-text="product.retail_store"></span>
+                                                    @endif
+                                                    &nbsp; &nbsp;
+                                                    <span x-show="(product.custom_prices.length > 0)" class="font-size-13" style="font-weight: bolder"  >Bundle Price : <span class="text-danger font-size-13"  x-html="money(product.custom_prices[0].price)+'&nbsp; = '+product.custom_prices[0].min_qty+' Quantity'"></span></span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
+                                </template>
+                            </div>
+                        </template>
+                    @endif
                 </div>
             </div>
 
@@ -68,7 +93,7 @@
                                 </thead>
                                 <tbody id="appender">
 
-                                <template x-for="(item,index) in invoiceitems.reverse()" :key="item.stock_id">
+                                <template x-for="(item,index) in invoiceitems" :key="item.stock_id">
                                     <tr :class="item.isDependent ? 'table-warning' : ''">
                                         <td class="text-start">
                                             <span class="d-block" x-text="item.name"></span>
@@ -78,12 +103,15 @@
 
                                         <td class="text-center">
                                             <div class="input-group form-group mb-0" style="width:120px;">
-                                                <!-- If it's a dependent product, disable editing -->
-                                                <a x-on:click="!item.isDependent && incrementQuantity(index)" class="btn btn-sm btn-primary" :class="{'disabled': item.isDependent}">
+                                                <!-- If it's a dependent product or at original return max qty, disable increasing -->
+                                                <a x-on:click="!item.isDependent && incrementQuantity(index)" class="btn btn-sm btn-primary" :class="{'disabled': item.isDependent || (isReturn && parseInt(item.quantity) >= parseInt(item.max_return_qty ?? item.original_quantity ?? item.quantity))}">
                                                     <i class="fa fa-plus"></i>
                                                 </a>
                                                 <input type="number"
+                                                       min="1"
+                                                       :max="isReturn ? (item.max_return_qty ?? item.original_quantity ?? item.quantity) : item.av_qty"
                                                        x-on:keyup="!item.isDependent && typeQuantity(index)"
+                                                       x-on:change="!item.isDependent && typeQuantity(index)"
                                                        x-model="item.quantity"
                                                        class="form-control form-control-sm text-center"
                                                        :readonly="item.isDependent">
@@ -296,7 +324,7 @@
 
                         @if(isset($this->invoice->id))
                             <div class="d-grid gap-3 mt-4">
-                                <button x-on:click="generateInvoice('{{ status('Draft') }}')" class="btn btn-lg d-block btn-dark submit_btn"   type="button" wire:target="generateInvoice" wire:loading.attr="disabled">
+                                <button x-on:click="generateInvoice('{{ $this->isReturn ? $this->invoice->status_id : status('Draft') }}')" class="btn btn-lg d-block btn-dark submit_btn"   type="button" wire:target="generateInvoice" wire:loading.attr="disabled">
                                     UPDATE INVOICE
 
                                     <i wire:loading.remove wire:target="generateInvoice" class="fa fa-save"></i>
@@ -454,6 +482,221 @@
             </div>
         </form>
     </div>
+
+    {{-- Invoice Return Reason & Customer Refund Confirmation Modal --}}
+    @if($this->isReturn)
+        <div
+            x-show="showReturnModal"
+            x-cloak
+            style="position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); z-index: 1055; overflow-y: auto; padding: 1.5rem 1rem;"
+            x-on:keydown.escape.window="if (!returnModalSubmitting) closeReturnModal()"
+        >
+            <div class="modal-dialog modal-lg modal-dialog-centered" style="max-width: 680px; margin: 1.5rem auto;">
+                <div class="modal-content shadow-lg border-0 rounded-3 bg-white">
+                    <div class="modal-header bg-warning-subtle border-bottom px-4 py-3">
+                        <h5 class="modal-title fw-bold text-dark mb-0">
+                            <i class="fa fa-undo me-2 text-warning-emphasis"></i>
+                            Confirm Invoice Return &amp; Customer Refund (#{{ $this->invoice->invoice_number }})
+                        </h5>
+                        <button type="button" class="btn-close" :disabled="returnModalSubmitting" x-on:click="closeReturnModal()"></button>
+                    </div>
+
+                    <div class="modal-body p-4">
+                        {{-- 1. Calculated Financial Return Difference Summary --}}
+                        <div class="p-3 rounded-3 bg-light border mb-4">
+                            <h6 class="fw-bold text-dark mb-2 pb-1 border-bottom">
+                                1. Invoice Return Financial Summary
+                            </h6>
+                            <div class="row text-center g-2">
+                                <div class="col-md-4">
+                                    <div class="p-2 bg-white rounded border">
+                                        <small class="text-muted d-block">Original Invoice Amount</small>
+                                        <strong class="fs-5 text-dark">₦<span x-text="money(originalInvoiceRaw)"></span></strong>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-2 bg-white rounded border">
+                                        <small class="text-muted d-block">Current Invoice Amount</small>
+                                        <strong class="fs-5 text-primary">₦<span x-text="money(computeNet())"></span></strong>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="p-2 bg-danger-subtle rounded border border-danger-subtle">
+                                        <small class="text-danger-emphasis d-block fw-semibold">Return Difference (Returned Value)</small>
+                                        <strong class="fs-5 text-danger">₦<span x-text="money(computeReturnDifference())"></span></strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Validation Error Alert inside Modal --}}
+                        <div x-show="returnModalError !== ''" x-cloak class="alert alert-danger py-2 px-3 mb-3">
+                            <i class="fa fa-exclamation-circle me-1"></i>
+                            <span x-text="returnModalError"></span>
+                        </div>
+
+                        {{-- 2. Capture Reason for Return --}}
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark mb-2">
+                                2. What is the reason for this invoice return? <span class="text-danger">*</span>
+                            </label>
+                            <div class="d-flex flex-column gap-2">
+                                <label class="p-2 border rounded d-flex align-items-center gap-2" style="cursor: pointer;" :class="{'border-primary bg-primary-subtle': returnForm.return_reason === 'Cashier / Sales Order made a mistake during invoicing.'}">
+                                    <input type="radio" class="form-check-input mt-0" name="return_reason_opt" value="Cashier / Sales Order made a mistake during invoicing." x-model="returnForm.return_reason" x-on:change="returnModalError = ''">
+                                    <span>1. Cashier / Sales Order made a mistake during invoicing.</span>
+                                </label>
+                                <label class="p-2 border rounded d-flex align-items-center gap-2" style="cursor: pointer;" :class="{'border-primary bg-primary-subtle': returnForm.return_reason === 'Customer returned item(s) on the invoice.'}">
+                                    <input type="radio" class="form-check-input mt-0" name="return_reason_opt" value="Customer returned item(s) on the invoice." x-model="returnForm.return_reason" x-on:change="returnModalError = ''">
+                                    <span>2. Customer returned item(s) on the invoice.</span>
+                                </label>
+                                <label class="p-2 border rounded d-flex align-items-center gap-2" style="cursor: pointer;" :class="{'border-primary bg-primary-subtle': returnForm.return_reason === 'Other reason.'}">
+                                    <input type="radio" class="form-check-input mt-0" name="return_reason_opt" value="Other reason." x-model="returnForm.return_reason" x-on:change="returnModalError = ''">
+                                    <span>3. Other reason.</span>
+                                </label>
+                            </div>
+
+                            <div class="mt-2" x-show="returnForm.return_reason === 'Other reason.'" x-cloak>
+                                <label class="form-label fw-semibold small text-dark mb-1">
+                                    Please provide an explanation for the return <span class="text-danger">*</span>
+                                </label>
+                                <textarea
+                                    class="form-control"
+                                    rows="2"
+                                    x-model="returnForm.other_reason_explanation"
+                                    x-on:input="returnModalError = ''"
+                                    placeholder="Describe the reason for returning this invoice..."
+                                ></textarea>
+                            </div>
+                        </div>
+
+                        {{-- 3. Customer Refund Confirmation --}}
+                        <div class="mb-4" x-show="returnForm.return_reason !== ''" x-cloak>
+                            <label class="form-label fw-bold text-dark mb-2">
+                                3. Will you be refunding the customer the invoice return difference (₦<span x-text="money(computeReturnDifference())"></span>)? <span class="text-danger">*</span>
+                            </label>
+                            <div class="d-flex gap-3">
+                                <label class="p-2 px-3 border rounded d-inline-flex align-items-center gap-2" style="cursor: pointer;" :class="{'border-success bg-success-subtle fw-semibold': returnForm.will_refund === 'yes'}">
+                                    <input type="radio" class="form-check-input mt-0" name="will_refund_opt" value="yes" x-model="returnForm.will_refund" x-on:change="returnModalError = ''">
+                                    <span>Yes — Refund Customer</span>
+                                </label>
+                                <label class="p-2 px-3 border rounded d-inline-flex align-items-center gap-2" style="cursor: pointer;" :class="{'border-secondary bg-light fw-semibold': returnForm.will_refund === 'no'}">
+                                    <input type="radio" class="form-check-input mt-0" name="will_refund_opt" value="no" x-model="returnForm.will_refund" x-on:change="returnForm.paymentmethod_id = ''; returnForm.bank_account_id = ''; returnModalError = ''">
+                                    <span>No — Do Not Refund</span>
+                                </label>
+                            </div>
+
+                            {{-- If YES: Refund Amount (read-only) + Payment Method (from Paymentmethod model: CASH / TRANSFER) --}}
+                            <div class="mt-3 p-3 border rounded bg-light" x-show="returnForm.will_refund === 'yes'" x-cloak>
+                                <div class="row g-3">
+                                    <div class="col-md-5">
+                                        <label class="form-label fw-semibold small mb-1">Refund Amount (Auto-Calculated)</label>
+                                        <input type="text" class="form-control fw-bold text-danger bg-white" :value="'₦' + money(computeReturnDifference())" readonly>
+                                        <small class="text-muted">Locked to calculated return difference.</small>
+                                    </div>
+                                    <div class="col-md-7">
+                                        <label class="form-label fw-semibold small mb-1">
+                                            Refund Payment Method <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="d-flex gap-2">
+                                            @foreach($this->refundPaymentMethods as $pm)
+                                                <label class="p-2 px-3 border rounded bg-white d-inline-flex align-items-center gap-2 flex-fill" style="cursor: pointer;" :class="{'border-primary bg-primary-subtle fw-semibold': String(returnForm.paymentmethod_id) === '{{ $pm['id'] }}'}">
+                                                    <input type="radio" class="form-check-input mt-0" name="refund_method_opt" value="{{ $pm['id'] }}" x-model="returnForm.paymentmethod_id" x-on:change="@if(!$pm['is_transfer']) returnForm.bank_account_id = ''; @endif returnModalError = ''">
+                                                    <span>
+                                                        <i class="fa {{ $pm['is_transfer'] ? 'fa-university' : 'fa-money-bill-wave' }} me-1"></i>
+                                                        {{ ucwords(strtolower($pm['name'])) }}
+                                                    </span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    {{-- If Transfer: Bank Account selection --}}
+                                    <div class="col-12" x-show="isTransferRefundSelected()" x-cloak>
+                                        <label class="form-label fw-semibold small mb-1">
+                                            Select Bank Account Used for Transfer Refund <span class="text-danger">*</span>
+                                        </label>
+                                        <select class="form-select" x-model="returnForm.bank_account_id" x-on:change="returnModalError = ''">
+                                            <option value="">-- Select Configured Bank Account --</option>
+                                            @foreach($this->bankAccounts as $ba)
+                                                <option value="{{ $ba['id'] }}">
+                                                    {{ $ba['name'] ?? 'Bank' }} &mdash; {{ $ba['account_name'] ?? '' }} ({{ $ba['account_number'] ?? '' }})
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- If NO: Not Refunded confirmation note --}}
+                            <div class="mt-2 p-2 px-3 border rounded bg-light small text-muted" x-show="returnForm.will_refund === 'no'" x-cloak>
+                                <i class="fa fa-info-circle me-1"></i>
+                                Refund status will be saved as <strong>Not Refunded</strong> (no refund payment outflow recorded).
+                            </div>
+                        </div>
+
+                        {{-- 4. Final Confirmation Summary --}}
+                        <div
+                            class="p-3 rounded border border-primary bg-primary-subtle"
+                            x-show="returnForm.return_reason !== '' && returnForm.will_refund !== ''"
+                            x-cloak
+                        >
+                            <h6 class="fw-bold text-primary mb-2">
+                                <i class="fa fa-check-circle me-1"></i> Final Return &amp; Refund Summary
+                            </h6>
+                            <ul class="small mb-0 ps-3 text-dark">
+                                <li>
+                                    <strong>Reason:</strong>
+                                    <span x-text="returnForm.return_reason"></span>
+                                    <span x-show="returnForm.return_reason === 'Other reason.' && returnForm.other_reason_explanation" x-text="' (' + returnForm.other_reason_explanation + ')'"></span>
+                                </li>
+                                <li>
+                                    <strong>Original Invoice:</strong> ₦<span x-text="money(originalInvoiceRaw)"></span>
+                                    &rarr;
+                                    <strong>New Invoice Total:</strong> ₦<span x-text="money(computeNet())"></span>
+                                    (<strong>Return Difference:</strong> ₦<span x-text="money(computeReturnDifference())"></span>)
+                                </li>
+                                <li>
+                                    <strong>Customer Refund:</strong>
+                                    <template x-if="returnForm.will_refund === 'yes'">
+                                        <span class="text-danger fw-bold">
+                                            Refunding ₦<span x-text="money(computeReturnDifference())"></span>
+                                            via <span x-text="selectedRefundMethodLabel() || '(select method)'"></span>
+                                            <span x-show="isTransferRefundSelected() && selectedBankAccountLabel()" x-text="' — ' + selectedBankAccountLabel()"></span>
+                                        </span>
+                                    </template>
+                                    <template x-if="returnForm.will_refund === 'no'">
+                                        <span class="fw-semibold">Not Refunded (₦0.00)</span>
+                                    </template>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer bg-light px-4 py-3 d-flex justify-content-between">
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            :disabled="returnModalSubmitting"
+                            x-on:click="closeReturnModal()"
+                        >
+                            Cancel / Modify Items
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-success px-4"
+                            :disabled="returnModalSubmitting"
+                            x-on:click="confirmAndSubmitReturn()"
+                        >
+                            <span x-show="returnModalSubmitting" x-cloak class="spinner-border spinner-border-sm me-2" role="status"></span>
+                            <i x-show="!returnModalSubmitting" class="fa fa-check me-1"></i>
+                            Confirm &amp; Process Invoice Return
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div wire:ignore.self class="modal fade" id="productOptionsModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -514,7 +757,41 @@
         function invoice() {
             return {
                 isLoading: false,
-                invoiceitems : @this.get('invoiceData.invoiceitems') ? JSON.parse( @this.get('invoiceData.invoiceitems')) : [],
+                isReturn: @js((bool) $this->isReturn),
+                originalInvoiceRaw: @js((float) $this->originalInvoiceAmount),
+                storedDiscountType: @js((string) ($this->invoice->discount_type ?? 'None')),
+                storedDiscountValue: @js((float) ($this->invoice->discount_value ?? 0)),
+                storedDiscountAmount: @js((float) ($this->invoice->discount_amount ?? 0)),
+                storedMembershipValue: @js((float) ($this->invoice->membership_discount_value ?? 0)),
+                currentInvoiceRaw: 0,
+                returnDifferenceRaw: 0,
+                returnDifferenceFormatted: '0.00',
+                bankAccountsList: @js($this->bankAccounts),
+                refundPaymentMethodsList: @js($this->refundPaymentMethods),
+                showReturnModal: false,
+                returnModalSubmitting: false,
+                returnModalError: '',
+                pendingReturnStatusId: '',
+                returnForm: {
+                    return_reason: '',
+                    other_reason_explanation: '',
+                    will_refund: '',
+                    paymentmethod_id: '',
+                    bank_account_id: '',
+                    idempotency_key: 'ret_{{ $this->invoice->id ?? 0 }}_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9),
+                },
+                invoiceitems : (@this.get('invoiceData.invoiceitems') ? JSON.parse(@this.get('invoiceData.invoiceitems')).reverse() : []).map(function(item) {
+                    const origQty = parseInt(item.max_return_qty ?? item.original_quantity ?? item.quantity);
+                    item.original_quantity = origQty;
+                    item.max_return_qty = origQty;
+                    item.original_selling_price = parseFloat(item.selling_price);
+                    // On an invoice return, ignore custom_price and lock selling_price to the original invoice price
+                    if (@js((bool) $this->isReturn)) {
+                        item.custom_price = [];
+                        item.default_selling_price = parseFloat(item.selling_price);
+                    }
+                    return item;
+                }),
                 searchString : "",
                 searchproduct : [],
                 searchCustomers : [],
@@ -537,11 +814,19 @@
                 searchCustomerString : "",
                 selectedProduct : {},
             selectProduct(product){
+                if (this.isReturn) {
+                    error("Cannot add new stock when returning an invoice.");
+                    return;
+                }
                 this.selectedProduct = product;
                 this.selling_price = product.selling_price;
                 this.addItem();
             },
             addItem() {
+                if (this.isReturn) {
+                    error("Cannot add new stock when returning an invoice.");
+                    return;
+                }
                 if ((this.invoiceitems.filter(e => e.stock_id === this.selectedProduct.id)).length > 0) {
                     error("Stock already exists");
                     return;
@@ -566,7 +851,7 @@
                     return;
                 }
 
-                this.invoiceitems.push({
+                this.invoiceitems.unshift({
                     stock_id : this.selectedProduct.id,
                     quantity : 1,
                     box : this.selectedProduct.box,
@@ -594,6 +879,9 @@
                 this.totalInvoice();
             },
             getPriceRange(quantity, defaultSellingPrice, customPrices, product) {
+                if (this.isReturn) {
+                    return parseFloat(product?.original_selling_price ?? product?.selling_price ?? defaultSellingPrice);
+                }
 
                 for (const priceRule of (customPrices ?? [])) {
                     const min = parseInt(priceRule.min_qty);
@@ -613,10 +901,21 @@
             },
             incrementQuantity(index){
                 let qty =  parseInt(this.invoiceitems[index]['quantity']) + 1;
-                if(qty <= this.invoiceitems[index]['av_qty'])
+                if (this.isReturn) {
+                    const maxReturnQty = parseInt(this.invoiceitems[index]['max_return_qty'] ?? this.invoiceitems[index]['original_quantity'] ?? this.invoiceitems[index]['quantity']);
+                    if (qty > maxReturnQty) {
+                        error("Cannot increase quantity above original invoice quantity (" + maxReturnQty + ")");
+                        return;
+                    }
+                }
+                if(this.isReturn || qty <= this.invoiceitems[index]['av_qty'])
                 {
-                    this.invoiceitems[index]['selling_price'] = this.getPriceRange(qty, this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price'], this.invoiceitems[index]);
-                    this.invoiceitems[index]['selling_price'] += this.getProductOptionsTotalAmount(this.invoiceitems[index]['selectedOptions']);
+                    if (this.isReturn) {
+                        this.invoiceitems[index]['selling_price'] = parseFloat(this.invoiceitems[index]['original_selling_price'] ?? this.invoiceitems[index]['selling_price']);
+                    } else {
+                        this.invoiceitems[index]['selling_price'] = this.getPriceRange(qty, this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price'], this.invoiceitems[index]);
+                        this.invoiceitems[index]['selling_price'] += this.getProductOptionsTotalAmount(this.invoiceitems[index]['selectedOptions']);
+                    }
 
                     this.invoiceitems[index]['quantity'] = qty;
 
@@ -629,17 +928,24 @@
                 }
             },
             typeQuantity(index){
-                if(parseInt(this.invoiceitems[index]['quantity']) > this.invoiceitems[index]['av_qty'])
+                if (this.isReturn) {
+                    const maxReturnQty = parseInt(this.invoiceitems[index]['max_return_qty'] ?? this.invoiceitems[index]['original_quantity'] ?? 1);
+                    if (parseInt(this.invoiceitems[index]['quantity']) > maxReturnQty) {
+                        error("Cannot increase quantity above original invoice quantity (" + maxReturnQty + ")");
+                        this.invoiceitems[index]['quantity'] = maxReturnQty;
+                    }
+                } else if(parseInt(this.invoiceitems[index]['quantity']) > this.invoiceitems[index]['av_qty'])
                 {
                     error("Total available quantity is "+this.invoiceitems[index]['av_qty']);
                     this.invoiceitems[index]['quantity'] = this.invoiceitems[index]['av_qty'];
                 }
 
-
-
-                this.invoiceitems[index]['selling_price'] = this.getPriceRange(this.invoiceitems[index]['quantity'], this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price'], this.invoiceitems[index]);
-                this.invoiceitems[index]['selling_price'] += this.getProductOptionsTotalAmount(this.invoiceitems[index]['selectedOptions']);
-
+                if (this.isReturn) {
+                    this.invoiceitems[index]['selling_price'] = parseFloat(this.invoiceitems[index]['original_selling_price'] ?? this.invoiceitems[index]['selling_price']);
+                } else {
+                    this.invoiceitems[index]['selling_price'] = this.getPriceRange(this.invoiceitems[index]['quantity'], this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price'], this.invoiceitems[index]);
+                    this.invoiceitems[index]['selling_price'] += this.getProductOptionsTotalAmount(this.invoiceitems[index]['selectedOptions']);
+                }
 
                 this.invoiceitems[index]['total_cost_price'] = this.invoiceitems[index]['cost_price'] * this.invoiceitems[index]['quantity'];
                 this.invoiceitems[index]['total_selling_price'] = this.invoiceitems[index]['selling_price'] * this.invoiceitems[index]['quantity'];
@@ -651,8 +957,12 @@
                 let qty =  parseInt(this.invoiceitems[index]['quantity']) - 1;
                 if(qty > 0)
                 {
-                    this.invoiceitems[index]['selling_price'] = this.getPriceRange(qty, this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price'], this.invoiceitems[index]);
-                    this.invoiceitems[index]['selling_price'] += this.getProductOptionsTotalAmount(this.invoiceitems[index]['selectedOptions']);
+                    if (this.isReturn) {
+                        this.invoiceitems[index]['selling_price'] = parseFloat(this.invoiceitems[index]['original_selling_price'] ?? this.invoiceitems[index]['selling_price']);
+                    } else {
+                        this.invoiceitems[index]['selling_price'] = this.getPriceRange(qty, this.invoiceitems[index]['default_selling_price'],  this.invoiceitems[index]['custom_price'], this.invoiceitems[index]);
+                        this.invoiceitems[index]['selling_price'] += this.getProductOptionsTotalAmount(this.invoiceitems[index]['selectedOptions']);
+                    }
 
                     this.invoiceitems[index]['quantity'] = qty;
                     this.invoiceitems[index]['total_cost_price'] = this.invoiceitems[index]['cost_price'] * this.invoiceitems[index]['quantity'];
@@ -715,31 +1025,137 @@
                     }
                 }
             },
+            // Pure calculators (no writes) so every on-screen amount re-evaluates automatically
+            // whenever any item quantity/price changes (plus, minus, typing or delete)
+            computeSubTotal() {
+                return (this.invoiceitems || []).reduce((result, item) => {
+                    return result + ((parseFloat(item.selling_price) || 0) * (parseFloat(item.quantity) || 0));
+                }, 0);
+            },
+            computeDiscounts(sub) {
+                if (this.isReturn) {
+                    // Keep the discount terms the invoice was originally issued with
+                    let discount = 0;
+                    if (this.storedDiscountType === 'Percentage' && this.storedDiscountValue > 0) {
+                        discount = Math.round(Math.abs((this.storedDiscountValue / 100) * sub));
+                    } else if (this.storedDiscountAmount > 0) {
+                        discount = this.storedDiscountAmount;
+                    }
+                    const membership = this.storedMembershipValue > 0
+                        ? Math.abs((this.storedMembershipValue / 100) * sub)
+                        : 0;
+                    return {discount: discount, membership: membership};
+                }
+
+                const discountValue = parseFloat(this.discount_value) || 0;
+                let discount = 0;
+                if (this.discount_type === 'Percentage') {
+                    discount = Math.round(Math.abs((discountValue / 100) * sub));
+                } else if (this.discount_type === 'Fixed') {
+                    discount = discountValue;
+                }
+                let membership = 0;
+                const membershipValue = parseFloat(this.membership_discount_value) || 0;
+                if (this.department === 'retail' && membershipValue > 0) {
+                    membership = Math.abs((membershipValue / 100) * sub);
+                }
+                return {discount: discount, membership: membership};
+            },
+            computeNet() {
+                const sub = this.computeSubTotal();
+                const d = this.computeDiscounts(sub);
+                return Math.max(0, sub - (d.discount + d.membership));
+            },
+            computeReturnDifference() {
+                return Math.max(0, (parseFloat(this.originalInvoiceRaw) || 0) - this.computeNet());
+            },
             totalInvoice()
             {
                 let sub_total = this.invoiceitems.length > 0 ? this.invoiceitems.reduce((result, item) => {
                     return result + (item.selling_price * item.quantity);
                 }, 0) : 0;
 
-                if (this.discount_type === 'Percentage') {
-                    this.discount_amount = Math.round(Math.abs(((this.discount_value / 100) * sub_total)));
-                } else if (this.discount_type === 'Fixed') {
-                    this.discount_amount = this.discount_value;
-                } else {
-                    this.discount_amount = 0;
-                }
-
-                if (this.department === 'retail' && this.membership_discount_value > 0) {
-                    this.membership_discount = Math.abs(((this.membership_discount_value / 100) * sub_total));
-                } else {
-                    this.membership_discount = 0;
-                }
-
+                const d = this.computeDiscounts(sub_total);
+                this.discount_amount = d.discount;
+                this.membership_discount = d.membership;
                 this.subTotal = this.money(sub_total);
-                this.netTotal = this.money(sub_total - (this.discount_amount + this.membership_discount));
+                const netRaw = Math.max(0, sub_total - (this.discount_amount + this.membership_discount));
+                this.currentInvoiceRaw = netRaw;
+                this.netTotal = this.money(netRaw);
+                this.returnDifferenceRaw = Math.max(0, (parseFloat(this.originalInvoiceRaw) || 0) - netRaw);
+                console.log(sub_total)
+                this.returnDifferenceFormatted = this.money(this.returnDifferenceRaw);
                 return true;
             },
+            selectedRefundMethodObj() {
+                if (!this.returnForm.paymentmethod_id) return null;
+                return (this.refundPaymentMethodsList || []).find(pm => String(pm.id) === String(this.returnForm.paymentmethod_id)) || null;
+            },
+            selectedRefundMethodLabel() {
+                const pm = this.selectedRefundMethodObj();
+                return pm ? pm.name : '';
+            },
+            isTransferRefundSelected() {
+                const pm = this.selectedRefundMethodObj();
+                return Boolean(pm && pm.is_transfer);
+            },
+            selectedBankAccountLabel() {
+                if (!this.returnForm.bank_account_id) return '';
+                const found = (this.bankAccountsList || []).find(b => String(b.id) === String(this.returnForm.bank_account_id));
+                if (!found) return '';
+                return (found.name || 'Bank') + ' - ' + (found.account_name || '') + ' (' + (found.account_number || '') + ')';
+            },
+            openReturnModal(status_id) {
+                this.totalInvoice();
+                this.pendingReturnStatusId = status_id;
+                this.returnModalError = '';
+                this.showReturnModal = true;
+            },
+            closeReturnModal() {
+                this.showReturnModal = false;
+                this.returnModalError = '';
+            },
+            confirmAndSubmitReturn() {
+                this.returnModalError = '';
+
+                if (!this.returnForm.return_reason) {
+                    this.returnModalError = 'Please select the reason for this invoice return.';
+                    return;
+                }
+
+                if (this.returnForm.return_reason === 'Other reason.' && !(this.returnForm.other_reason_explanation || '').trim()) {
+                    this.returnModalError = 'Please provide an explanation for selecting Other reason.';
+                    return;
+                }
+
+                if (!this.returnForm.will_refund) {
+                    this.returnModalError = 'Please select whether you will be refunding the customer.';
+                    return;
+                }
+
+                if (this.returnForm.will_refund === 'yes') {
+                    if (!(this.computeReturnDifference() > 0)) {
+                        this.returnModalError = 'The return difference is ₦0.00. Reduce item quantity or choose "No — Do Not Refund".';
+                        return;
+                    }
+                    if (!this.returnForm.paymentmethod_id) {
+                        this.returnModalError = 'Please select the refund payment method (Cash or Transfer).';
+                        return;
+                    }
+                    if (this.isTransferRefundSelected() && !this.returnForm.bank_account_id) {
+                        this.returnModalError = 'Please select the bank account used for the Transfer refund.';
+                        return;
+                    }
+                }
+
+                this.returnModalSubmitting = true;
+                this.generateInvoice(this.pendingReturnStatusId, true);
+            },
             async searchProduct() {
+                if (this.isReturn) {
+                    this.searchproduct = [];
+                    return;
+                }
                 if (this.searchString !== "" && this.searchString.length > 3) {
                     this.searchproduct = await (await fetch('{{ route('findstock') }}?query=' + this.searchString+"&column="+this.department
                     )).
@@ -825,9 +1241,10 @@
                 this.searchCustomerString = "";
                 this.searchCustomers = [];
             },
-            generateInvoice(status_id) {
+            generateInvoice(status_id, confirmedFromReturnModal = false) {
                 const hasZero = this.invoiceitems.some(item => item.quantity <= 0);
                 if(hasZero) {
+                    this.returnModalSubmitting = false;
                     error("One or more items in your cart have a quantity of zero or less. Please review your input and try again")
                     return ;
                 }
@@ -835,6 +1252,7 @@
                 const isStockExchange = {{ $canStockExchange ? 'true' : 'false' }} && (this.invoice_type === 'stock_exchange' || this.is_stock_exchange === true);
                 if (isStockExchange) {
                     if (!this.supplier_id || this.supplier_id === "") {
+                        this.returnModalSubmitting = false;
                         error("Please select a Supplier for this Stock Exchange Invoice.");
                         return;
                     }
@@ -843,6 +1261,7 @@
                         if( $this->department != "4") {
                     @endphp
                     if(this.customer_id.firstname === "") {
+                        this.returnModalSubmitting = false;
                         error("You have not select a customer for this invoice,  please select a customer by searching!...")
                         return ;
                     }
@@ -853,9 +1272,17 @@
 
                 if(this.invoiceitems.length === 0)
                 {
+                    this.returnModalSubmitting = false;
                     error("Invoice items list is empty, please add at least one product to generate invoice")
                     return ;
                 }
+
+                // In Return Invoice Mode, require the Return Reason & Customer Refund Confirmation step first
+                if (this.isReturn && !confirmedFromReturnModal) {
+                    this.openReturnModal(status_id);
+                    return;
+                }
+
                 @php
                     if( $this->department != "4") {
                 @endphp
@@ -885,20 +1312,41 @@
                 @this.set('invoiceData.membership_discount_value', this.membership_discount_value, true);
                 @this.set('invoiceData.membership_discount', this.membership_discount, true);
 
+                if (this.isReturn) {
+                    @this.set('invoiceData.return_info', {
+                        return_reason: this.returnForm.return_reason,
+                        other_reason_explanation: this.returnForm.other_reason_explanation,
+                        will_refund: this.returnForm.will_refund,
+                        paymentmethod_id: this.returnForm.will_refund === 'yes' ? this.returnForm.paymentmethod_id : null,
+                        bank_account_id: (this.returnForm.will_refund === 'yes' && this.isTransferRefundSelected()) ? this.returnForm.bank_account_id : null,
+                        idempotency_key: this.returnForm.idempotency_key,
+                    }, true);
+                }
+
                 this.errors = {};
                 let obj = this;
                 @this.generateInvoice().then(function(resp){
+                    obj.returnModalSubmitting = false;
 
-                    if(resp.status !== true)
+                    if(!resp || resp.status !== true)
                     {
-                        obj.errors = resp.errors;
-
+                        obj.errors = (resp && resp.errors) ? resp.errors : {};
+                        const returnErrKeys = ['return_reason', 'other_reason_explanation', 'will_refund', 'refund_payment_method', 'bank_account_id', 'refund_amount', 'invoice'];
+                        for (const k of returnErrKeys) {
+                            if (obj.errors[k]) {
+                                obj.returnModalError = Array.isArray(obj.errors[k]) ? obj.errors[k][0] : obj.errors[k];
+                                break;
+                            }
+                        }
                     }else {
+                        obj.showReturnModal = false;
                         setTimeout(() => {
                             window.location.href = '{{ route('invoiceandsales.create') }}';
                         }, 1000);
                     }
 
+                }).catch(function() {
+                    obj.returnModalSubmitting = false;
                 });
 
             },
@@ -911,6 +1359,10 @@
                 }
             },
             async requestProductWithBarcode(barcode) {
+                if (this.isReturn) {
+                    error("Cannot add new stock or increase quantity when returning an invoice.");
+                    return;
+                }
                 if (this.isLoading) return;
                 this.isLoading = true;
                 try {
@@ -999,6 +1451,8 @@
             },
             logProductNotExist() {
                 const input = document.getElementById('searchText');
+                // The product search box is not rendered in Return Invoice mode
+                if (!input) return;
                 let currentObj = this;
                 input.addEventListener('keydown', function(event) {
                     const cleanBarCode = $(input).val().trim();
@@ -1073,9 +1527,10 @@
 
                 parents.forEach(parentItem => {
 
-                    if (!parentItem.dependent_products) return;
+                    if (!Array.isArray(parentItem.dependent_products)) return;
 
                     parentItem.dependent_products.forEach(dep => {
+                        if (!dep || !Array.isArray(dep.dependent_info) || !dep.dependent_info[0]) return;
                         const info = dep.dependent_info[0];
 
                         const qty = Math.floor(parentItem.quantity / info.parent) * info.child;

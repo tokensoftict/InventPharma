@@ -23,7 +23,7 @@ trait PaymentComponentTrait
 
     public $bankAccounts;
 
-    public string $description;
+    public string $description = "";
 
     public $bank_account_id;
 
@@ -334,7 +334,9 @@ trait PaymentComponentTrait
 
     private function mountProperties() : void
     {
-        $this->payments = paymentMethods(true);
+        $this->payments = paymentMethods(true)->filter(function($item){
+            return $item->id != 10;
+        });
         $this->bankAccounts = bank_accounts(true);
         $this->select2key  =mt_rand();
         $this->change = money(0);
@@ -402,6 +404,7 @@ trait PaymentComponentTrait
         $this->customer_id = $data['customer_id'];
         $this->customer = Customer::find($data['customer_id']);
         $this->amount = $data['amount'];
+        $this->description = (string) ($data['description'] ?? "");
 
         $lastLog = OpayPaymentLog::where('customer_id', $this->customer_id)
             ->whereNull('invoice_id')

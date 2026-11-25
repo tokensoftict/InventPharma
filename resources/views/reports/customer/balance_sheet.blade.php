@@ -82,8 +82,12 @@
         <thead>
         <tr>
             <th>#</th>
+            <th>Invoice</th>
             <th>Credit</th>
             <th>Payment</th>
+            <th>Mode of payment</th>
+            <th>Description</th>
+            <th>Return or refund</th>
             <th>Date</th>
             <th>Balance</th>
         </tr>
@@ -91,14 +95,25 @@
         <tbody>
         @foreach($histories as $history)
             @php
-                $opening =  ($opening+$history->amount)
+                $opening = ($opening + $history->amount);
+                $linkedInvoice = $history->isCreditRecord() ? $history->resolveInvoice() : null;
             @endphp
             <tr>
                 <td>{{ $loop->iteration }}</td>
-                <td>{{ $history->amount < 0  ? number_format($history->amount,2) : "" }}</td>
-                <td>{{ $history->amount > 0  ? number_format($history->amount,2) : "" }}</td>
+                <td>
+                    @if($linkedInvoice && userCanView('invoiceandsales.view'))
+                        <a href="{{ route('invoiceandsales.view', $linkedInvoice->id) }}" target="_blank">{{ $linkedInvoice->invoice_number }}</a>
+                    @else
+                        {{ $history->invoiceNumberLabel() }}
+                    @endif
+                </td>
+                <td>{{ $history->isCreditRecord() ? number_format($history->amount, 2) : "" }}</td>
+                <td>{{ $history->isPaymentRecord() ? number_format($history->amount, 2) : "" }}</td>
+                <td>{{ $history->modeOfPaymentLabel() }}</td>
+                <td>{{ $history->descriptionLabel() }}</td>
+                <td>{{ $history->returnOrRefundLabel() }}</td>
                 <td>{{ eng_str_date($history->payment_date) }}</td>
-                <td>{{ number_format(($opening),2) }}</td>
+                <td>{{ number_format(($opening), 2) }}</td>
             </tr>
         @endforeach
         </tbody>
@@ -107,11 +122,13 @@
             <td></td>
             <td></td>
             <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
             <th>Total Balance</th>
-            <th>{{ number_format($opening,2) }}</th>
+            <th>{{ number_format($opening, 2) }}</th>
         </tr>
-        </tfoot>
-        <tfoot>
         </tfoot>
     </table>
     </div>

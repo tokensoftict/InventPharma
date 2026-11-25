@@ -342,6 +342,7 @@ class InvoiceController extends Controller
         $data['title'] = 'Return ';
         $data['subtitle'] = 'Return Already Generated ';
         $data['invoice'] = $invoice;
+        $data['isReturn'] = true;
         $data['department'] = department_by_quantity_column($invoice->in_department)->id;
         logActivity($invoice->id, $invoice->invoice_number,'Invoice return page was viewed :'.status_name($invoice->status_id));
 

@@ -1526,4 +1526,98 @@ class StockForStockPaymentTest extends TestCase
 
         $this->assertTrue(userCanView('invoiceandsales.createStockExchangeInvoice'));
     }
+
+    public function test_return_invoice_blocks_adding_new_stock_and_increasing_quantity(): void
+    {
+        $paidInvoice = Invoice::create([
+            'invoice_number' => 'INV-RET-001',
+            'customer_id' => $this->customer->id,
+            'department' => 'wholesales',
+            'in_department' => 'wholesales',
+            'status_id' => status('Paid'),
+            'sub_total' => 50000,
+            'total_amount_paid' => 50000,
+            'invoice_date' => '2026-11-25',
+            'sales_time' => '12:00:00',
+            'created_by' => $this->user->id,
+            'last_updated_by' => $this->user->id,
+        ]);
+
+        Invoiceitem::create([
+            'invoice_id' => $paidInvoice->id,
+            'stock_id' => $this->stock->id,
+            'quantity' => 5,
+            'customer_id' => $this->customer->id,
+            'status_id' => status('Paid'),
+            'added_by' => $this->user->id,
+            'invoice_date' => '2026-11-25',
+            'sales_time' => '12:00:00',
+            'cost_price' => 8000,
+            'selling_price' => 10000,
+            'profit' => 2000,
+            'department' => 'wholesales',
+        ]);
+
+        $newStock = Stock::create([
+            'name' => 'Extra Drug 250mg',
+            'whole_price' => 5000,
+            'bulk_price' => 4800,
+            'retail_price' => 5500,
+            'cost_price' => 4000,
+            'wholesales' => 50,
+            'quantity' => 50,
+            'status' => 1,
+        ]);
+
+        $repo = new InvoiceRepository();
+
+        // 1. Attempting to increase quantity from 5 to 6 on a Paid invoice is rejected
+        $increaseResult = $repo->updateInvoice($paidInvoice->fresh(), [
+            'department' => 'wholesales',
+            'in_department' => 'wholesales',
+            'customer_id' => $this->customer->id,
+            'status_id' => status('Draft'),
+            'invoiceitems' => json_encode([[
+                'stock_id' => $this->stock->id,
+                'name' => $this->stock->name,
+                'quantity' => 6,
+                'selling_price' => 10000,
+                'cost_price' => 8000,
+            ]]),
+        ]);
+
+        $this->assertIsArray($increaseResult);
+        $this->assertArrayHasKey($this->stock->id, $increaseResult);
+        $this->assertStringContainsString('Cannot increase quantity', $increaseResult[$this->stock->id]);
+        $this->assertEquals(5, $paidInvoice->fresh()->invoiceitems->first()->quantity);
+
+        // 2. Attempting to add a new stock not on the original invoice is rejected
+        $addStockResult = $repo->updateInvoice($paidInvoice->fresh(), [
+            'department' => 'wholesales',
+            'in_department' => 'wholesales',
+            'customer_id' => $this->customer->id,
+            'status_id' => status('Draft'),
+            'invoiceitems' => json_encode([
+                [
+                    'stock_id' => $this->stock->id,
+                    'name' => $this->stock->name,
+                    'quantity' => 5,
+                    'selling_price' => 10000,
+                    'cost_price' => 8000,
+                ],
+                [
+                    'stock_id' => $newStock->id,
+                    'name' => $newStock->name,
+                    'quantity' => 1,
+                    'selling_price' => 5000,
+                    'cost_price' => 4000,
+                ],
+            ]),
+        ]);
+
+        $this->assertIsArray($addStockResult);
+        $this->assertArrayHasKey($newStock->id, $addStockResult);
+        $this->assertStringContainsString('Cannot add new stock', $addStockResult[$newStock->id]);
+        $this->assertEquals(1, $paidInvoice->fresh()->invoiceitems()->count());
+    }
 }

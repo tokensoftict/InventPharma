@@ -76,85 +76,85 @@ class Invoice extends Model
 {
     use ModelFilterTraits;
 
-	protected $table = 'invoices';
+    protected $table = 'invoices';
 
 
-	protected $casts = [
-		'customer_id' => 'int',
+    protected $casts = [
+        'customer_id' => 'int',
         'is_stock_exchange' => 'bool',
         'invoice_type' => 'string',
         'supplier_id' => 'int',
         'prescriber_id' => 'int',
-		'payment_id' => 'int',
-		'discount_amount' => 'float',
-		'discount_value' => 'float',
-		'status_id' => 'int',
-		'sub_total' => 'float',
-		'total_amount_paid' => 'float',
+        'payment_id' => 'int',
+        'discount_amount' => 'float',
+        'discount_value' => 'float',
+        'status_id' => 'int',
+        'sub_total' => 'float',
+        'total_amount_paid' => 'float',
         'exchange_amount_utilised' => 'float',
-		'total_profit' => 'float',
-		'total_cost' => 'float',
-		'vat' => 'float',
-		'vat_amount' => 'float',
-		'created_by' => 'int',
-		'last_updated_by' => 'int',
-		'voided_by' => 'int',
-		'invoice_date' => 'datetime',
+        'total_profit' => 'float',
+        'total_cost' => 'float',
+        'vat' => 'float',
+        'vat_amount' => 'float',
+        'created_by' => 'int',
+        'last_updated_by' => 'int',
+        'voided_by' => 'int',
+        'invoice_date' => 'datetime',
         'scan_date' => 'datetime',
-		'sales_time' => 'datetime',
+        'sales_time' => 'datetime',
         'scan_time' => 'datetime',
-		'date_voided' => 'datetime',
-		'void_time' => 'datetime',
-		'picked_by' => 'int',
-		'packed_by' => 'int',
-		'checked_by' => 'int',
-		'carton_no' => 'int',
-        'scan_user_id' =>'int',
-		'online_order_status' => 'bool',
-		'online_order_debit' => 'int',
-		'onliner_order_id' => 'int',
-		'before_customer_id' => 'int',
+        'date_voided' => 'datetime',
+        'void_time' => 'datetime',
+        'picked_by' => 'int',
+        'packed_by' => 'int',
+        'checked_by' => 'int',
+        'carton_no' => 'int',
+        'scan_user_id' => 'int',
+        'online_order_status' => 'bool',
+        'online_order_debit' => 'int',
+        'onliner_order_id' => 'int',
+        'before_customer_id' => 'int',
         'retail_printed' => 'bool',
         'membership_discount' => 'float',
         'membership_discount_value' => 'float',
-	];
+    ];
 
-	protected $fillable = [
-		'invoice_number',
-		'customer_id',
+    protected $fillable = [
+        'invoice_number',
+        'customer_id',
         'is_stock_exchange',
         'invoice_type',
         'supplier_id',
-		'payment_id',
-		'department',
-		'in_department',
-		'discount_amount',
-		'discount_type',
-		'discount_value',
-		'status_id',
-		'sub_total',
-		'total_amount_paid',
+        'payment_id',
+        'department',
+        'in_department',
+        'discount_amount',
+        'discount_type',
+        'discount_value',
+        'status_id',
+        'sub_total',
+        'total_amount_paid',
         'exchange_amount_utilised',
-		'total_profit',
-		'total_cost',
-		'vat',
-		'vat_amount',
-		'created_by',
-		'last_updated_by',
-		'voided_by',
-		'invoice_date',
-		'sales_time',
-		'void_reason',
-		'date_voided',
-		'void_time',
-		'picked_by',
-		'packed_by',
-		'checked_by',
-		'carton_no',
-		'online_order_status',
-		'online_order_debit',
-		'onliner_order_id',
-		'before_customer_id',
+        'total_profit',
+        'total_cost',
+        'vat',
+        'vat_amount',
+        'created_by',
+        'last_updated_by',
+        'voided_by',
+        'invoice_date',
+        'sales_time',
+        'void_reason',
+        'date_voided',
+        'void_time',
+        'picked_by',
+        'packed_by',
+        'checked_by',
+        'carton_no',
+        'online_order_status',
+        'online_order_debit',
+        'onliner_order_id',
+        'before_customer_id',
         'retail_printed',
         'scan_user_id',
         'scan_date',
@@ -163,7 +163,7 @@ class Invoice extends Model
         'prescriber_payment_status',
         'membership_discount',
         'membership_discount_value'
-	];
+    ];
 
     protected static function booted(): void
     {
@@ -186,7 +186,7 @@ class Invoice extends Model
 
     public function payment()
     {
-        return $this->morphOne(Payment::class,'invoice');
+        return $this->morphOne(Payment::class, 'invoice');
     }
 
     public function creditlogs()
@@ -196,36 +196,36 @@ class Invoice extends Model
 
     public function paymentmethoditems()
     {
-        return $this->morphMany(Paymentmethoditem::class,'invoice');
+        return $this->morphMany(Paymentmethoditem::class, 'invoice');
     }
 
-    public function create_by() : BelongsTo
+    public function create_by(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function last_updated() : BelongsTo
+    public function last_updated(): BelongsTo
     {
         return $this->belongsTo(User::class, 'last_updated_by');
     }
 
-    public function picked() : BelongsTo
+    public function picked(): BelongsTo
     {
         return $this->belongsTo(User::class, 'picked_by');
     }
 
-    public function checked() : BelongsTo
+    public function checked(): BelongsTo
     {
         return $this->belongsTo(User::class, 'checked_by');
     }
 
-    public function packed() : BelongsTo
+    public function packed(): BelongsTo
     {
         return $this->belongsTo(User::class, 'packed_by');
     }
 
 
-    public function scan_by() : BelongsTo
+    public function scan_by(): BelongsTo
     {
         return $this->belongsTo(User::class, 'scan_user_id');
     }
@@ -235,45 +235,45 @@ class Invoice extends Model
         return $this->belongsTo(User::class, 'voided_by');
     }
 
-	public function customer()
-	{
-		return $this->belongsTo(Customer::class);
-	}
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class);
+    }
 
     public function prescriber()
-	{
-		return $this->belongsTo(Prescriber::class);
-	}
+    {
+        return $this->belongsTo(Prescriber::class);
+    }
 
-	public function status()
-	{
-		return $this->belongsTo(Status::class);
-	}
+    public function status()
+    {
+        return $this->belongsTo(Status::class);
+    }
 
-	public function customer_ledgers()
-	{
-		return $this->hasMany(CustomerLedger::class);
-	}
+    public function customer_ledgers()
+    {
+        return $this->hasMany(CustomerLedger::class);
+    }
 
-	public function invoiceactivitylogs()
-	{
-		return $this->hasMany(Invoiceactivitylog::class);
-	}
+    public function invoiceactivitylogs()
+    {
+        return $this->hasMany(Invoiceactivitylog::class);
+    }
 
-	public function invoiceitembatches()
-	{
-		return $this->hasMany(Invoiceitembatch::class);
-	}
+    public function invoiceitembatches()
+    {
+        return $this->hasMany(Invoiceitembatch::class);
+    }
 
-	public function invoiceitems()
-	{
-		return $this->hasMany(Invoiceitem::class);
-	}
+    public function invoiceitems()
+    {
+        return $this->hasMany(Invoiceitem::class);
+    }
 
-	public function onlineordertotals()
-	{
-		return $this->hasMany(Onlineordertotal::class);
-	}
+    public function onlineordertotals()
+    {
+        return $this->hasMany(Onlineordertotal::class);
+    }
 
     public function invoiceprinthistories()
     {
@@ -285,12 +285,22 @@ class Invoice extends Model
         return $this->hasMany(OpayPaymentLog::class);
     }
 
+    public function invoiceReturns()
+    {
+        return $this->hasMany(InvoiceReturn::class, 'invoice_id')->orderByDesc('id');
+    }
+
+    public function latestInvoiceReturn()
+    {
+        return $this->hasOne(InvoiceReturn::class, 'invoice_id')->latestOfMany();
+    }
+
     public function waitingCustomer()
     {
         return $this->hasOne(WaitingCustomer::class, );
     }
 
-    public function supplier() : BelongsTo
+    public function supplier(): BelongsTo
     {
         return $this->belongsTo(Supplier::class, 'supplier_id');
     }
@@ -355,8 +365,10 @@ class Invoice extends Model
             return round((float) ($this->exchange_amount_utilised ?? 0), 5);
         }
 
-        if (\Illuminate\Support\Facades\Schema::hasTable('supplier_credit_payment_histories')
-            && \Illuminate\Support\Facades\Schema::hasColumn('supplier_credit_payment_histories', 'invoice_id')) {
+        if (
+            \Illuminate\Support\Facades\Schema::hasTable('supplier_credit_payment_histories')
+            && \Illuminate\Support\Facades\Schema::hasColumn('supplier_credit_payment_histories', 'invoice_id')
+        ) {
             $allocations = $this->stockExchangeAllocations()->get();
 
             $activeTotal = $allocations->filter(function ($item) {
@@ -471,11 +483,11 @@ class Invoice extends Model
 
         $query->where(function ($q) {
             $q->where('is_stock_exchange', true)
-              ->orWhere('invoice_type', 'stock_exchange');
+                ->orWhere('invoice_type', 'stock_exchange');
         })
-        ->whereNotNull('supplier_id')
-        ->whereNull('voided_by')
-        ->whereNull('date_voided');
+            ->whereNotNull('supplier_id')
+            ->whereNull('voided_by')
+            ->whereNull('date_voided');
 
         if (!empty($invalidStatusIds)) {
             $query->whereNotIn('status_id', $invalidStatusIds);
@@ -525,7 +537,7 @@ class Invoice extends Model
                 'invoice_date' => $this->invoice_date->toDateString(),
                 'total' => $this->total_amount_paid,
                 'created_by' => is_null($this->onliner_order_id) ? $this->created_by : $this->payment->user_id, // use payment use for online invoice
-                'payment_methods' => $this->paymentmethoditems->map(function($item) {
+                'payment_methods' => $this->paymentmethoditems->map(function ($item) {
                     return $item->paymentmethod->name ?? 'Unknown';
                 })->unique()->implode(', '),
                 'comment' => '',

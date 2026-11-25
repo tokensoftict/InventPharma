@@ -513,6 +513,78 @@
                     </div>
                 </div>
             </div>
+
+            @php
+                $invoiceReturnsList = \Illuminate\Support\Facades\Schema::hasTable('invoice_returns')
+                    ? $this->invoice->invoiceReturns()->with(['processor', 'paymentmethod', 'bankAccount.bank'])->get()
+                    : collect();
+            @endphp
+            @if($invoiceReturnsList->isNotEmpty())
+                <div class="card border-warning mt-3 mb-2">
+                    <div class="card-header bg-warning-subtle py-2">
+                        <h6 class="mb-0 text-dark fw-bold">
+                            <i class="fa fa-undo me-1"></i> Invoice Return &amp; Customer Refund History
+                        </h6>
+                    </div>
+                    <div class="card-body p-2">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered mb-0">
+                                <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Processed At</th>
+                                    <th>By</th>
+                                    <th class="text-end">Original Amount</th>
+                                    <th class="text-end">New Amount</th>
+                                    <th class="text-end">Return Diff</th>
+                                    <th>Reason</th>
+                                    <th>Refund Status</th>
+                                    <th class="text-end">Refunded</th>
+                                    <th>Method / Bank Account</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach($invoiceReturnsList as $ret)
+                                    <tr>
+                                        <td>{{ $ret->return_sequence }}</td>
+                                        <td class="text-nowrap">{{ $ret->processed_at ? $ret->processed_at->format('d M Y, h:i A') : eng_str_date($ret->return_date) }}</td>
+                                        <td>{{ $ret->processor->name ?? 'N/A' }}</td>
+                                        <td class="text-end">₦{{ money($ret->original_invoice_amount) }}</td>
+                                        <td class="text-end">₦{{ money($ret->current_invoice_amount) }}</td>
+                                        <td class="text-end text-danger fw-semibold">₦{{ money($ret->return_difference) }}</td>
+                                        <td>
+                                            {{ $ret->return_reason }}
+                                            @if($ret->other_reason_explanation)
+                                                <small class="d-block text-muted">{{ $ret->other_reason_explanation }}</small>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ $ret->is_customer_refunded ? 'bg-danger' : 'bg-secondary' }}">
+                                                {{ $ret->refund_status }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end fw-bold">₦{{ money($ret->refund_amount) }}</td>
+                                        <td>
+                                            @if($ret->is_customer_refunded)
+                                                <strong>{{ $ret->paymentmethod->name ?? $ret->refund_payment_method }}</strong>
+                                                @if($ret->bankAccount)
+                                                    <small class="d-block text-muted">
+                                                        {{ $ret->bankAccount->bank->name ?? '' }} &mdash; {{ $ret->bankAccount->account_name }} ({{ $ret->bankAccount->account_number }})
+                                                    </small>
+                                                @endif
+                                            @else
+                                                &mdash;
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <br/>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#invoice_logs">View Invoice Log(s)</button>
 

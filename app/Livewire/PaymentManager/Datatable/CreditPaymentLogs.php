@@ -25,7 +25,14 @@ class CreditPaymentLogs extends ExportDataTableComponent
 
     public function builder(): Builder
     {
-        return  Creditpaymentlog::query()->select('*')->filterdata($this->filters)->where('creditpaymentlogs.amount', '>', 0);
+        return Creditpaymentlog::query()
+            ->select('*')
+            ->filterdata($this->filters)
+            ->where('creditpaymentlogs.amount', '>', 0)
+            ->where(function ($q) {
+                $q->whereNull('creditpaymentlogs.invoicelog_type')
+                  ->orWhere('creditpaymentlogs.invoicelog_type', '!=', \App\Models\InvoiceReturn::class);
+            });
     }
 
 

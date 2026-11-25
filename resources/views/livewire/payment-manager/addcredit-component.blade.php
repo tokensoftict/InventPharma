@@ -240,6 +240,11 @@
                         </div>
                     @endif
 
+                    <div class="mt-3">
+                        <label class="pay-label fw-semibold text-secondary mb-1">Description</label>
+                        <textarea class="form-control" rows="2" wire:model="description" placeholder="Enter payment description or remark (optional)..."></textarea>
+                    </div>
+
                     <button id="savePaymentBtn" wire:click="saveCreditPayment" wire:target="saveCreditPayment" wire:loading.attr="disabled"
                             {{ $this->btnEnabled === true ? '' : 'disabled="disabled"' }}
                             class="btn pay-save w-100 mt-4">

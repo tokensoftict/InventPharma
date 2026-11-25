@@ -16,6 +16,7 @@ use App\Models\StockOptionValue;
 use App\Repositories\InvoiceRepository;
 use App\Traits\SimpleComponentTrait;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Livewire\Component;
 use App\Traits\LivewireAlert;
 use Masmerise\Toaster\Toastable;
@@ -40,6 +41,9 @@ class InvoiceFormComponent extends Component
     public $cities;
     public $memberGroups;
     public $suppliers = [];
+    public array $bankAccounts = [];
+    public array $refundPaymentMethods = [];
+    public float $originalInvoiceAmount = 0.0;
     private InvoiceRepository $invoiceRepository;
     public string $firstname = "";
     public string $lastname = "";
@@ -56,14 +60,38 @@ class InvoiceFormComponent extends Component
     public array $selectedProductInfo = ["selectedOptions"];
 
     public string $invoice_number = "";
+    public bool $isReturn = false;
+
     public function mount()
     {
         $this->invoice_number = generateUniqueNumber();
+        if (isset($this->invoice->id)) {
+            $returnableStatuses = array_values(array_filter([
+                status('Dispatched'),
+                status('Paid'),
+                status('Complete'),
+            ]));
+            if ($this->invoice->payment_id !== null || in_array((int) $this->invoice->status_id, $returnableStatuses, true)) {
+                $this->isReturn = true;
+            }
+            $this->originalInvoiceAmount = round($this->invoice->calculateOriginalTotal(), 2);
+        }
         $this->invoiceData = InvoiceRepository::invoice($this->invoice, $this);
         $this->prescribers = Prescriber::query()->select('id', 'name')->where('status', 1)->get()->toArray();
         $this->cities = City::all();
         $this->memberGroups = MemberGroup::all();
         $this->suppliers = suppliers(true);
+        $this->bankAccounts = Schema::hasTable('bank_accounts')
+            ? collect(bank_accounts(true))->map(fn ($ba) => (array) $ba)->values()->all()
+            : [];
+        $this->refundPaymentMethods = \App\Models\InvoiceReturn::refundPaymentMethods()
+            ->map(fn (\App\Models\Paymentmethod $pm) => [
+                'id' => (int) $pm->id,
+                'name' => (string) $pm->name,
+                'is_transfer' => \App\Models\InvoiceReturn::isTransferPaymentMethod($pm),
+            ])
+            ->values()
+            ->all();
     }
 
     private function initDepartment()
@@ -304,15 +332,23 @@ class InvoiceFormComponent extends Component
         }
 
         if (is_array($response)) {
+            $returnErrorKeys = ['return_reason', 'other_reason_explanation', 'will_refund', 'refund_payment_method', 'bank_account_id', 'refund_amount', 'invoice'];
+            $specificMessage = null;
+            foreach ($returnErrorKeys as $errKey) {
+                if (!empty($response[$errKey])) {
+                    $specificMessage = is_array($response[$errKey]) ? $response[$errKey][0] : (string) $response[$errKey];
+                    break;
+                }
+            }
 
             $this->alert(
                 "error",
-                "Customer",
+                $this->isReturn ? "Invoice Return" : "Customer",
                 [
                     'position' => 'center',
-                    'timer' => 2000,
+                    'timer' => 3000,
                     'toast' => false,
-                    'text' => "An error occurred in your invoice, please check and try again"
+                    'text' => $specificMessage ?: "An error occurred in your invoice, please check and try again"
                 ]
             );
 
@@ -332,7 +368,7 @@ class InvoiceFormComponent extends Component
         );
 
 
-        if ($this->department == "4" && !$response->isStockExchange()) {
+        if ($this->department == "4" && !$response->isStockExchange() && !$this->isReturn) {
             return redirect()->route('payment.createInvoicePayment', ['invoice_number' => $response->invoice_number]);
         } else {
             return redirect()->route('invoiceandsales.view', $response->id);

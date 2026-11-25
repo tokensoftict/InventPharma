@@ -108,6 +108,6 @@
 
 @section('contentInvoice')
 
-    <livewire:invoice-and-sales.invoice-form-component :invoice="$invoice" :department="$department"/>
+    <livewire:invoice-and-sales.invoice-form-component :invoice="$invoice" :department="$department" :isReturn="$isReturn ?? false"/>
 
 @endsection

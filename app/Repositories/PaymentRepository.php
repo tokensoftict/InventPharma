@@ -636,20 +636,23 @@ class PaymentRepository
         DB::transaction(function() use($obj){
             $payment_data_items = [];
 
-            $credit = Creditpaymentlog::create(
-                [
-                    'credit_number' => creditPaymentReference(),
-                    'payment_id' => NULL,
-                    'user_id' =>  auth()->id(),
-                    'paymentmethod_id' => $obj->payment_method,
-                    'customer_id' =>  $obj->customer_id,
-                    'paymentmethoditem_id' => NULL,
-                    'invoicelog_type' =>NULL ,
-                    'invoicelog_id' => NULL,
-                    'amount' => $obj->sub_total,
-                    'payment_date' => dailyDate()
-                ]
-            );
+            $creditPayload = [
+                'credit_number' => creditPaymentReference(),
+                'payment_id' => NULL,
+                'user_id' =>  auth()->id(),
+                'paymentmethod_id' => $obj->payment_method,
+                'customer_id' =>  $obj->customer_id,
+                'paymentmethoditem_id' => NULL,
+                'invoicelog_type' =>NULL ,
+                'invoicelog_id' => NULL,
+                'amount' => $obj->sub_total,
+                'payment_date' => dailyDate(),
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'description')) {
+                $creditPayload['description'] = !empty($obj->description) ? trim((string) $obj->description) : null;
+            }
+
+            $credit = Creditpaymentlog::create($creditPayload);
 
             $payment_data = [
                 'user_id' => auth()->id(),
