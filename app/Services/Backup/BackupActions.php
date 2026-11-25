@@ -9,6 +9,7 @@ use App\Models\BackupSetting;
 use App\Services\Backup\Drivers\GoogleDriveClient;
 use App\Services\Backup\Drivers\GoogleDriveDriver;
 use App\Services\Backup\Drivers\LocalDriver;
+use App\Services\Backup\Drivers\S3Driver;
 use App\Services\Backup\Exceptions\BackupException;
 use App\Services\Backup\Exceptions\ConfigurationException;
 use App\Services\Backup\Support\BackupEncryptor;
@@ -392,6 +393,80 @@ class BackupActions
         }
 
         $this->log->audit('google_disconnected', 'Google Drive disconnected.', null, ['destination_id' => $destination->id]);
+    }
+
+    /* ----------------------------------------------------------- s3 storage */
+
+    /** Create/update the S3 (Contabo) destination: creates the backup folder and tests access. */
+    public function saveS3Destination(?int $id, array $input): BackupDestination
+    {
+        $this->auth->authorize('configure');
+
+        $data = Validator::make($input, [
+            'name'                => 'required|string|max:100',
+            'prefix'              => ['required', 'string', 'max:200', 'regex:~^[A-Za-z0-9._\-/]+$~', 'not_regex:~\.\.~'],
+            'enabled'             => 'boolean',
+            'retention_keep_last' => 'nullable|integer|min:1|max:1000',
+            'retention_keep_days' => 'nullable|integer|min:1|max:3650',
+        ], [
+            'prefix.regex' => 'The folder name may only contain letters, numbers, dots, dashes, underscores and slashes.',
+        ])->validate();
+
+        if (! S3Driver::credentialsConfigured()) {
+            throw new ConfigurationException('S3 storage credentials are missing. Set the CONTABO_* values in the .env file first.');
+        }
+
+        $destination = $id
+            ? BackupDestination::where('type', BackupDestination::TYPE_S3)->findOrFail($id)
+            : BackupDestination::firstOrNew(['type' => BackupDestination::TYPE_S3]);
+
+        $destination->name = $data['name'];
+        $destination->retention_keep_last = $data['retention_keep_last'] ?? null;
+        $destination->retention_keep_days = $data['retention_keep_days'] ?? null;
+        $destination->setConf(['prefix' => trim($data['prefix'], '/ '), 'bucket' => S3Driver::bucketName()]);
+        $destination->enabled = false;
+        $destination->status = BackupDestination::STATUS_UNCONFIGURED;
+        $destination->save();
+
+        /** @var S3Driver $driver */
+        $driver = $this->drivers->driver($destination);
+
+        try {
+            $driver->initialize($destination);   // creates the folder in the bucket
+            $driver->validate($destination, 0);  // bucket reachable + can write/delete
+            $destination->markStatus(BackupDestination::STATUS_READY);
+            $destination->forceFill(['enabled' => (bool) ($data['enabled'] ?? true)])->save();
+        } catch (BackupException $e) {
+            $destination->markStatus($e->errorCode === 'destination_unavailable' ? BackupDestination::STATUS_UNAVAILABLE : BackupDestination::STATUS_ERROR, $e->getMessage());
+            $this->log->audit('destination_saved', "S3 destination \"{$destination->name}\" saved but not usable: " . $e->getMessage(), null, ['destination_id' => $destination->id]);
+            throw $e;
+        }
+
+        $this->log->audit('destination_saved', "S3 destination \"{$destination->name}\" saved.", null, ['destination_id' => $destination->id, 'prefix' => $destination->conf('prefix')]);
+
+        $this->ensureDefault($destination);
+
+        return $destination;
+    }
+
+    /** Detach the S3 destination. Backup files already in the bucket are left untouched. */
+    public function removeS3Destination(int $destinationId): void
+    {
+        $this->auth->authorize('disconnect');
+
+        $destination = BackupDestination::where('type', BackupDestination::TYPE_S3)->findOrFail($destinationId);
+
+        $destination->config = null;
+        $destination->enabled = false;
+        $destination->save();
+        $destination->markStatus(BackupDestination::STATUS_UNCONFIGURED, 'Disconnected.');
+
+        $settings = BackupSetting::current();
+        if ($settings->default_destination_id === $destination->id) {
+            $settings->forceFill(['default_destination_id' => null])->save();
+        }
+
+        $this->log->audit('destination_removed', "S3 destination \"{$destination->name}\" disconnected.", null, ['destination_id' => $destination->id]);
     }
 
     protected function ensureDefault(BackupDestination $destination): void

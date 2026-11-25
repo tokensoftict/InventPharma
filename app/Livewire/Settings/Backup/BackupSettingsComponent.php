@@ -6,6 +6,7 @@ use App\Models\BackupDestination;
 use App\Models\BackupSetting;
 use App\Services\Backup\BackupActions;
 use App\Services\Backup\BackupAuthorizer;
+use App\Services\Backup\Drivers\S3Driver;
 use App\Services\Backup\Exceptions\BackupException;
 use App\Services\Backup\Support\BackupEncryptor;
 use App\Traits\LivewireAlert;
@@ -40,6 +41,12 @@ class BackupSettingsComponent extends Component
     public ?int $localKeepLast = null;
     public ?int $localKeepDays = null;
 
+    // s3 (Contabo)
+    public ?int $s3Id = null;
+    public string $s3Name = 'Contabo S3 Storage';
+    public string $s3Prefix = 'inventory-backups';
+    public bool $s3Enabled = true;
+
     // google
     public string $googleFolder = 'Inventory Backups';
     public bool $configuringGoogle = false;
@@ -64,6 +71,7 @@ class BackupSettingsComponent extends Component
 
         $this->loadSettings();
         $this->loadLocal();
+        $this->loadS3();
 
         if ($msg = session('backup_success')) {
             $this->toast('success', $msg);
@@ -104,6 +112,18 @@ class BackupSettingsComponent extends Component
             $this->localEnabled = (bool) $local->enabled;
             $this->localKeepLast = $local->retention_keep_last;
             $this->localKeepDays = $local->retention_keep_days;
+        }
+    }
+
+    protected function loadS3(): void
+    {
+        $s3 = BackupDestination::where('type', BackupDestination::TYPE_S3)->orderBy('id')->first();
+        $this->s3Prefix = (string) config('backup-manager.s3.prefix', S3Driver::DEFAULT_PREFIX);
+        if ($s3) {
+            $this->s3Id = $s3->id;
+            $this->s3Name = $s3->name;
+            $this->s3Prefix = (string) $s3->conf('prefix', $this->s3Prefix);
+            $this->s3Enabled = (bool) $s3->enabled;
         }
     }
 
@@ -165,6 +185,32 @@ class BackupSettingsComponent extends Component
     public function test(BackupActions $actions, int $id)
     {
         $this->guard(fn () => $this->toast('success', $actions->testDestination($id)));
+    }
+
+    public function saveS3(BackupActions $actions)
+    {
+        $this->guard(function () use ($actions) {
+            $keep = $this->retention[$this->s3Id] ?? ['last' => null, 'days' => null];
+            $d = $actions->saveS3Destination($this->s3Id, [
+                'name'                => $this->s3Name,
+                'prefix'              => $this->s3Prefix,
+                'enabled'             => $this->s3Enabled,
+                'retention_keep_last' => ($keep['last'] ?? null) ?: null,
+                'retention_keep_days' => ($keep['days'] ?? null) ?: null,
+            ]);
+            $this->s3Id = $d->id;
+            $this->retention[$d->id] = ['last' => $d->retention_keep_last, 'days' => $d->retention_keep_days];
+            $this->toast('success', "Connected. Backups will be stored in the \"{$d->conf('prefix')}/\" folder of the bucket.");
+        });
+    }
+
+    public function removeS3(BackupActions $actions, int $id)
+    {
+        $this->guard(function () use ($actions, $id) {
+            $actions->removeS3Destination($id);
+            $this->s3Id = null;
+            $this->toast('success', 'S3 storage disconnected. Existing backups stay in the bucket.');
+        });
     }
 
     public function connectGoogle(BackupActions $actions)
@@ -396,6 +442,9 @@ class BackupSettingsComponent extends Component
         return view('livewire.settings.backup.backup-settings-component', [
             'destinations'      => $destinations,
             'google'            => $destinations->where('type', BackupDestination::TYPE_GOOGLE_DRIVE),
+            's3'                => $destinations->where('type', BackupDestination::TYPE_S3),
+            's3Configured'      => S3Driver::credentialsConfigured(),
+            's3Bucket'          => S3Driver::bucketName(),
             'frequencies'       => config('backup-manager.frequencies'),
             'timezones'         => \DateTimeZone::listIdentifiers(),
             'sodium'            => BackupEncryptor::available(),

@@ -137,6 +137,65 @@
         </div>
     </div>
 
+    {{-- ============================================================ S3 (CONTABO) --}}
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header"><h5 class="card-title mb-0"><i class="fas fa-cloud me-1"></i> Contabo S3 Storage</h5></div>
+                <div class="card-body">
+                    @if(! $s3Configured)
+                        <div class="alert alert-warning small mb-3">
+                            <i class="fas fa-exclamation-triangle me-1"></i> S3 credentials are not set. Add these to the server's <code>.env</code> file, then reload this page:
+                            <div class="font-monospace mt-1">CONTABO_ACCESS_KEY_ID, CONTABO_SECRET_ACCESS_KEY, CONTABO_DEFAULT_REGION, CONTABO_BUCKET, CONTABO_ENDPOINT</div>
+                        </div>
+                    @else
+                        <div class="d-flex justify-content-between align-items-center mb-3 p-2 bg-light rounded border">
+                            <div>
+                                <span class="badge bg-success me-1"><i class="fas fa-check-circle me-1"></i> Credentials found</span>
+                                <span class="small text-muted">Bucket: <code>{{ $s3Bucket }}</code> (keys are read from <code>.env</code>, never stored here)</span>
+                            </div>
+                        </div>
+                    @endif
+
+                    @foreach($s3 as $d)
+                        <div class="border rounded p-2 mb-2" wire:key="s3-{{ $d->id }}">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ $d->name }}</strong>
+                                @include('livewire.settings.backup._badge', ['status' => $d->status])
+                            </div>
+                            <div class="small">Bucket: {{ $d->conf('bucket') ?? '-' }} &middot; Folder: <code>{{ $d->conf('prefix') ?? '-' }}/</code></div>
+                            @if($d->status_message && $d->status !== 'ready')<div class="small text-danger">{{ $d->status_message }}</div>@endif
+                            <div class="mt-1">
+                                @if($canTest)<button class="btn btn-sm btn-light" wire:click="test({{ $d->id }})">Test</button>@endif
+                                <button class="btn btn-sm btn-light" wire:click="toggle({{ $d->id }})">{{ $d->enabled ? 'Disable' : 'Enable' }}</button>
+                                @if($canDisconnect)<button class="btn btn-sm btn-outline-danger" wire:click="removeS3({{ $d->id }})" wire:confirm="Disconnect S3 storage? Existing backups stay in the bucket.">Disconnect</button>@endif
+                            </div>
+                        </div>
+                    @endforeach
+
+                    @if($canConfigure)
+                        <div class="mb-2"><label class="form-label">Display name</label><input class="form-control" wire:model="s3Name"></div>
+                        <div class="mb-2">
+                            <label class="form-label">Backup folder in the bucket</label>
+                            <input class="form-control font-monospace" wire:model="s3Prefix" placeholder="inventory-backups">
+                            <div class="form-text">Created automatically. Kept separate from your pictures. Letters, numbers, <code>. - _ /</code> only.</div>
+                            @error('s3Prefix')<span class="text-danger small">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" wire:model="s3Enabled" id="s3Enabled">
+                            <label class="form-check-label" for="s3Enabled">Enable after a successful connection test</label>
+                        </div>
+                        <button class="btn btn-primary btn-sm" wire:click="saveS3" wire:loading.attr="disabled" wire:target="saveS3" @disabled(! $s3Configured)>
+                            <span wire:loading wire:target="saveS3" class="spinner-border spinner-border-sm me-1"></span>
+                            <i wire:loading.remove wire:target="saveS3" class="fas fa-plug me-1"></i>
+                            {{ $s3->isEmpty() ? 'Create folder & connect' : 'Save & re-test' }}
+                        </button>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{-- ============================================================ GENERAL / SCHEDULE --}}
     <div class="card">
         <div class="card-header"><h5 class="card-title mb-0">General &amp; schedule</h5></div>

@@ -6,6 +6,7 @@ use App\Models\BackupDestination;
 use App\Services\Backup\Contracts\BackupDestinationDriver;
 use App\Services\Backup\Drivers\GoogleDriveDriver;
 use App\Services\Backup\Drivers\LocalDriver;
+use App\Services\Backup\Drivers\S3Driver;
 use App\Services\Backup\Exceptions\ConfigurationException;
 
 /**
@@ -19,6 +20,7 @@ class BackupDestinationManager
     protected static array $drivers = [
         BackupDestination::TYPE_LOCAL        => LocalDriver::class,
         BackupDestination::TYPE_GOOGLE_DRIVE => GoogleDriveDriver::class,
+        BackupDestination::TYPE_S3           => S3Driver::class,
     ];
 
     public static function extend(string $type, string $driverClass): void

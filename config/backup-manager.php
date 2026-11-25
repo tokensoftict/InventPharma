@@ -62,6 +62,19 @@ return [
         'timeout'       => 120,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | S3-compatible object storage (Contabo, AWS S3, MinIO ...)
+    |--------------------------------------------------------------------------
+    | Credentials come from the Laravel filesystem disk named below (config/filesystems.php,
+    | i.e. the CONTABO_* values in .env). Backups are written to a dedicated folder (key
+    | prefix) in that bucket so they never mix with other files such as product pictures.
+    */
+    's3' => [
+        'disk'   => env('BACKUP_S3_DISK', 'contabo'),
+        'prefix' => env('BACKUP_S3_PREFIX', 'inventory-backups'),
+    ],
+
     'frequencies' => [
         'manual'         => 'Manual only',
         'every_hour'     => 'Every hour',

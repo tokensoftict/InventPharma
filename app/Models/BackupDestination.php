@@ -16,6 +16,7 @@ class BackupDestination extends Model
 {
     public const TYPE_LOCAL = 'local';
     public const TYPE_GOOGLE_DRIVE = 'google_drive';
+    public const TYPE_S3 = 's3';
 
     public const STATUS_UNCONFIGURED = 'unconfigured';
     public const STATUS_READY = 'ready';
@@ -72,6 +73,7 @@ class BackupDestination extends Model
     {
         return match ($this->type) {
             self::TYPE_LOCAL        => 'Local Storage',
+            self::TYPE_S3           => 'Contabo S3 Storage',
             self::TYPE_GOOGLE_DRIVE => 'Google Drive',
             default                 => ucfirst(str_replace('_', ' ', $this->type)),
         };
