@@ -549,10 +549,19 @@
                                     <input type="radio" class="form-check-input mt-0" name="return_reason_opt" value="Customer returned item(s) on the invoice." x-model="returnForm.return_reason" x-on:change="returnModalError = ''">
                                     <span>2. Customer returned item(s) on the invoice.</span>
                                 </label>
+                                <label class="p-2 border rounded d-flex align-items-center gap-2" style="cursor: pointer;" :class="{'border-danger bg-danger-subtle fw-semibold': returnForm.return_reason === 'Return invoice in order to delete it.'}">
+                                    <input type="radio" class="form-check-input mt-0" name="return_reason_opt" value="Return invoice in order to delete it." x-model="returnForm.return_reason" x-on:change="returnModalError = ''">
+                                    <span>3. Return invoice in order to delete it.</span>
+                                </label>
                                 <label class="p-2 border rounded d-flex align-items-center gap-2" style="cursor: pointer;" :class="{'border-primary bg-primary-subtle': returnForm.return_reason === 'Other reason.'}">
                                     <input type="radio" class="form-check-input mt-0" name="return_reason_opt" value="Other reason." x-model="returnForm.return_reason" x-on:change="returnModalError = ''">
-                                    <span>3. Other reason.</span>
+                                    <span>4. Other reason.</span>
                                 </label>
+                            </div>
+
+                            <div class="alert alert-danger py-2 px-3 mt-2 mb-0 small" x-show="returnForm.return_reason === 'Return invoice in order to delete it.'" x-cloak>
+                                <i class="fa fa-trash me-1"></i>
+                                <strong>Delete Invoice:</strong> All items on this invoice will be returned to stock and the invoice status will be set to <strong>Deleted</strong>.
                             </div>
 
                             <div class="mt-2" x-show="returnForm.return_reason === 'Other reason.'" x-cloak>
@@ -1062,12 +1071,21 @@
                 }
                 return {discount: discount, membership: membership};
             },
+            isDeleteInvoiceReason() {
+                return this.isReturn && this.returnForm && this.returnForm.return_reason === 'Return invoice in order to delete it.';
+            },
             computeNet() {
+                if (this.isDeleteInvoiceReason()) {
+                    return 0;
+                }
                 const sub = this.computeSubTotal();
                 const d = this.computeDiscounts(sub);
                 return Math.max(0, sub - (d.discount + d.membership));
             },
             computeReturnDifference() {
+                if (this.isDeleteInvoiceReason()) {
+                    return Math.max(0, parseFloat(this.originalInvoiceRaw) || 0);
+                }
                 return Math.max(0, (parseFloat(this.originalInvoiceRaw) || 0) - this.computeNet());
             },
             totalInvoice()
@@ -1124,6 +1142,11 @@
 
                 if (this.returnForm.return_reason === 'Other reason.' && !(this.returnForm.other_reason_explanation || '').trim()) {
                     this.returnModalError = 'Please provide an explanation for selecting Other reason.';
+                    return;
+                }
+
+                if (this.invoiceitems.length === 0 && !this.isDeleteInvoiceReason()) {
+                    this.returnModalError = 'All items have been removed. Please select "3. Return invoice in order to delete it." or keep at least one item on the invoice.';
                     return;
                 }
 
@@ -1269,17 +1292,20 @@
                     @endphp
                 }
 
-                if(this.invoiceitems.length === 0)
+                // In Return Invoice Mode, require the Return Reason & Customer Refund Confirmation step first
+                if (this.isReturn && !confirmedFromReturnModal) {
+                    if (this.invoiceitems.length === 0 && !this.returnForm.return_reason) {
+                        this.returnForm.return_reason = 'Return invoice in order to delete it.';
+                    }
+                    this.openReturnModal(status_id);
+                    return;
+                }
+
+                if(this.invoiceitems.length === 0 && !this.isDeleteInvoiceReason())
                 {
                     this.returnModalSubmitting = false;
                     error("Invoice items list is empty, please add at least one product to generate invoice")
                     return ;
-                }
-
-                // In Return Invoice Mode, require the Return Reason & Customer Refund Confirmation step first
-                if (this.isReturn && !confirmedFromReturnModal) {
-                    this.openReturnModal(status_id);
-                    return;
                 }
 
                 @php

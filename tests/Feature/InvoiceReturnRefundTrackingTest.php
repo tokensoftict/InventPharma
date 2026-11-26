@@ -837,6 +837,58 @@ class InvoiceReturnRefundTrackingTest extends TestCase
         $this->assertEquals(19000.0, $ret->refund_amount);
     }
 
+    public function test_return_with_delete_invoice_reason_returns_all_stock_deletes_payment_and_marks_invoice_deleted(): void
+    {
+        Bus::fake();
+        $this->actingAs($this->cashierA);
+
+        $initialStockAQty = (int) $this->stockA->fresh()->wholesales;
+        $initialStockBQty = (int) $this->stockB->fresh()->wholesales;
+
+        // Create a paid invoice for 56,000 (5 of stockA + 2 of stockB)
+        $invoice = $this->createPaidInvoice('INV-RET-DELETE-01', 5, 2, (int) status('Paid'));
+        $origPaymentId = $invoice->payment_id;
+
+        // Cashier selects "Return invoice in order to delete it." without even reducing item quantities on the form
+        $updated = (new InvoiceRepository())->updateInvoice($invoice, [
+            'department' => 'wholesales',
+            'in_department' => 'wholesales',
+            'customer_id' => $this->customer->id,
+            'status_id' => status('Paid'),
+            'discount_type' => 'None',
+            'discount_value' => 0,
+            'discount_amount' => 0,
+            'invoiceitems' => json_encode([
+                ['stock_id' => $this->stockA->id, 'name' => $this->stockA->name, 'quantity' => 5, 'selling_price' => 10000, 'cost_price' => 8000, 'discount_type' => 'Fixed', 'discount_value' => 0, 'discount_amount' => 0],
+                ['stock_id' => $this->stockB->id, 'name' => $this->stockB->name, 'quantity' => 2, 'selling_price' => 3000, 'cost_price' => 2000, 'discount_type' => 'Fixed', 'discount_value' => 0, 'discount_amount' => 0],
+            ]),
+            'return_info' => [
+                'return_reason' => InvoiceReturn::REASON_DELETE_INVOICE,
+                'will_refund' => 'yes',
+                'paymentmethod_id' => 1, // CASH
+                'idempotency_key' => 'idem-delete-inv-001',
+            ],
+        ]);
+
+        $this->assertInstanceOf(Invoice::class, $updated);
+        $this->assertSame((int) status('Deleted'), (int) $updated->status_id);
+        $this->assertNull($updated->payment_id);
+        $this->assertNull(Payment::find($origPaymentId));
+
+        // All 5 units of stockA and 2 units of stockB returned to stock
+        $this->assertSame($initialStockAQty + 5, (int) $this->stockA->fresh()->wholesales);
+        $this->assertSame($initialStockBQty + 2, (int) $this->stockB->fresh()->wholesales);
+
+        $ret = InvoiceReturn::where('invoice_id', $invoice->id)->firstOrFail();
+        $this->assertSame(InvoiceReturn::REASON_DELETE_INVOICE, $ret->return_reason);
+        $this->assertEquals(56000.0, $ret->original_invoice_amount);
+        $this->assertEquals(0.0, $ret->current_invoice_amount);
+        $this->assertEquals(56000.0, $ret->return_difference);
+        $this->assertTrue($ret->is_customer_refunded);
+        $this->assertEquals(56000.0, $ret->refund_amount);
+        $this->assertSame(1, $ret->paymentmethod_id);
+    }
+
     public function test_cash_transfer_and_no_refund_persistence_idempotency_and_reconciliation_queries(): void
     {
         Bus::fake();

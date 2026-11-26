@@ -15,11 +15,13 @@ class InvoiceReturn extends Model
 
     public const REASON_CASHIER_MISTAKE = 'Cashier / Sales Order made a mistake during invoicing.';
     public const REASON_CUSTOMER_RETURNED = 'Customer returned item(s) on the invoice.';
+    public const REASON_DELETE_INVOICE = 'Return invoice in order to delete it.';
     public const REASON_OTHER = 'Other reason.';
 
     public const ALLOWED_REASONS = [
         self::REASON_CASHIER_MISTAKE,
         self::REASON_CUSTOMER_RETURNED,
+        self::REASON_DELETE_INVOICE,
         self::REASON_OTHER,
     ];
 

@@ -520,6 +520,146 @@ class InvoiceRepository
 
             Stock::returnStocks($invoice, $invoiceItemsBatches, array_unique($columns));
 
+            // If the return reason is to delete the invoice, complete the deletion flow (matching InvoiceController::destroy)
+            if ($isReturnOperation && $returnReason === InvoiceReturn::REASON_DELETE_INVOICE) {
+                $returnDifference = max(0.0, round($originalInvoiceAmount, 5));
+
+                if ($isCustomerRefunded && $returnDifference <= 0) {
+                    $invoice->invoiceitembatches()->lockForUpdate()->get()->map->only(['stockbatch_id', 'department', 'av_qty', 'quantity'])->each(function ($item) use (&$reverseItemsBatches, &$columns) {
+                        $reverseItemsBatches[] = [
+                            'id' => $item['stockbatch_id'],
+                            'department' => $item['department'],
+                            $item['department'] => $item['av_qty'] - $item['quantity'],
+                        ];
+                    });
+                    Stock::removeSaleableBatches($invoice, $reverseItemsBatches, array_unique($columns));
+
+                    return ['refund_amount' => 'Cannot issue a customer refund when the invoice return difference is 0.00.'];
+                }
+
+                $oldPaymentIds = collect([$invoice->payment_id, $originalPayment?->id])
+                    ->merge(
+                        Payment::where('invoice_id', $invoice->id)
+                            ->where(function ($q) {
+                                $q->where('invoice_type', Invoice::class)
+                                  ->orWhereNull('invoice_type')
+                                  ->orWhere('invoice_type', '');
+                            })
+                            ->pluck('id')
+                    )
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                if ($oldPaymentIds->isNotEmpty()) {
+                    if (\Illuminate\Support\Facades\Schema::hasTable('creditpaymentlogs')) {
+                        Creditpaymentlog::whereIn('payment_id', $oldPaymentIds)->delete();
+                    }
+                    if (\Illuminate\Support\Facades\Schema::hasTable('paymentmethoditems')) {
+                        Paymentmethoditem::whereIn('payment_id', $oldPaymentIds)->delete();
+                    }
+                    if (\Illuminate\Support\Facades\Schema::hasTable('customer_ledgers')) {
+                        CustomerLedger::whereIn('payment_id', $oldPaymentIds)->delete();
+                    }
+                    Payment::whereIn('id', $oldPaymentIds)->delete();
+                }
+
+                if (\Illuminate\Support\Facades\Schema::hasTable('creditpaymentlogs')
+                    && \Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'invoicelog_type')
+                ) {
+                    Creditpaymentlog::where('invoicelog_type', Invoice::class)
+                        ->where('invoicelog_id', $invoice->id)
+                        ->delete();
+                }
+
+                if (\Illuminate\Support\Facades\Schema::hasTable('paymentmethoditems')) {
+                    Paymentmethoditem::where('invoice_id', $invoice->id)
+                        ->where(function ($q) {
+                            $q->where('invoice_type', Invoice::class)
+                              ->orWhereNull('invoice_type')
+                              ->orWhere('invoice_type', '');
+                        })
+                        ->delete();
+                }
+
+                if (\Illuminate\Support\Facades\Schema::hasTable('customer_ledgers')) {
+                    CustomerLedger::where('invoice_id', $invoice->id)->delete();
+                }
+
+                if ($invoice->customer) {
+                    $invoice->customer->updateCreditBalance();
+                }
+
+                $invoice->payment_id = null;
+                $invoice->status_id = status('Deleted');
+                $invoice->retail_printed = "0";
+                $invoice->date_voided = todaysDate();
+                $invoice->void_time = Carbon::now();
+                $invoice->voided_by = auth()->id();
+                $invoice->last_updated_by = auth()->id();
+                $invoice->void_reason = $invoice->void_reason === NULL ? 1 : ($invoice->void_reason + 1);
+                $invoice->update();
+
+                if (\Illuminate\Support\Facades\Schema::hasTable('invoice_returns')) {
+                    $snapshot = $originalItemsByStock->map(function ($origItem) {
+                        $origQty = (int) $origItem->quantity;
+
+                        return [
+                            'stock_id' => (int) $origItem->stock_id,
+                            'name' => $origItem->name ?? ($origItem->stock->name ?? ''),
+                            'original_quantity' => $origQty,
+                            'remaining_quantity' => 0,
+                            'returned_quantity' => $origQty,
+                            'selling_price' => (float) $origItem->selling_price,
+                        ];
+                    })->values()->all();
+
+                    $idempotencyKey = trim((string) ($returnInfo['idempotency_key'] ?? ''));
+
+                    InvoiceReturn::create([
+                        'invoice_id' => $invoice->id,
+                        'invoice_number' => $invoice->invoice_number,
+                        'customer_id' => $invoice->customer_id,
+                        'department' => $invoice->in_department ?: $invoice->department,
+                        'return_sequence' => (int) ($invoice->void_reason ?: 1),
+                        'original_invoice_amount' => $originalInvoiceAmount,
+                        'current_invoice_amount' => 0.0,
+                        'return_difference' => $returnDifference,
+                        'return_reason' => $returnReason,
+                        'other_reason_explanation' => null,
+                        'is_customer_refunded' => $isCustomerRefunded,
+                        'refund_status' => $isCustomerRefunded
+                            ? InvoiceReturn::REFUND_STATUS_REFUNDED
+                            : InvoiceReturn::REFUND_STATUS_NOT_REFUNDED,
+                        'refund_amount' => $isCustomerRefunded ? $returnDifference : 0.0,
+                        'paymentmethod_id' => ($isCustomerRefunded && $refundPaymentMethodModel) ? (int) $refundPaymentMethodModel->id : null,
+                        'refund_payment_method' => ($isCustomerRefunded && $refundPaymentMethodModel) ? (string) $refundPaymentMethodModel->name : null,
+                        'bank_account_id' => ($isCustomerRefunded && InvoiceReturn::isTransferPaymentMethod($refundPaymentMethodModel))
+                            ? $bankAccountId
+                            : null,
+                        'processed_by' => auth()->id() ?: ($invoice->last_updated_by ?: 1),
+                        'return_date' => todaysDate(),
+                        'processed_at' => Carbon::now(),
+                        'idempotency_key' => $idempotencyKey !== '' ? $idempotencyKey : null,
+                        'returned_items_snapshot' => $snapshot,
+                    ]);
+                }
+
+                logActivity($invoice->id, $invoice->invoice_number, "Invoice payment was deleted " . $invoice->status);
+                logActivity($invoice->id, $invoice->invoice_number, 'invoice was returned RETURNED');
+
+                if ($invoice->online_order_status == "1") {
+                    logActivity($invoice->id, $invoice->invoice_number, "Online invoice, update sent to server " . $invoice->status);
+                    \App\Services\Online\ProcessOrderService::sendBackCancelOrderMessage($invoice->onliner_order_id, $invoice->invoice_number);
+                }
+
+                if (config('app.sync_with_online') == 1) {
+                    dispatch(new PushStockUpdateToServer(array_column($invoice->invoiceitems()->get()->toArray(), 'stock_id')));
+                }
+
+                return $invoice;
+            }
+
             $validationService = new InvoiceValidationService();
             $validation = $validationService->validateInvoice(
                 $items,
