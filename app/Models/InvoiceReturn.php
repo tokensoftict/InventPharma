@@ -30,6 +30,7 @@ class InvoiceReturn extends Model
 
     public const METHOD_CASH = 'CASH';
     public const METHOD_TRANSFER = 'TRANSFER';
+    public const METHOD_CREDIT = 'CREDIT BALANCE';
 
     protected $table = 'invoice_returns';
 
@@ -99,7 +100,7 @@ class InvoiceReturn extends Model
     }
 
     /**
-     * Retrieve the configured Cash and Transfer Paymentmethod models from paymentmethods table.
+     * Retrieve the configured Cash, Transfer, and Credit Balance Paymentmethod models from paymentmethods table.
      */
     public static function refundPaymentMethods(): Collection
     {
@@ -110,7 +111,7 @@ class InvoiceReturn extends Model
         return Paymentmethod::query()
             ->where('status', 1)
             ->get()
-            ->filter(fn (Paymentmethod $pm) => self::isCashPaymentMethod($pm) || self::isTransferPaymentMethod($pm))
+            ->filter(fn (Paymentmethod $pm) => self::isCashPaymentMethod($pm) || self::isTransferPaymentMethod($pm) || self::isCreditPaymentMethod($pm))
             ->values();
     }
 
@@ -132,6 +133,28 @@ class InvoiceReturn extends Model
         return str_contains(strtoupper(trim((string) $pm->name)), 'TRANSFER') || (int) $pm->id === 3;
     }
 
+    public static function isCreditPaymentMethod(?Paymentmethod $pm): bool
+    {
+        if (!$pm) {
+            return false;
+        }
+
+        return str_contains(strtoupper(trim((string) $pm->name)), 'CREDIT') || (int) $pm->id === 4;
+    }
+
+    public static function formatRefundPaymentMethodName(?Paymentmethod $pm): ?string
+    {
+        if (!$pm) {
+            return null;
+        }
+
+        if (self::isCreditPaymentMethod($pm)) {
+            return self::METHOD_CREDIT;
+        }
+
+        return (string) $pm->name;
+    }
+
     public static function resolveRefundPaymentMethod(mixed $idOrName): ?Paymentmethod
     {
         if ($idOrName === null || $idOrName === '' || !Schema::hasTable('paymentmethods')) {
@@ -149,7 +172,8 @@ class InvoiceReturn extends Model
         return $methods->first(function (Paymentmethod $pm) use ($upper) {
             return strtoupper(trim((string) $pm->name)) === $upper
                 || ($upper === 'CASH' && self::isCashPaymentMethod($pm))
-                || ($upper === 'TRANSFER' && self::isTransferPaymentMethod($pm));
+                || ($upper === 'TRANSFER' && self::isTransferPaymentMethod($pm))
+                || (in_array($upper, ['CREDIT', 'CREDIT BALANCE'], true) && self::isCreditPaymentMethod($pm));
         });
     }
 

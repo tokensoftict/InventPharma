@@ -44,11 +44,17 @@ class CustomerReportController extends Controller
         $customerId = (int) $data['filters']['filters']['customer_id'];
         $dateRange = $data['filters']['filters']['between.return_date'];
 
+        $this->ensureReturnedCreditInvoicesHaveCreditLog($customerId);
+
         $data['opening'] = Creditpaymentlog::where('customer_id', $customerId)
             ->where('payment_date', '<', $dateRange[0])
             ->where(function ($q) {
                 $q->whereNull('invoicelog_type')
-                  ->orWhere('invoicelog_type', '!=', InvoiceReturn::class);
+                  ->orWhere('invoicelog_type', '!=', InvoiceReturn::class)
+                  ->orWhere(function ($q2) {
+                      $q2->where('invoicelog_type', InvoiceReturn::class)
+                         ->where('amount', '>', 0);
+                  });
             })
             ->sum('amount');
 
@@ -61,7 +67,11 @@ class CustomerReportController extends Controller
             ->whereBetween('payment_date', $dateRange)
             ->where(function ($q) {
                 $q->whereNull('invoicelog_type')
-                  ->orWhere('invoicelog_type', '!=', InvoiceReturn::class);
+                  ->orWhere('invoicelog_type', '!=', InvoiceReturn::class)
+                  ->orWhere(function ($q2) {
+                      $q2->where('invoicelog_type', InvoiceReturn::class)
+                         ->where('amount', '>', 0);
+                  });
             })
             ->orderBy('payment_date', 'ASC')
             ->orderBy('id', 'ASC')
@@ -70,13 +80,168 @@ class CustomerReportController extends Controller
         if (Schema::hasTable('invoice_returns')) {
             $histories->loadMorph('invoicelog', [
                 Invoice::class => ['invoiceReturns.paymentmethod'],
+                InvoiceReturn::class => ['invoice', 'paymentmethod'],
             ]);
         }
 
-        $data['histories'] = $histories;
+        $data['histories'] = $this->orderCreditBalanceRefundsAfterReturnedInvoice($histories);
 
         return view('reports.customer.balance_sheet', $data);
 
+    }
+
+    /**
+     * Restore any missing negative invoice Creditpaymentlog rows that were cascade-deleted
+     * in MySQL when an invoice paid on Credit (paymentmethod_id = 4) was returned.
+     */
+    private function ensureReturnedCreditInvoicesHaveCreditLog(int $customerId): void
+    {
+        if ($customerId <= 0
+            || !Schema::hasTable('creditpaymentlogs')
+            || !Schema::hasTable('paymentmethoditems')
+            || !Schema::hasTable('invoice_returns')
+            || !Schema::hasColumn('creditpaymentlogs', 'invoicelog_type')
+        ) {
+            return;
+        }
+
+        $returnedInvoiceIds = InvoiceReturn::where('customer_id', $customerId)
+            ->pluck('invoice_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($returnedInvoiceIds->isEmpty()) {
+            return;
+        }
+
+        $creditMethodItems = \App\Models\Paymentmethoditem::where('customer_id', $customerId)
+            ->where('paymentmethod_id', 4)
+            ->whereIn('invoice_id', $returnedInvoiceIds)
+            ->where(function ($q) {
+                $q->where('invoice_type', Invoice::class)
+                  ->orWhereNull('invoice_type')
+                  ->orWhere('invoice_type', '');
+            })
+            ->get();
+
+        if ($creditMethodItems->isEmpty()) {
+            return;
+        }
+
+        $restoredAny = false;
+        foreach ($creditMethodItems as $creditItem) {
+            $invoiceId = (int) $creditItem->invoice_id;
+            $invoice = Invoice::find($invoiceId);
+            if (!$invoice || (int) $invoice->status_id === (int) status('Deleted')) {
+                continue;
+            }
+
+            $exists = Creditpaymentlog::where('customer_id', $customerId)
+                ->where(function ($q) use ($invoiceId, $creditItem) {
+                    $q->where(function ($q2) use ($invoiceId) {
+                        $q2->where('invoicelog_type', Invoice::class)
+                           ->where('invoicelog_id', $invoiceId);
+                    })->orWhere(function ($q3) use ($creditItem) {
+                        $q3->where('payment_id', $creditItem->payment_id)
+                           ->where('amount', '<', 0);
+                    });
+                })
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            $returns = InvoiceReturn::where('invoice_id', $invoiceId)->orderBy('id', 'ASC')->get();
+            $firstReturn = $returns->first();
+            $hasRefunds = $returns->contains(fn (InvoiceReturn $r) => (bool) $r->is_customer_refunded);
+
+            $creditAmount = ($hasRefunds && $firstReturn)
+                ? -((float) $firstReturn->original_invoice_amount)
+                : -((float) $creditItem->amount);
+
+            $payload = [
+                'payment_id' => $creditItem->payment_id,
+                'user_id' => $creditItem->user_id ?: $invoice->created_by,
+                'paymentmethod_id' => 4,
+                'customer_id' => $customerId,
+                'paymentmethoditem_id' => $creditItem->id,
+                'invoicelog_type' => Invoice::class,
+                'invoicelog_id' => $invoiceId,
+                'amount' => $creditAmount,
+                'payment_date' => $creditItem->getRawOriginal('payment_date') ?: ($invoice->getRawOriginal('invoice_date') ?: todaysDate()),
+            ];
+
+            if (Schema::hasColumn('creditpaymentlogs', 'credit_number') && function_exists('creditPaymentReference')) {
+                $payload['credit_number'] = creditPaymentReference();
+            }
+
+            Creditpaymentlog::create($payload);
+            $restoredAny = true;
+        }
+
+        if ($restoredAny) {
+            Customer::find($customerId)?->updateCreditBalance();
+        }
+    }
+
+    /**
+     * Place CREDIT BALANCE refund rows (invoicelog_type = InvoiceReturn::class, amount > 0)
+     * immediately after the row of the invoice that was returned when that invoice row is present.
+     */
+    private function orderCreditBalanceRefundsAfterReturnedInvoice(\Illuminate\Support\Collection $histories): \Illuminate\Support\Collection
+    {
+        $creditInvoiceIdsInList = [];
+        foreach ($histories as $item) {
+            if ($item->isCreditRecord()) {
+                $invId = $item->resolveInvoice()?->id;
+                if ($invId) {
+                    $creditInvoiceIdsInList[$invId] = true;
+                }
+            }
+        }
+
+        if (empty($creditInvoiceIdsInList)) {
+            return $histories;
+        }
+
+        $attachedRefundsByInvoice = [];
+        $mainRows = [];
+
+        foreach ($histories as $item) {
+            if ($item->isCreditBalanceRefundRecord()) {
+                $retInvoiceId = $item->invoicelog instanceof InvoiceReturn
+                    ? (int) $item->invoicelog->invoice_id
+                    : (int) ($item->resolveInvoice()?->id ?? 0);
+
+                if ($retInvoiceId > 0 && isset($creditInvoiceIdsInList[$retInvoiceId])) {
+                    $attachedRefundsByInvoice[$retInvoiceId][] = $item;
+                    continue;
+                }
+            }
+            $mainRows[] = $item;
+        }
+
+        if (empty($attachedRefundsByInvoice)) {
+            return $histories;
+        }
+
+        $ordered = [];
+        foreach ($mainRows as $row) {
+            $ordered[] = $row;
+            if ($row->isCreditRecord()) {
+                $invId = (int) ($row->resolveInvoice()?->id ?? 0);
+                if ($invId > 0 && !empty($attachedRefundsByInvoice[$invId])) {
+                    foreach ($attachedRefundsByInvoice[$invId] as $refundRow) {
+                        $ordered[] = $refundRow;
+                    }
+                    unset($attachedRefundsByInvoice[$invId]);
+                }
+            }
+        }
+
+        return collect($ordered);
     }
 
     public function customer_ledger(Request $request)

@@ -225,7 +225,7 @@ class CustomerManagerComponent extends Component
         ];
 
         $this->customerInvoices = Invoice::where('customer_id', $id)
-            ->with('status')
+            ->with(['status', 'invoiceReturns.paymentmethod'])
             ->latest('invoice_date')
             ->limit(10)
             ->get();
@@ -235,7 +235,8 @@ class CustomerManagerComponent extends Component
             ->limit(10)
             ->get();
 
-        $this->customerCreditLogs = Creditpaymentlog::where('customer_id', $id)
+        $this->customerCreditLogs = Creditpaymentlog::with(['paymentmethod', 'invoicelog'])
+            ->where('customer_id', $id)
             ->latest('payment_date')
             ->limit(10)
             ->get();

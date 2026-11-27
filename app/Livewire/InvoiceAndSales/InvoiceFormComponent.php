@@ -85,11 +85,15 @@ class InvoiceFormComponent extends Component
             ? collect(bank_accounts(true))->map(fn ($ba) => (array) $ba)->values()->all()
             : [];
         $this->refundPaymentMethods = \App\Models\InvoiceReturn::refundPaymentMethods()
-            ->map(fn (\App\Models\Paymentmethod $pm) => [
-                'id' => (int) $pm->id,
-                'name' => (string) $pm->name,
-                'is_transfer' => \App\Models\InvoiceReturn::isTransferPaymentMethod($pm),
-            ])
+            ->map(function (\App\Models\Paymentmethod $pm) {
+                $isCredit = \App\Models\InvoiceReturn::isCreditPaymentMethod($pm);
+                return [
+                    'id' => (int) $pm->id,
+                    'name' => $isCredit ? 'CREDIT BALANCE' : (string) $pm->name,
+                    'is_transfer' => \App\Models\InvoiceReturn::isTransferPaymentMethod($pm),
+                    'is_credit' => $isCredit,
+                ];
+            })
             ->values()
             ->all();
     }

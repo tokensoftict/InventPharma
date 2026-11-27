@@ -111,10 +111,21 @@ class Creditpaymentlog extends Model
         return (float) $this->amount > 0;
     }
 
+    public function isCreditBalanceRefundRecord(): bool
+    {
+        return $this->invoicelog_type === InvoiceReturn::class && (float) $this->amount > 0;
+    }
+
     public function resolveInvoice(): ?Invoice
     {
         if ($this->invoicelog instanceof Invoice) {
             return $this->invoicelog;
+        }
+
+        if ($this->invoicelog instanceof InvoiceReturn) {
+            return $this->invoicelog->relationLoaded('invoice')
+                ? $this->invoicelog->invoice
+                : Invoice::find($this->invoicelog->invoice_id);
         }
 
         if ($this->invoicelog_type === Invoice::class && !empty($this->invoicelog_id)) {
@@ -133,8 +144,59 @@ class Creditpaymentlog extends Model
         return null;
     }
 
+    /**
+     * Resolve all InvoiceReturn records for the linked invoice on this credit log row.
+     *
+     * @return \Illuminate\Support\Collection<int, InvoiceReturn>
+     */
+    public function invoiceReturns(): \Illuminate\Support\Collection
+    {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('invoice_returns')) {
+            return collect();
+        }
+
+        if ($this->isCreditBalanceRefundRecord() && $this->invoicelog instanceof InvoiceReturn) {
+            return collect([$this->invoicelog]);
+        }
+
+        $invoice = $this->resolveInvoice();
+        if (!$invoice) {
+            return collect();
+        }
+
+        return $invoice->relationLoaded('invoiceReturns')
+            ? $invoice->invoiceReturns->sortBy('id')->values()
+            : $invoice->invoiceReturns()->with('paymentmethod')->reorder('id', 'asc')->get();
+    }
+
+    /**
+     * Determine whether the invoice linked to this credit record was returned.
+     */
+    public function isReturnedInvoice(): bool
+    {
+        if (!$this->isCreditRecord()) {
+            return false;
+        }
+
+        if ($this->invoiceReturns()->isNotEmpty()) {
+            return true;
+        }
+
+        $invoice = $this->resolveInvoice();
+
+        return $invoice !== null && (!is_null($invoice->date_voided) || (int) $invoice->void_reason > 0);
+    }
+
     public function invoiceNumberLabel(): string
     {
+        if ($this->isCreditBalanceRefundRecord()) {
+            if ($this->invoicelog instanceof InvoiceReturn && !empty($this->invoicelog->invoice_number)) {
+                return trim((string) $this->invoicelog->invoice_number);
+            }
+
+            return trim((string) ($this->resolveInvoice()?->invoice_number ?? ''));
+        }
+
         if (!$this->isCreditRecord()) {
             return '';
         }
@@ -146,6 +208,10 @@ class Creditpaymentlog extends Model
     {
         if (!$this->isPaymentRecord()) {
             return '';
+        }
+
+        if ($this->isCreditBalanceRefundRecord() || (int) $this->paymentmethod_id === 4) {
+            return InvoiceReturn::METHOD_CREDIT;
         }
 
         $methodName = trim((string) ($this->paymentmethod?->name ?? ''));
@@ -170,26 +236,81 @@ class Creditpaymentlog extends Model
 
     public function descriptionLabel(): string
     {
-        return trim((string) ($this->description ?? ''));
+        $rawDescription = trim((string) ($this->description ?? ''));
+        if ($rawDescription !== '') {
+            return $rawDescription;
+        }
+
+        if ($this->isReturnedInvoice()) {
+            return $this->returnedInvoiceSummaryText();
+        }
+
+        return '';
+    }
+
+    /**
+     * Build a concise human-readable summary of the return(s) for a returned credit invoice row.
+     */
+    public function returnedInvoiceSummaryText(): string
+    {
+        if (!$this->isReturnedInvoice()) {
+            return '';
+        }
+
+        $returns = $this->invoiceReturns();
+        $invoice = $this->resolveInvoice();
+
+        if ($returns->isEmpty()) {
+            $voidDate = $invoice && $invoice->date_voided ? eng_str_date($invoice->date_voided) : '';
+            return 'Invoice Returned' . ($voidDate !== '' ? ' on ' . $voidDate : '');
+        }
+
+        $firstReturn = $returns->first();
+        $lastReturn = $returns->last();
+
+        $originalAmount = (float) $firstReturn->original_invoice_amount;
+        $currentAmount = (float) $lastReturn->current_invoice_amount;
+        $totalReturned = (float) $returns->sum('return_difference');
+
+        $reasons = $returns->map(function (InvoiceReturn $ret) {
+            if ($ret->return_reason === InvoiceReturn::REASON_OTHER && !empty($ret->other_reason_explanation)) {
+                return trim((string) $ret->other_reason_explanation);
+            }
+            return trim((string) $ret->return_reason);
+        })->filter()->unique()->values()->all();
+
+        $parts = [
+            'Invoice Returned',
+            'Original: ' . number_format($originalAmount, 2),
+            'After Return: ' . number_format($currentAmount, 2),
+            'Returned: ' . number_format($totalReturned, 2),
+        ];
+
+        if (!empty($reasons)) {
+            $parts[] = 'Reason: ' . implode('; ', $reasons);
+        }
+
+        if (!empty($lastReturn->return_date)) {
+            $parts[] = 'Return Date: ' . eng_str_date($lastReturn->return_date);
+        }
+
+        return implode(' | ', $parts);
     }
 
     public function returnOrRefundLabel(): string
     {
+        if ($this->isCreditBalanceRefundRecord()) {
+            return number_format((float) $this->amount, 2) . ' (' . InvoiceReturn::METHOD_CREDIT . ')';
+        }
+
         if (!$this->isCreditRecord() || !\Illuminate\Support\Facades\Schema::hasTable('invoice_returns')) {
             return '';
         }
 
-        $invoice = $this->resolveInvoice();
-        if (!$invoice) {
-            return '';
-        }
-
-        $returns = $invoice->relationLoaded('invoiceReturns')
-            ? $invoice->invoiceReturns->sortBy('id')->values()
-            : $invoice->invoiceReturns()->with('paymentmethod')->reorder('id', 'asc')->get();
+        $returns = $this->invoiceReturns();
 
         if ($returns->isEmpty()) {
-            return '';
+            return $this->isReturnedInvoice() ? 'Returned' : '';
         }
 
         $parts = [];
@@ -203,7 +324,10 @@ class Creditpaymentlog extends Model
             }
 
             if ($ret->is_customer_refunded) {
-                $methodName = trim((string) ($ret->paymentmethod?->name ?? $ret->refund_payment_method));
+                $rawMethodName = trim((string) ($ret->paymentmethod?->name ?? $ret->refund_payment_method));
+                $methodName = ((int) $ret->paymentmethod_id === 4 || in_array(strtoupper($rawMethodName), ['CREDIT', 'CREDIT BALANCE'], true))
+                    ? InvoiceReturn::METHOD_CREDIT
+                    : $rawMethodName;
                 $parts[] = number_format($displayAmount, 2) . ($methodName !== '' ? ' (' . $methodName . ')' : '');
             } else {
                 $parts[] = number_format($displayAmount, 2);

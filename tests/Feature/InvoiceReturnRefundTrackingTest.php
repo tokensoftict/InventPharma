@@ -408,6 +408,7 @@ class InvoiceReturnRefundTrackingTest extends TestCase
             ['id' => 1, 'name' => 'CASH', 'status' => 1],
             ['id' => 2, 'name' => 'POS', 'status' => 1],
             ['id' => 3, 'name' => 'TRANSFER', 'status' => 1],
+            ['id' => 4, 'name' => 'CREDIT', 'status' => 1],
         ]);
 
         $this->cashierA = User::forceCreate(['name' => 'Cashier Alice', 'email' => 'alice@test.local', 'usergroup_id' => 1, 'department_id' => 2, 'status' => 1]);
@@ -889,6 +890,96 @@ class InvoiceReturnRefundTrackingTest extends TestCase
         $this->assertSame(1, $ret->paymentmethod_id);
     }
 
+    public function test_return_refund_with_credit_balance_payment_method_adds_plus_to_customer_balance_and_places_row_after_returned_invoice(): void
+    {
+        Bus::fake();
+        $this->actingAs($this->cashierA);
+        $today = todaysDate();
+
+        // Create a Credit invoice for 56,000 (-56,000 on customer credit balance)
+        $invoice = $this->createPaidInvoice('INV-RET-CREDIT-BAL', 5, 2, (int) status('Paid'));
+        $creditInvoiceLog = \App\Models\Creditpaymentlog::create([
+            'credit_number' => 'CR-INV-CB-01',
+            'payment_id' => $invoice->payment_id,
+            'user_id' => $this->cashierA->id,
+            'paymentmethod_id' => 4,
+            'customer_id' => $this->customer->id,
+            'invoicelog_type' => Invoice::class,
+            'invoicelog_id' => $invoice->id,
+            'amount' => -56000.0,
+            'payment_date' => $today,
+        ]);
+
+        // Add another transaction after the invoice
+        $otherPaymentLog = \App\Models\Creditpaymentlog::create([
+            'credit_number' => 'CR-PAY-INTERIM',
+            'user_id' => $this->cashierA->id,
+            'paymentmethod_id' => 1,
+            'customer_id' => $this->customer->id,
+            'amount' => 10000.0,
+            'payment_date' => $today,
+            'description' => 'Interim cash payment',
+        ]);
+        $this->customer->updateCreditBalance();
+        $this->assertEquals(-46000.0, (float) $this->customer->fresh()->credit_balance);
+
+        // Now return 2 units of stockA (20,000 difference) and refund via CREDIT BALANCE (paymentmethod_id = 4)
+        $updated = (new InvoiceRepository())->updateInvoice($invoice, [
+            'department' => 'wholesales',
+            'in_department' => 'wholesales',
+            'customer_id' => $this->customer->id,
+            'status_id' => status('Paid'),
+            'discount_type' => 'None',
+            'discount_value' => 0,
+            'discount_amount' => 0,
+            'invoiceitems' => json_encode([
+                ['stock_id' => $this->stockA->id, 'name' => $this->stockA->name, 'quantity' => 3, 'selling_price' => 10000, 'cost_price' => 8000, 'discount_type' => 'Fixed', 'discount_value' => 0, 'discount_amount' => 0],
+                ['stock_id' => $this->stockB->id, 'name' => $this->stockB->name, 'quantity' => 2, 'selling_price' => 3000, 'cost_price' => 2000, 'discount_type' => 'Fixed', 'discount_value' => 0, 'discount_amount' => 0],
+            ]),
+            'return_info' => [
+                'return_reason' => InvoiceReturn::REASON_CUSTOMER_RETURNED,
+                'will_refund' => 'yes',
+                'paymentmethod_id' => 4, // CREDIT BALANCE
+                'idempotency_key' => 'idem-credit-bal-001',
+            ],
+        ]);
+        $this->assertInstanceOf(Invoice::class, $updated);
+
+        $ret = InvoiceReturn::where('invoice_id', $invoice->id)->firstOrFail();
+        $this->assertSame(4, $ret->paymentmethod_id);
+        $this->assertSame('CREDIT BALANCE', $ret->refund_payment_method);
+        $this->assertEquals(20000.0, $ret->refund_amount);
+
+        // Customer credit balance increased by +20,000 (-46,000 + 20,000 = -26,000)
+        $this->assertEquals(-26000.0, (float) $this->customer->fresh()->credit_balance);
+
+        // Verify the new Creditpaymentlog row was created with +20,000
+        $creditRefundLog = \App\Models\Creditpaymentlog::where('invoicelog_type', InvoiceReturn::class)
+            ->where('invoicelog_id', $ret->id)
+            ->firstOrFail();
+        $this->assertTrue($creditRefundLog->isCreditBalanceRefundRecord());
+        $this->assertEquals(20000.0, (float) $creditRefundLog->amount);
+        $this->assertSame('CREDIT BALANCE', $creditRefundLog->modeOfPaymentLabel());
+        $this->assertSame('20,000.00 (CREDIT BALANCE)', $creditRefundLog->returnOrRefundLabel());
+
+        // Verify CustomerReportController orders the CREDIT BALANCE refund row immediately after the returned invoice row
+        $controller = new \App\Http\Controllers\CustomerReport\CustomerReportController();
+        $refMethod = new \ReflectionMethod($controller, 'orderCreditBalanceRefundsAfterReturnedInvoice');
+        $refMethod->setAccessible(true);
+
+        $rawHistories = \App\Models\Creditpaymentlog::with(['paymentmethod', 'invoicelog'])
+            ->where('customer_id', $this->customer->id)
+            ->orderBy('payment_date', 'ASC')
+            ->orderBy('id', 'ASC')
+            ->get();
+        $orderedHistories = $refMethod->invoke($controller, $rawHistories)->values();
+
+        $this->assertCount(3, $orderedHistories);
+        $this->assertSame($creditInvoiceLog->id, $orderedHistories[0]->id);
+        $this->assertSame($creditRefundLog->id, $orderedHistories[1]->id); // Immediately after the returned invoice!
+        $this->assertSame($otherPaymentLog->id, $orderedHistories[2]->id);
+    }
+
     public function test_cash_transfer_and_no_refund_persistence_idempotency_and_reconciliation_queries(): void
     {
         Bus::fake();
@@ -1080,9 +1171,15 @@ class InvoiceReturnRefundTrackingTest extends TestCase
         // After 1st return (20,000.00 CASH), the invoice row shows the invoice number and "20,000.00 (CASH)"
         $this->assertTrue($creditLogInv1->isCreditRecord());
         $this->assertFalse($creditLogInv1->isPaymentRecord());
+        $this->assertTrue($creditLogInv1->isReturnedInvoice());
         $this->assertSame('INV-RET-CASH', $creditLogInv1->invoiceNumberLabel());
         $this->assertSame('', $creditLogInv1->modeOfPaymentLabel());
         $this->assertSame('20,000.00 (CASH)', $creditLogInv1->returnOrRefundLabel());
+        $this->assertStringContainsString('Invoice Returned', $creditLogInv1->descriptionLabel());
+        $this->assertStringContainsString('Original: 56,000.00', $creditLogInv1->descriptionLabel());
+        $this->assertStringContainsString('After Return: 36,000.00', $creditLogInv1->descriptionLabel());
+        $this->assertStringContainsString('Returned: 20,000.00', $creditLogInv1->descriptionLabel());
+        $this->assertStringContainsString(InvoiceReturn::REASON_CUSTOMER_RETURNED, $creditLogInv1->descriptionLabel());
 
         // Perform a 2nd return on the same invoice (reduce qty from 3 -> 2, returning another 10,000.00 via TRANSFER)
         $updated1Second = $repo->updateInvoice($inv1->fresh(), [
@@ -1109,8 +1206,12 @@ class InvoiceReturnRefundTrackingTest extends TestCase
 
         // Both returns on INV-RET-CASH are merged together in the "Return or refund" column on the SAME invoice row
         $creditLogInv1Fresh = $creditLogInv1->fresh();
+        $this->assertTrue($creditLogInv1Fresh->isReturnedInvoice());
         $this->assertSame('INV-RET-CASH', $creditLogInv1Fresh->invoiceNumberLabel());
         $this->assertSame('20,000.00 (CASH), 10,000.00 (TRANSFER)', $creditLogInv1Fresh->returnOrRefundLabel());
+        $this->assertStringContainsString('Original: 56,000.00', $creditLogInv1Fresh->descriptionLabel());
+        $this->assertStringContainsString('After Return: 26,000.00', $creditLogInv1Fresh->descriptionLabel());
+        $this->assertStringContainsString('Returned: 30,000.00', $creditLogInv1Fresh->descriptionLabel());
 
         // Verify a Credit Payment row with description has Invoice blank, Mode of payment populated, and Return or refund blank
         $creditPaymentRow = \App\Models\Creditpaymentlog::create([
@@ -1124,6 +1225,7 @@ class InvoiceReturnRefundTrackingTest extends TestCase
         ]);
         $creditPaymentRow->load('paymentmethod');
         $this->assertTrue($creditPaymentRow->isPaymentRecord());
+        $this->assertFalse($creditPaymentRow->isReturnedInvoice());
         $this->assertSame('', $creditPaymentRow->invoiceNumberLabel());
         $this->assertSame('TRANSFER', $creditPaymentRow->modeOfPaymentLabel());
         $this->assertSame('Part settlement via Zenith Bank transfer', $creditPaymentRow->descriptionLabel());

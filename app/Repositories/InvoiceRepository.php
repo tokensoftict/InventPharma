@@ -616,7 +616,7 @@ class InvoiceRepository
 
                     $idempotencyKey = trim((string) ($returnInfo['idempotency_key'] ?? ''));
 
-                    InvoiceReturn::create([
+                    $invoiceReturn = InvoiceReturn::create([
                         'invoice_id' => $invoice->id,
                         'invoice_number' => $invoice->invoice_number,
                         'customer_id' => $invoice->customer_id,
@@ -633,7 +633,9 @@ class InvoiceRepository
                             : InvoiceReturn::REFUND_STATUS_NOT_REFUNDED,
                         'refund_amount' => $isCustomerRefunded ? $returnDifference : 0.0,
                         'paymentmethod_id' => ($isCustomerRefunded && $refundPaymentMethodModel) ? (int) $refundPaymentMethodModel->id : null,
-                        'refund_payment_method' => ($isCustomerRefunded && $refundPaymentMethodModel) ? (string) $refundPaymentMethodModel->name : null,
+                        'refund_payment_method' => ($isCustomerRefunded && $refundPaymentMethodModel)
+                            ? InvoiceReturn::formatRefundPaymentMethodName($refundPaymentMethodModel)
+                            : null,
                         'bank_account_id' => ($isCustomerRefunded && InvoiceReturn::isTransferPaymentMethod($refundPaymentMethodModel))
                             ? $bankAccountId
                             : null,
@@ -643,6 +645,10 @@ class InvoiceRepository
                         'idempotency_key' => $idempotencyKey !== '' ? $idempotencyKey : null,
                         'returned_items_snapshot' => $snapshot,
                     ]);
+
+                    if ($isCustomerRefunded && InvoiceReturn::isCreditPaymentMethod($refundPaymentMethodModel)) {
+                        $this->recordCreditBalanceRefundLog($invoice, $invoiceReturn, $returnDifference, $returnReason, $otherExplanation, $refundPaymentMethodModel);
+                    }
                 }
 
                 logActivity($invoice->id, $invoice->invoice_number, "Invoice payment was deleted " . $invoice->status);
@@ -797,6 +803,16 @@ class InvoiceRepository
                                 }
                             })
                             ->get();
+                        // Note: creditpaymentlogs has ON DELETE CASCADE on payment_id and paymentmethoditem_id in MySQL,
+                        // so explicitly delete old invoice credit logs and re-create (INSERT) them with the new payment_id below.
+                        Creditpaymentlog::whereIn('payment_id', $oldPaymentIds)
+                            ->where(function ($q) {
+                                if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'invoicelog_type')) {
+                                    $q->whereNull('invoicelog_type')
+                                      ->orWhere('invoicelog_type', Invoice::class);
+                                }
+                            })
+                            ->delete();
                     }
                     if (\Illuminate\Support\Facades\Schema::hasTable('paymentmethoditems')) {
                         Paymentmethoditem::whereIn('payment_id', $oldPaymentIds)->delete();
@@ -841,6 +857,8 @@ class InvoiceRepository
                         'payment_date' => $rawPaymentDate,
                     ]);
 
+                    $recreatedInvoiceCreditLog = false;
+
                     if ($originalMethodItems->isNotEmpty() && \Illuminate\Support\Facades\Schema::hasTable('paymentmethoditems')) {
                         $oldItemsTotal = (float) $originalMethodItems->sum('amount');
                         $itemsCount = $originalMethodItems->count();
@@ -882,56 +900,73 @@ class InvoiceRepository
                             $createdMethodItem = Paymentmethoditem::create($itemPayload);
 
                             if ((int) $createdMethodItem->paymentmethod_id === 4 && \Illuminate\Support\Facades\Schema::hasTable('creditpaymentlogs')) {
-                                // If Not Refunded, credit debt reduces to the new amount (-$createdMethodItem->amount);
-                                // If Refunded in Cash/Transfer, credit balance does not change (0 effect on credit balance).
-                                if ($existingInvoiceCreditLogs->isNotEmpty()) {
-                                    $existingCreditLog = $existingInvoiceCreditLogs->first();
+                                // Always INSERT a fresh Creditpaymentlog row because MySQL ON DELETE CASCADE on
+                                // payment_id / paymentmethoditem_id deletes the previous row when the old payment is deleted.
+                                $existingCreditLog = $existingInvoiceCreditLogs->first();
+                                if ($existingCreditLog) {
                                     $newCreditAmount = $isCustomerRefunded
                                         ? (float) $existingCreditLog->amount
                                         : (float) $existingCreditLog->amount + $returnDifference;
-
-                                    $updateCreditFields = [
-                                        'payment_id' => $newPayment->id,
-                                        'amount' => min(0.0, round($newCreditAmount, 5)),
-                                    ];
-                                    if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'paymentmethoditem_id')) {
-                                        $updateCreditFields['paymentmethoditem_id'] = $createdMethodItem->id;
-                                    }
-                                    if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'invoicelog_type')) {
-                                        $updateCreditFields['invoicelog_type'] = Invoice::class;
-                                        $updateCreditFields['invoicelog_id'] = $invoice->id;
-                                    }
-                                    $existingCreditLog->update($updateCreditFields);
+                                    $newCreditAmount = min(0.0, round($newCreditAmount, 5));
                                 } else {
                                     $newCreditAmount = $isCustomerRefunded
                                         ? -((float) $origMethodItem->amount)
                                         : -((float) $createdMethodItem->amount);
-
-                                    $creditPayload = [
-                                        'payment_id' => $newPayment->id,
-                                        'user_id' => $createdMethodItem->user_id,
-                                        'paymentmethod_id' => 4,
-                                        'customer_id' => $createdMethodItem->customer_id,
-                                        'amount' => $newCreditAmount,
-                                        'payment_date' => $rawPaymentDate,
-                                    ];
-                                    if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'credit_number') && function_exists('creditPaymentReference')) {
-                                        $creditPayload['credit_number'] = creditPaymentReference();
-                                    }
-                                    if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'paymentmethoditem_id')) {
-                                        $creditPayload['paymentmethoditem_id'] = $createdMethodItem->id;
-                                    }
-                                    if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'invoicelog_type')) {
-                                        $creditPayload['invoicelog_type'] = Invoice::class;
-                                        $creditPayload['invoicelog_id'] = $invoice->id;
-                                    }
-                                    Creditpaymentlog::create($creditPayload);
                                 }
+
+                                $creditPayload = [
+                                    'payment_id' => $newPayment->id,
+                                    'user_id' => $existingCreditLog?->user_id ?? $createdMethodItem->user_id,
+                                    'paymentmethod_id' => 4,
+                                    'customer_id' => $createdMethodItem->customer_id,
+                                    'amount' => $newCreditAmount,
+                                    'payment_date' => $existingCreditLog
+                                        ? ($existingCreditLog->getRawOriginal('payment_date') ?: $rawPaymentDate)
+                                        : $rawPaymentDate,
+                                ];
+                                if ($existingCreditLog) {
+                                    $creditPayload['id'] = $existingCreditLog->id;
+                                }
+                                if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'credit_number')) {
+                                    $creditPayload['credit_number'] = !empty($existingCreditLog?->credit_number)
+                                        ? $existingCreditLog->credit_number
+                                        : (function_exists('creditPaymentReference') ? creditPaymentReference() : null);
+                                }
+                                if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'paymentmethoditem_id')) {
+                                    $creditPayload['paymentmethoditem_id'] = $createdMethodItem->id;
+                                }
+                                if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'invoicelog_type')) {
+                                    $creditPayload['invoicelog_type'] = Invoice::class;
+                                    $creditPayload['invoicelog_id'] = $invoice->id;
+                                }
+                                Creditpaymentlog::forceCreate($creditPayload);
+                                $recreatedInvoiceCreditLog = true;
                             }
                         }
-                    } elseif ($existingInvoiceCreditLogs->isNotEmpty()) {
+                    }
+
+                    if (!$recreatedInvoiceCreditLog && $existingInvoiceCreditLogs->isNotEmpty() && \Illuminate\Support\Facades\Schema::hasTable('creditpaymentlogs')) {
                         foreach ($existingInvoiceCreditLogs as $existingCreditLog) {
-                            $existingCreditLog->update(['payment_id' => $newPayment->id]);
+                            $newCreditAmount = $isCustomerRefunded
+                                ? (float) $existingCreditLog->amount
+                                : (float) $existingCreditLog->amount + $returnDifference;
+                            $creditPayload = [
+                                'id' => $existingCreditLog->id,
+                                'payment_id' => $newPayment->id,
+                                'user_id' => $existingCreditLog->user_id,
+                                'paymentmethod_id' => $existingCreditLog->paymentmethod_id ?: 4,
+                                'customer_id' => $existingCreditLog->customer_id,
+                                'amount' => min(0.0, round($newCreditAmount, 5)),
+                                'payment_date' => $existingCreditLog->getRawOriginal('payment_date') ?: $rawPaymentDate,
+                            ];
+                            if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'credit_number')) {
+                                $creditPayload['credit_number'] = $existingCreditLog->credit_number ?: (function_exists('creditPaymentReference') ? creditPaymentReference() : null);
+                            }
+                            if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'invoicelog_type')) {
+                                $creditPayload['invoicelog_type'] = Invoice::class;
+                                $creditPayload['invoicelog_id'] = $invoice->id;
+                            }
+                            Creditpaymentlog::forceCreate($creditPayload);
                         }
                     }
 
@@ -1034,7 +1069,7 @@ class InvoiceRepository
 
                 $idempotencyKey = trim((string) ($returnInfo['idempotency_key'] ?? ''));
 
-                InvoiceReturn::create([
+                $invoiceReturn = InvoiceReturn::create([
                     'invoice_id' => $invoice->id,
                     'invoice_number' => $invoice->invoice_number,
                     'customer_id' => $invoice->customer_id,
@@ -1051,7 +1086,9 @@ class InvoiceRepository
                         : InvoiceReturn::REFUND_STATUS_NOT_REFUNDED,
                     'refund_amount' => $isCustomerRefunded ? $returnDifference : 0.0,
                     'paymentmethod_id' => ($isCustomerRefunded && $refundPaymentMethodModel) ? (int) $refundPaymentMethodModel->id : null,
-                    'refund_payment_method' => ($isCustomerRefunded && $refundPaymentMethodModel) ? (string) $refundPaymentMethodModel->name : null,
+                    'refund_payment_method' => ($isCustomerRefunded && $refundPaymentMethodModel)
+                        ? InvoiceReturn::formatRefundPaymentMethodName($refundPaymentMethodModel)
+                        : null,
                     'bank_account_id' => ($isCustomerRefunded && InvoiceReturn::isTransferPaymentMethod($refundPaymentMethodModel))
                         ? $bankAccountId
                         : null,
@@ -1061,6 +1098,10 @@ class InvoiceRepository
                     'idempotency_key' => $idempotencyKey !== '' ? $idempotencyKey : null,
                     'returned_items_snapshot' => $snapshot,
                 ]);
+
+                if ($isCustomerRefunded && InvoiceReturn::isCreditPaymentMethod($refundPaymentMethodModel)) {
+                    $this->recordCreditBalanceRefundLog($invoice, $invoiceReturn, $returnDifference, $returnReason, $otherExplanation, $refundPaymentMethodModel);
+                }
             }
 
             logActivity($invoice->id, $invoice->invoice_number, "Invoice was updated".status_name($invoice->status_id));
@@ -1084,6 +1125,54 @@ class InvoiceRepository
 
             return $invoice;
         });
+    }
+
+    protected function recordCreditBalanceRefundLog(
+        Invoice $invoice,
+        InvoiceReturn $invoiceReturn,
+        float $returnDifference,
+        string $returnReason,
+        string $otherExplanation,
+        \App\Models\Paymentmethod $refundPaymentMethodModel
+    ): void {
+        if (!\Illuminate\Support\Facades\Schema::hasTable('creditpaymentlogs')
+            || empty($invoice->customer_id)
+            || $returnDifference <= 0
+        ) {
+            return;
+        }
+
+        $reasonDetail = $returnReason === InvoiceReturn::REASON_OTHER && $otherExplanation !== ''
+            ? $otherExplanation
+            : $returnReason;
+        $returnDescription = 'Refund to Credit Balance (Invoice #' . $invoice->invoice_number . ')'
+            . ($reasonDetail !== '' ? ' - ' . $reasonDetail : '');
+
+        $returnCreditPayload = [
+            'payment_id' => $invoice->payment_id,
+            'user_id' => auth()->id() ?: ($invoice->last_updated_by ?: 1),
+            'paymentmethod_id' => (int) $refundPaymentMethodModel->id,
+            'customer_id' => $invoice->customer_id,
+            'amount' => $returnDifference,
+            'payment_date' => $invoiceReturn->return_date,
+        ];
+
+        if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'credit_number') && function_exists('creditPaymentReference')) {
+            $returnCreditPayload['credit_number'] = creditPaymentReference();
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'invoicelog_type')) {
+            $returnCreditPayload['invoicelog_type'] = InvoiceReturn::class;
+            $returnCreditPayload['invoicelog_id'] = $invoiceReturn->id;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('creditpaymentlogs', 'description')) {
+            $returnCreditPayload['description'] = $returnDescription;
+        }
+
+        Creditpaymentlog::create($returnCreditPayload);
+
+        if ($invoice->customer) {
+            $invoice->customer->updateCreditBalance();
+        }
     }
 
     public function createOnlineInvoice(array $invoiceData, Collection $orderTotal) : Invoice

@@ -606,12 +606,12 @@
                                         <label class="form-label fw-semibold small mb-1">
                                             Refund Payment Method <span class="text-danger">*</span>
                                         </label>
-                                        <div class="d-flex gap-2">
+                                        <div class="d-flex flex-wrap gap-2">
                                             @foreach($this->refundPaymentMethods as $pm)
                                                 <label class="p-2 px-3 border rounded bg-white d-inline-flex align-items-center gap-2 flex-fill" style="cursor: pointer;" :class="{'border-primary bg-primary-subtle fw-semibold': String(returnForm.paymentmethod_id) === '{{ $pm['id'] }}'}">
                                                     <input type="radio" class="form-check-input mt-0" name="refund_method_opt" value="{{ $pm['id'] }}" x-model="returnForm.paymentmethod_id" x-on:change="@if(!$pm['is_transfer']) returnForm.bank_account_id = ''; @endif returnModalError = ''">
                                                     <span>
-                                                        <i class="fa {{ $pm['is_transfer'] ? 'fa-university' : 'fa-money-bill-wave' }} me-1"></i>
+                                                        <i class="fa {{ $pm['is_transfer'] ? 'fa-university' : (($pm['is_credit'] ?? false) ? 'fa-wallet' : 'fa-money-bill-wave') }} me-1"></i>
                                                         {{ ucwords(strtolower($pm['name'])) }}
                                                     </span>
                                                 </label>

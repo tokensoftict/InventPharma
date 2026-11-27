@@ -329,8 +329,16 @@
                                         </thead>
                                         <tbody>
                                             @forelse($customerInvoices as $inv)
+                                                @php
+                                                    $invHasReturn = ($inv->relationLoaded('invoiceReturns') && $inv->invoiceReturns->isNotEmpty()) || !is_null($inv->date_voided);
+                                                @endphp
                                                 <tr>
-                                                    <td class="fw-bold">{{ $inv->invoice_number }}</td>
+                                                    <td class="fw-bold">
+                                                        {{ $inv->invoice_number }}
+                                                        @if($invHasReturn)
+                                                            <span class="badge bg-warning text-dark ms-1">Returned</span>
+                                                        @endif
+                                                    </td>
                                                     <td>{{ convert_date($inv->invoice_date) }}</td>
                                                     <td>
                                                         @if($inv->in_department === 'retail')
@@ -404,13 +412,28 @@
                                         <tbody>
                                             @forelse($customerCreditLogs as $log)
                                                 <tr>
-                                                    <td>{{ $log->credit_number ?? '#'.$log->id }}</td>
+                                                    <td>
+                                                        {{ $log->credit_number ?? '#'.$log->id }}
+                                                        @if($log->invoiceNumberLabel() !== '')
+                                                            <div class="small text-muted">Inv: #{{ $log->invoiceNumberLabel() }}</div>
+                                                        @endif
+                                                    </td>
                                                     <td>{{ convert_date($log->payment_date) }}</td>
                                                     <td>
                                                         @if($log->amount < 0)
                                                             <span class="text-danger fw-semibold"><i class="bx bx-minus-circle me-1"></i>Credit Purchase (Debt Added)</span>
+                                                            @if($log->isReturnedInvoice())
+                                                                <span class="badge bg-warning text-dark ms-1">Returned</span>
+                                                                <div class="small text-muted mt-1">{{ $log->returnedInvoiceSummaryText() }}</div>
+                                                            @endif
+                                                        @elseif($log->isCreditBalanceRefundRecord())
+                                                            <span class="text-info fw-semibold"><i class="bx bx-undo me-1"></i>Invoice Return Refund (Credit Balance)</span>
+                                                            <div class="small text-muted mt-1">{{ $log->descriptionLabel() }}</div>
                                                         @else
                                                             <span class="text-success fw-semibold"><i class="bx bx-plus-circle me-1"></i>Credit Settlement (Payment)</span>
+                                                            @if($log->descriptionLabel() !== '')
+                                                                <div class="small text-muted mt-1">{{ $log->descriptionLabel() }}</div>
+                                                            @endif
                                                         @endif
                                                     </td>
                                                     <td class="text-end fw-bold {{ $log->amount < 0 ? 'text-danger' : 'text-success' }}">
